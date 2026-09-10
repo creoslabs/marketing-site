@@ -7,11 +7,10 @@ export default function Hero() {
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <h1
-          className="animate-fade-up text-balance text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-[5.5rem]"
+          className="animate-fade-up text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-[5.5rem]"
         >
-          Marketing technology,
-          <br />
-          built by marketers.
+          <span className="block sm:whitespace-nowrap">Marketing technology,</span>
+          <span className="block">built by marketers.</span>
         </h1>
 
         <p
