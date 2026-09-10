@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LiquidButton } from "@/components/ui/button";
 
 const LINKS = [
-  { label: "Products", href: "#products" },
+  { label: "Work", href: "#products" },
   { label: "About", href: "#about" },
   { label: "Contact", href: "#contact" },
 ];

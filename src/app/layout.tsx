@@ -3,25 +3,25 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.creos-labs.com"),
-  title: "Creos Labs — A technology company",
+  title: "Creos Labs — Custom marketing solutions",
   description:
-    "Creos Labs is a technology company that designs, builds, and operates its own products, including Cardindex and Creos.",
+    "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Creos Labs — A technology company",
+    title: "Creos Labs — Custom marketing solutions",
     description:
-      "Creos Labs is a technology company that designs, builds, and operates its own products, including Cardindex and Creos.",
+      "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
     url: "/",
     siteName: "Creos Labs",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Creos Labs — A technology company",
+    title: "Creos Labs — Custom marketing solutions",
     description:
-      "Creos Labs is a technology company that designs, builds, and operates its own products, including Cardindex and Creos.",
+      "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
   },
 };
 

@@ -3,18 +3,18 @@ import { Reveal } from "@/components/Reveal";
 const PRODUCTS = [
   {
     name: "Cardindex",
-    tagline: "A connected-card system for notes and knowledge.",
+    tagline: "A connected-card system for content ideas and inspiration.",
     description:
-      "Cardindex stores ideas, notes, and knowledge as linked cards. Built and maintained by our engineering team, and used internally before it shipped to anyone else.",
-    tags: ["Productivity", "Knowledge base"],
+      "Cardindex helps creators and marketers capture ideas, inspiration, and campaign notes as linked cards — engineered end to end, from idea to production.",
+    tags: ["Content ideas", "Creator tools"],
     href: "#",
   },
   {
     name: "Creos",
-    tagline: "The infrastructure behind Creos Labs.",
+    tagline: "A content lab, custom-built for creators and marketers.",
     description:
-      "Creos is our core platform — the toolkit and infrastructure our own products run on, combining a clean interface with the systems underneath it.",
-    tags: ["Platform", "Infrastructure"],
+      "Creos is a content lab — a platform for planning, producing, and managing content, designed and engineered the same way we build for our clients.",
+    tags: ["Content lab", "Marketing"],
     href: "#",
   },
 ];
@@ -25,14 +25,14 @@ export default function Products() {
       <div className="mx-auto max-w-6xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
-            What we&apos;ve built
+            Selected work
           </h2>
           <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Two products. One engineering team.
+            Two solutions. One team.
           </p>
           <p className="mt-4 text-muted">
-            Cardindex and Creos are built, deployed, and maintained by the
-            same small team — no outsourcing, no separate vendors.
+            Creos and Cardindex are examples of the marketing technology we
+            build — engineered in-house, end to end.
           </p>
         </Reveal>
 

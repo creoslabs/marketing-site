@@ -3,16 +3,16 @@ import { Reveal } from "@/components/Reveal";
 
 const VALUES = [
   {
-    title: "We build, not consult",
-    description: "Every product is our own — designed, engineered, and operated in-house, not delivered to a client.",
+    title: "Built for you, not off-the-shelf",
+    description: "Every solution is engineered around how your business actually works, not squeezed into a generic template.",
   },
   {
     title: "Engineering first",
     description: "Decisions start with how something works, not how it looks in a deck.",
   },
   {
-    title: "Small team, full ownership",
-    description: "A lean engineering team means direct ownership of the systems we build, end to end.",
+    title: "Small team, direct access",
+    description: "You work directly with the people building your solution — no account managers in between.",
   },
 ];
 
@@ -30,13 +30,13 @@ export default function About() {
               About Creos Labs
             </h2>
             <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-              An independent technology company.
+              A technology company for custom marketing solutions.
             </p>
             <p className="mt-6 leading-relaxed text-muted">
-              Creos Labs designs, builds, and operates its own products —
-              Cardindex, Creos, and what comes next. We&apos;re not an agency
-              and we don&apos;t take on client work. Everything we ship, we
-              built for ourselves first.
+              Creos Labs designs and builds custom marketing technology for
+              businesses — from Creos, our content lab, to Cardindex and
+              beyond. We work as an extension of your team, engineering
+              solutions built specifically for how you operate.
             </p>
           </Reveal>
 

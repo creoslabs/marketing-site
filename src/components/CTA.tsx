@@ -6,10 +6,10 @@ export default function CTA() {
     <section id="contact" className="relative border-t border-white/10 py-28">
       <Reveal className="mx-auto max-w-4xl px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Want to know more about what we build?
+          Want custom marketing technology built for your business?
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-muted">
-          Reach out about Cardindex, Creos, or working at Creos Labs.
+          Tell us what you&apos;re trying to build — we&apos;ll take it from there.
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
