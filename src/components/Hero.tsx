@@ -2,7 +2,7 @@ import { LiquidButton } from "@/components/ui/button";
 
 export default function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-44 pb-32">
+    <section id="top" className="relative overflow-hidden pt-56 pb-32">
       <div className="pointer-events-none absolute -top-64 left-1/2 h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-white/10 blur-[140px]" />
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
