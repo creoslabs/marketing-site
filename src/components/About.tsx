@@ -1,4 +1,5 @@
 import { DotPattern } from "@/components/ui/dot-pattern";
+import { Reveal } from "@/components/Reveal";
 
 const VALUES = [
   {
@@ -24,7 +25,7 @@ export default function About() {
 
       <div className="relative mx-auto max-w-6xl px-6">
         <div className="grid gap-16 md:grid-cols-2">
-          <div>
+          <Reveal>
             <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
               About Creos Labs
             </h2>
@@ -37,9 +38,9 @@ export default function About() {
               and we don&apos;t take on client work. Everything we ship, we
               built for ourselves first.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="flex flex-col gap-8">
+          <Reveal delay={150} className="flex flex-col gap-8">
             {VALUES.map((value, i) => (
               <div key={value.title} className="flex gap-5">
                 <span className="text-2xl font-semibold text-accent-blue">
@@ -53,7 +54,7 @@ export default function About() {
                 </div>
               </div>
             ))}
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
