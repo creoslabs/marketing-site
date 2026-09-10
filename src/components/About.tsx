@@ -34,9 +34,10 @@ export default function About() {
             </p>
             <p className="mt-6 leading-relaxed text-muted">
               Creos Labs designs and builds custom marketing technology for
-              businesses — from Creos, our content lab, to Cardindex and
-              beyond. We work as an extension of your team, engineering
-              solutions built specifically for how you operate.
+              businesses — including Creos, our business management
+              platform for creators, and Content Lab, our competitor
+              content analysis tool. We work as an extension of your team,
+              engineering solutions built specifically for how you operate.
             </p>
           </Reveal>
 

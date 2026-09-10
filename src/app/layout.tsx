@@ -5,14 +5,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.creos-labs.com"),
   title: "Creos Labs — Custom marketing solutions",
   description:
-    "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
+    "Creos Labs designs and builds custom marketing technology for businesses, including Creos and Content Lab.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "Creos Labs — Custom marketing solutions",
     description:
-      "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
+      "Creos Labs designs and builds custom marketing technology for businesses, including Creos and Content Lab.",
     url: "/",
     siteName: "Creos Labs",
     type: "website",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Creos Labs — Custom marketing solutions",
     description:
-      "Creos Labs designs and builds custom marketing technology for businesses, including Creos, our content lab, and Cardindex.",
+      "Creos Labs designs and builds custom marketing technology for businesses, including Creos and Content Lab.",
   },
 };
 

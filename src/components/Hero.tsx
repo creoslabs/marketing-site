@@ -27,8 +27,8 @@ export default function Hero() {
           style={{ animationDelay: "200ms" }}
         >
           We design and engineer marketing technology for businesses that
-          need more than an off-the-shelf tool — including Creos, our
-          content lab, and Cardindex.
+          need more than an off-the-shelf tool — including Creos and
+          Content Lab.
         </p>
 
         <div

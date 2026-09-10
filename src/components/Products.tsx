@@ -2,19 +2,19 @@ import { Reveal } from "@/components/Reveal";
 
 const PRODUCTS = [
   {
-    name: "Cardindex",
-    tagline: "A connected-card system for content ideas and inspiration.",
+    name: "Creos",
+    tagline: "Purpose-built business management tools for creators.",
     description:
-      "Cardindex helps creators and marketers capture ideas, inspiration, and campaign notes as linked cards — engineered end to end, from idea to production.",
-    tags: ["Content ideas", "Creator tools"],
+      "Creos gives creators the tools to run their business — scheduling, invoicing, and client management, built specifically for how creators work.",
+    tags: ["Business management", "Creator tools"],
     href: "#",
   },
   {
-    name: "Creos",
-    tagline: "A content lab, custom-built for creators and marketers.",
+    name: "Content Lab",
+    tagline: "Analyze competitor content, built for marketers.",
     description:
-      "Creos is a content lab — a platform for planning, producing, and managing content, designed and engineered the same way we build for our clients.",
-    tags: ["Content lab", "Marketing"],
+      "Content Lab tracks and analyzes competitor content so you can see what's working in your space, then apply it to your own.",
+    tags: ["Competitor analysis", "Content"],
     href: "#",
   },
 ];
@@ -28,11 +28,11 @@ export default function Products() {
             Selected work
           </h2>
           <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Two solutions. One team.
+            Two products. One team.
           </p>
           <p className="mt-4 text-muted">
-            Creos and Cardindex are examples of the marketing technology we
-            build — engineered in-house, end to end.
+            Creos and Content Lab are examples of the marketing technology
+            we build — engineered in-house, end to end.
           </p>
         </Reveal>
 
