@@ -14,7 +14,7 @@ export default function CTA() {
 
         <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
           <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-            <a href="mailto:jackson@creos-labs.com">jackson@creos-labs.com</a>
+            <a href="mailto:hello@creos-labs.com">hello@creos-labs.com</a>
           </LiquidButton>
         </div>
       </Reveal>
