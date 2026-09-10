@@ -1,5 +1,43 @@
 import { Reveal } from "@/components/Reveal";
 
+function BriefcaseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+    >
+      <path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" />
+      <path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+      <path d="M4 13h16" />
+    </svg>
+  );
+}
+
+function AnalysisIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+    >
+      <circle cx="10" cy="10" r="6" />
+      <path d="M7 12V9" />
+      <path d="M10 12V7" />
+      <path d="M13 12v-4" />
+      <path d="m20 20-4.35-4.35" />
+    </svg>
+  );
+}
+
 const PRODUCTS = [
   {
     name: "Creos",
@@ -7,6 +45,7 @@ const PRODUCTS = [
     description:
       "Creos gives creators the tools to run their business — scheduling, invoicing, and client management, built specifically for how creators work.",
     tags: ["Business management", "Creator tools"],
+    icon: BriefcaseIcon,
     href: "#",
   },
   {
@@ -15,6 +54,7 @@ const PRODUCTS = [
     description:
       "Content Lab tracks and analyzes competitor content so you can see what's working in your space, then apply it to your own.",
     tags: ["Competitor analysis", "Content"],
+    icon: AnalysisIcon,
     href: "#",
   },
 ];
@@ -44,15 +84,20 @@ export default function Products() {
                 className="group relative flex h-full flex-col justify-between rounded-3xl border border-white/10 bg-surface p-8 transition hover:border-white/20 hover:bg-white/[0.06] sm:p-10"
               >
                 <div>
-                  <div className="flex flex-wrap gap-2">
-                    {product.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-muted"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-accent-blue">
+                      <product.icon />
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {product.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-muted"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
                   <h3 className="mt-6 text-3xl font-semibold tracking-tight">
