@@ -1,8 +1,7 @@
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
-import Products from "@/components/Products";
-import About from "@/components/About";
-import CTA from "@/components/CTA";
+import WhatWereBuilding from "@/components/WhatWereBuilding";
+import Waitlist from "@/components/Waitlist";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -11,9 +10,8 @@ export default function Home() {
       <Nav />
       <main className="flex-1">
         <Hero />
-        <Products />
-        <About />
-        <CTA />
+        <WhatWereBuilding />
+        <Waitlist />
       </main>
       <Footer />
     </>

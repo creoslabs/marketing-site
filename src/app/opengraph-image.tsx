@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Creos Labs — Custom marketing solutions";
+export const alt = "Creos Labs — Marketing technology, built by marketers";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -72,8 +72,8 @@ export default async function Image() {
             padding: "0 80px",
           }}
         >
-          <div style={{ display: "flex" }}>Custom-built</div>
-          <div style={{ display: "flex" }}>marketing solutions.</div>
+          <div style={{ display: "flex" }}>Marketing technology,</div>
+          <div style={{ display: "flex" }}>built by marketers.</div>
         </div>
         <div
           style={{
@@ -83,7 +83,7 @@ export default async function Image() {
             color: "#86868b",
           }}
         >
-          Engineered for your business.
+          Content Lab — coming soon.
         </div>
       </div>
     ),
