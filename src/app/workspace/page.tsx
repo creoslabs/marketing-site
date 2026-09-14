@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "./page-header";
 import { PRODUCTS, USAGE, PLAN } from "./data";
 
@@ -23,11 +23,7 @@ function deriveFirstName(email: string) {
 }
 
 export default async function OverviewPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   const firstName = deriveFirstName(user?.email ?? "");
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",

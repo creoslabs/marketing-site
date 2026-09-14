@@ -244,3 +244,55 @@ body {
 .ws .ws-link-accent:hover {
   color: var(--ws-accent-text-hover);
 }
+
+/* Stat-card info tooltip: hover is inherently "one open at a time" since
+   only one element can be hovered, so this needs no JS state. */
+.ws .ws-info-hover {
+  position: relative;
+}
+
+.ws .ws-info-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  background: var(--ws-surface-header);
+  color: var(--ws-ink-45);
+  cursor: help;
+}
+
+.ws .ws-info-tip {
+  position: absolute;
+  top: 26px;
+  width: 176px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-hairline);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ws-ink-60);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  z-index: 10;
+}
+
+.ws .ws-info-tip.left {
+  left: 8px;
+}
+
+.ws .ws-info-tip.right {
+  right: 8px;
+}
+
+.ws .ws-info-hover:hover .ws-info-tip {
+  opacity: 1;
+  visibility: visible;
+}

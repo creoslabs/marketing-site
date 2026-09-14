@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
 import { EditRowButton, ConnectButton, DeleteAccountButton } from "./account-actions";
 
@@ -32,10 +32,7 @@ function Row({
 }
 
 export default async function AccountPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   const email = user?.email ?? "";
   const localPart = email.split("@")[0] ?? "";
   const name =

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getUser } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
 import { PLAN, USAGE, INVOICES, PAYMENT_METHOD } from "../data";
 import {
@@ -16,10 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BillingPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   const email = user?.email ?? "";
   const localPart = email.split("@")[0] ?? "";
   const billedTo =
