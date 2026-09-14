@@ -83,7 +83,7 @@ export default async function Image() {
             color: "#86868b",
           }}
         >
-          Content Lab — coming soon.
+          Outlier &amp; Signal — coming soon.
         </div>
       </div>
     ),

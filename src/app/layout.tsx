@@ -3,7 +3,7 @@ import "./globals.css";
 
 const TITLE = "Creos Labs — Marketing technology, built by marketers";
 const DESCRIPTION =
-  "Creos Labs is building Content Lab, a competitor and creator content intelligence tool for marketers — coming soon. Join the waitlist to get early access.";
+  "Creos Labs is building Outlier and Signal, marketing intelligence tools for creators and advertisers — coming soon. Join the waitlist to get early access.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.creos-labs.com"),

@@ -45,8 +45,8 @@ export default function Waitlist() {
           Be first to get access.
         </h2>
         <p className="mt-4 text-muted">
-          Content Lab hasn&apos;t launched yet. Join the waitlist and
-          we&apos;ll let you know the moment it&apos;s ready.
+          Outlier and Signal haven&apos;t launched yet. Join the waitlist
+          and we&apos;ll let you know the moment they&apos;re ready.
         </p>
 
         {status === "success" ? (
