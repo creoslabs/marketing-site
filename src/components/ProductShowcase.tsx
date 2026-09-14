@@ -25,9 +25,17 @@ export type ProductData = {
 
 export function ProductShowcase({ product }: { product: ProductData }) {
   const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState<"down" | "up">("down");
+  const prevActiveRef = useRef(0);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const count = product.highlights.length;
   const current = product.highlights[active];
+
+  useEffect(() => {
+    if (active > prevActiveRef.current) setDirection("down");
+    else if (active < prevActiveRef.current) setDirection("up");
+    prevActiveRef.current = active;
+  }, [active]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -54,11 +62,15 @@ export function ProductShowcase({ product }: { product: ProductData }) {
     e.currentTarget.style.setProperty("--y", `${py * 100}%`);
     e.currentTarget.style.setProperty("--rx", `${(0.5 - py) * 6}deg`);
     e.currentTarget.style.setProperty("--ry", `${(px - 0.5) * 6}deg`);
+    e.currentTarget.style.setProperty("--sx", `${(px - 0.5) * -32}px`);
+    e.currentTarget.style.setProperty("--sy", `${(0.5 - py) * -32}px`);
   };
 
   const handlePointerLeave: PointerEventHandler<HTMLDivElement> = (e) => {
     e.currentTarget.style.setProperty("--rx", "0deg");
     e.currentTarget.style.setProperty("--ry", "0deg");
+    e.currentTarget.style.setProperty("--sx", "0px");
+    e.currentTarget.style.setProperty("--sy", "0px");
   };
 
   const jumpTo = (i: number) => {
@@ -86,9 +98,12 @@ export function ProductShowcase({ product }: { product: ProductData }) {
             <div
               onPointerMove={handlePointerMove}
               onPointerLeave={handlePointerLeave}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/50 transition-transform duration-300 ease-out will-change-transform"
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white will-change-transform"
               style={{
                 transform: "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))",
+                boxShadow:
+                  "var(--sx, 0px) var(--sy, 0px) 60px -15px rgba(0,0,0,0.65), 0 25px 50px -20px rgba(0,0,0,0.5)",
+                transition: "transform 0.35s ease-out, box-shadow 0.35s ease-out",
               }}
             >
               <div className="flex items-center gap-1.5 border-b border-black/10 bg-[#f5f5f7] px-4 py-2.5">
@@ -96,7 +111,10 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
               </div>
-              <div key={current.screenshot} className="animate-image-in">
+              <div
+                key={current.screenshot}
+                className={direction === "down" ? "animate-image-in-down" : "animate-image-in-up"}
+              >
                 <Image
                   src={current.screenshot}
                   alt={current.screenshotAlt}
@@ -167,10 +185,10 @@ export function ProductShowcase({ product }: { product: ProductData }) {
               >
                 <span
                   className={cn(
-                    "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors duration-300",
+                    "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-all duration-300 group-active/step:scale-90",
                     i === active
-                      ? cn(item.dotClassName, "border-transparent text-black")
-                      : "border-white/15 bg-background text-muted group-hover/step:border-white/30"
+                      ? cn(item.dotClassName, "border-transparent text-black scale-110")
+                      : "border-white/15 bg-background text-muted group-hover/step:scale-105 group-hover/step:border-white/30"
                   )}
                 >
                   {String(i + 1).padStart(2, "0")}

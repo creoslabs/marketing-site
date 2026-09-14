@@ -1,5 +1,6 @@
 import { Reveal } from "@/components/Reveal";
 import { ProductShowcase, type ProductData } from "@/components/ProductShowcase";
+import { SectionProgress } from "@/components/SectionProgress";
 
 const PRODUCTS: ProductData[] = [
   {
@@ -85,6 +86,7 @@ const PRODUCTS: ProductData[] = [
 export default function WhatWereBuilding() {
   return (
     <section id="building" className="relative py-28">
+      <SectionProgress targetId="building" />
       <div className="mx-auto max-w-6xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
