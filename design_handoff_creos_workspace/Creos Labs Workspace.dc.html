@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics=""><meta name="design_doc_mode" content="canvas">
+<style>
+body{margin:0;background:#f0eee9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+a{color:#2a78d6}a:hover{color:#1a5aa8}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}
+.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;background:#0c0e10;border:1px solid rgba(0,0,0,.14);border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.14);overflow:hidden}
+.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}
+</style></helmet>
+
+<section class="dv-turn" id="t11">
+<div class="dv-thd"><a class="dv-tid" href="#t11">11</a><span class="dv-tname">Workspace — Signal light; dark (<a class="dv-oid" href="#10a">10a</a>) stays canonical</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="11a"><div class="dv-olabel"><a class="dv-oid" href="#11a">11a</a>Overview — Signal light</div>
+<div class="dv-card" style="background:#faf9f7;border-color:rgba(0,0,0,.14);width:1180px">
+  <div style="background:#faf9f7;color:#111;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+    <div style="display:flex;align-items:center;gap:22px;padding:0 24px;height:57px;background:#faf9f7;border-bottom:1px solid rgba(0,0,0,.09)">
+      <div style="font:700 17px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#111">Creos Labs</div>
+      <div style="flex:1"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(0,0,0,.55)">Docs</div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(0,0,0,.55)">Support</div>
+      <div style="display:flex;align-items:center;gap:9px;padding-left:18px;border-left:1px solid rgba(0,0,0,.09)">
+        <div style="width:26px;height:26px;border-radius:50%;flex:none;background:repeating-linear-gradient(135deg,#e9e7e1 0 9px,#e3e1da 9px 18px);display:flex;align-items:center;justify-content:center;font:600 9.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55)">JR</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;white-space:nowrap">Jackson Reed</div>
+        <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45)">▾</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;padding:0 24px;height:44px;border-bottom:1px solid rgba(0,0,0,.09)">
+      <div style="font:600 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;white-space:nowrap;box-shadow:inset 0 -1px 0 #0a6cf0">Overview</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);white-space:nowrap;box-shadow:none">Account</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);white-space:nowrap;box-shadow:none">Billing</div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:14px;padding:30px 24px 0">
+      <div>
+        <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em">Good morning, Jackson</div>
+        <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);margin-top:8px">Monday, Sep 15 · 7 new outliers and 12 failing assets since you last looked</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:22px 24px 0">
+      <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:26px 28px 24px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:14px">Creator research</div>
+          <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#111">Outlier</div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);margin-top:11px;max-width:40ch;text-wrap:pretty">Tracks a watchlist of creators and scores every post against that creator’s own median. Surfaces the hooks worth repurposing.</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:1px;background:rgba(0,0,0,.09);border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden">
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Creators</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#111">18</div>
+          </div>
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">New outliers</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#111">7</div>
+          </div>
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Best 24h</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#111">6.4×</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 15px;border-radius:8px;background:#0a6cf0;color:#ffffff">Open Outlier</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.09);color:#111">Watchlist</div>
+          <div style="flex:1"></div>
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45);white-space:nowrap">3 jobs running</div>
+        </div>
+      </div>
+      <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:26px 28px 24px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:14px">Ad analysis</div>
+          <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#111">Signal</div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);margin-top:11px;max-width:40ch;text-wrap:pretty">Scores ad creative against a fixed criteria set per format, and flags every check a given asset fails.</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:1px;background:rgba(0,0,0,.09);border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden">
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Assets</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#111">87</div>
+          </div>
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Failing</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#D14424">12</div>
+          </div>
+          <div style="flex:1;background:#ffffff;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Last run</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#111">2h</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 15px;border-radius:8px;background:#0a6cf0;color:#ffffff">Open Signal</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.09);color:#111">Upload asset</div>
+          <div style="flex:1"></div>
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45);white-space:nowrap">Idle</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin:14px 24px 30px;background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:18px 22px;display:flex;align-items:center;gap:22px">
+      <div>
+        <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:10px">Studio plan</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;white-space:nowrap">$79 / month · renews Oct 1</div>
+      </div>
+      <div style="width:1px;height:52px;background:rgba(0,0,0,.09);flex:none"></div>
+      <sc-for list="{{ usage }}" as="u" hint-placeholder-count="4">
+        <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:7px">
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.short }}</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.v }}</div>
+          <div style="height:3px;background:rgba(0,0,0,.09);border-radius:20px;overflow:hidden;margin-top:2px"><div style="height:100%;width:{{ u.w }};background:#0a6cf0"></div></div>
+        </div>
+      </sc-for>
+      <div style="width:1px;height:52px;background:rgba(0,0,0,.09);flex:none"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.09);color:#111">Manage plan</div>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="11b"><div class="dv-olabel"><a class="dv-oid" href="#11b">11b</a>Billing — Signal light</div>
+<div class="dv-card" style="background:#faf9f7;border-color:rgba(0,0,0,.14);width:1180px">
+  <div style="background:#faf9f7;color:#111;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+    <div style="display:flex;align-items:center;gap:22px;padding:0 24px;height:57px;background:#faf9f7;border-bottom:1px solid rgba(0,0,0,.09)">
+      <div style="font:700 17px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#111">Creos Labs</div>
+      <div style="flex:1"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(0,0,0,.55)">Docs</div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(0,0,0,.55)">Support</div>
+      <div style="display:flex;align-items:center;gap:9px;padding-left:18px;border-left:1px solid rgba(0,0,0,.09)">
+        <div style="width:26px;height:26px;border-radius:50%;flex:none;background:repeating-linear-gradient(135deg,#e9e7e1 0 9px,#e3e1da 9px 18px);display:flex;align-items:center;justify-content:center;font:600 9.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55)">JR</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;white-space:nowrap">Jackson Reed</div>
+        <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45)">▾</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;padding:0 24px;height:44px;border-bottom:1px solid rgba(0,0,0,.09)">
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);white-space:nowrap;box-shadow:none">Overview</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);white-space:nowrap;box-shadow:none">Account</div>
+      <div style="font:600 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;white-space:nowrap;box-shadow:inset 0 -1px 0 #0a6cf0">Billing</div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:14px;padding:30px 24px 0">
+      <div>
+        <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em">Billing</div>
+        <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);margin-top:8px">Studio plan · next charge $79.00 on Oct 1, 2026</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 372px;gap:14px;padding:22px 24px 30px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:20px 22px 22px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:18px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45)">Usage this period</div>
+            <div style="flex:1"></div>
+            <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45)">Sep 1 – Sep 30</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 26px">
+            <sc-for list="{{ usage }}" as="u" hint-placeholder-count="4">
+              <div>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">{{ u.k }}</div>
+                  <div style="flex:1"></div>
+                  <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.v }}</div>
+                </div>
+                <div style="height:4px;background:rgba(0,0,0,.09);border-radius:20px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:{{ u.w }};background:#0a6cf0"></div></div>
+                <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45)">{{ u.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:20px 22px 22px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45)">Invoices</div>
+            <div style="flex:1"></div>
+            <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0a6cf0;white-space:nowrap">Download all</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;background:rgba(0,0,0,.09);border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1fr 130px 90px 60px;gap:14px;background:#f7f6f3;padding:11px 16px">
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45)">Date</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45)">Period</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45)">Amount</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);text-align:right">PDF</div>
+            </div>
+            <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1fr 130px 90px 60px;gap:14px;align-items:center;background:#ffffff;padding:13px 16px">
+                <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">{{ i.d }}</div>
+                <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55)">{{ i.n }}</div>
+                <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111;font-variant-numeric:tabular-nums">{{ i.amt }}</div>
+                <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0a6cf0;text-align:right;white-space:nowrap">↓</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#e8f1ff;border:1px solid rgba(10,108,240,.3);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#0b2a52;margin-bottom:14px">Current plan</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#0b2a52">Studio</div>
+            <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0b2a52">$79 / month</div>
+          </div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0b2a52;margin-top:11px;text-wrap:pretty">Both products, 25 creators, 5,000 posts and 150 ad analyses a month.</div>
+          <div style="display:flex;gap:8px;margin-top:17px">
+            <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;background:#0a6cf0;color:#ffffff">Change plan</div>
+            <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;border:1px solid rgba(10,108,240,.3);color:#0b2a52">Cancel</div>
+          </div>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:15px">Payment method</div>
+          <div style="display:flex;align-items:center;gap:13px">
+            <div style="width:40px;height:26px;border-radius:5px;flex:none;background:repeating-linear-gradient(135deg,#e9e7e1 0 9px,#e3e1da 9px 18px);border:1px solid rgba(0,0,0,.09)"></div>
+            <div style="flex:1">
+              <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">Visa ending 4429</div>
+              <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.45);margin-top:6px">Expires 03 / 28</div>
+            </div>
+            <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#0a6cf0;white-space:nowrap">Update</div>
+          </div>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(0,0,0,.45);margin-bottom:15px">Billing details</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);width:96px;flex:none">Billed to</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">Jackson Reed</div></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);width:96px;flex:none">Email</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">jackson@creoslabs.co</div></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(0,0,0,.55);width:96px;flex:none">VAT</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111">Not provided</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "build the Account tab in both themes" · "add a theme switch to the chrome" · "make the product cards clickable wholesale instead of button-led"</p>
+</section>
+
+<section class="dv-turn" id="t10">
+<div class="dv-thd"><a class="dv-tid" href="#t10">10</a><span class="dv-tname">Workspace, uncrowded — the launcher does one job; settings and billing get tabs</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="10a"><div class="dv-olabel"><a class="dv-oid" href="#10a">10a</a>Overview — one job per screen: pick a product. Account and billing move to their own tabs</div>
+<div class="dv-card" style="background:#000000;border-color:rgba(255,255,255,.14);width:1180px">
+  <div style="background:#000000;color:#f5f5f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+    <div style="display:flex;align-items:center;gap:22px;padding:0 24px;height:57px;background:#000000;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div style="font:700 17px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#ffffff">Creos Labs</div>
+      <div style="flex:1"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(245,245,247,.6)">Docs</div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(245,245,247,.6)">Support</div>
+      <div style="display:flex;align-items:center;gap:9px;padding-left:18px;border-left:1px solid rgba(255,255,255,.1)">
+        <div style="width:26px;height:26px;border-radius:50%;flex:none;background:repeating-linear-gradient(135deg,#1e1e21 0 9px,#171719 9px 18px);display:flex;align-items:center;justify-content:center;font:600 9.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6)">JR</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;white-space:nowrap">Jackson Reed</div>
+        <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45)">▾</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;padding:0 24px;height:44px;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div style="font:600 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;white-space:nowrap;box-shadow:inset 0 -1px 0 #0a84ff">Overview</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);white-space:nowrap;box-shadow:none">Account</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);white-space:nowrap;box-shadow:none">Billing</div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:14px;padding:30px 24px 0">
+      <div>
+        <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em">Good morning, Jackson</div>
+        <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);margin-top:8px">Monday, Sep 15 · 7 new outliers and 12 failing assets since you last looked</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:22px 24px 0">
+      <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:26px 28px 24px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:14px">Creator research</div>
+          <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#f5f5f7">Outlier</div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);margin-top:11px;max-width:40ch;text-wrap:pretty">Tracks a watchlist of creators and scores every post against that creator’s own median. Surfaces the hooks worth repurposing.</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:1px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden">
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Creators</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7">18</div>
+          </div>
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">New outliers</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7">7</div>
+          </div>
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Best 24h</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7">6.4×</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 15px;border-radius:8px;background:#0a84ff;color:#ffffff">Open Outlier</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);color:#f5f5f7">Watchlist</div>
+          <div style="flex:1"></div>
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45);white-space:nowrap">3 jobs running</div>
+        </div>
+      </div>
+      <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:26px 28px 24px;display:flex;flex-direction:column;gap:22px">
+        <div>
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:14px">Ad analysis</div>
+          <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#f5f5f7">Signal</div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);margin-top:11px;max-width:40ch;text-wrap:pretty">Scores ad creative against a fixed criteria set per format, and flags every check a given asset fails.</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:1px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden">
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Assets</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7">87</div>
+          </div>
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Failing</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#ff8f75">12</div>
+          </div>
+          <div style="flex:1;background:#0b0b0d;padding:15px 16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Last run</div>
+            <div style="font:700 20px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7">2h</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 15px;border-radius:8px;background:#0a84ff;color:#ffffff">Open Signal</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:11px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);color:#f5f5f7">Upload asset</div>
+          <div style="flex:1"></div>
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45);white-space:nowrap">Idle</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin:14px 24px 30px;background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:18px 22px;display:flex;align-items:center;gap:22px">
+      <div>
+        <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:10px">Studio plan</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;white-space:nowrap">$79 / month · renews Oct 1</div>
+      </div>
+      <div style="width:1px;height:52px;background:rgba(255,255,255,.1);flex:none"></div>
+      <sc-for list="{{ usage }}" as="u" hint-placeholder-count="4">
+        <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:7px">
+          <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.short }}</div>
+          <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.v }}</div>
+          <div style="height:3px;background:rgba(255,255,255,.1);border-radius:20px;overflow:hidden;margin-top:2px"><div style="height:100%;width:{{ u.w }};background:#0a84ff"></div></div>
+        </div>
+      </sc-for>
+      <div style="width:1px;height:52px;background:rgba(255,255,255,.1);flex:none"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);color:#f5f5f7">Manage plan</div>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="10b"><div class="dv-olabel"><a class="dv-oid" href="#10b">10b</a>Billing tab — everything money, given room; Account follows the same pattern</div>
+<div class="dv-card" style="background:#000000;border-color:rgba(255,255,255,.14);width:1180px">
+  <div style="background:#000000;color:#f5f5f7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+    <div style="display:flex;align-items:center;gap:22px;padding:0 24px;height:57px;background:#000000;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div style="font:700 17px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#ffffff">Creos Labs</div>
+      <div style="flex:1"></div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(245,245,247,.6)">Docs</div>
+      <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;color:rgba(245,245,247,.6)">Support</div>
+      <div style="display:flex;align-items:center;gap:9px;padding-left:18px;border-left:1px solid rgba(255,255,255,.1)">
+        <div style="width:26px;height:26px;border-radius:50%;flex:none;background:repeating-linear-gradient(135deg,#1e1e21 0 9px,#171719 9px 18px);display:flex;align-items:center;justify-content:center;font:600 9.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6)">JR</div>
+        <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;white-space:nowrap">Jackson Reed</div>
+        <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45)">▾</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:26px;padding:0 24px;height:44px;border-bottom:1px solid rgba(255,255,255,.1)">
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);white-space:nowrap;box-shadow:none">Overview</div>
+      <div style="font:500 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);white-space:nowrap;box-shadow:none">Account</div>
+      <div style="font:600 12.5px/44px 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;white-space:nowrap;box-shadow:inset 0 -1px 0 #0a84ff">Billing</div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:14px;padding:30px 24px 0">
+      <div>
+        <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em">Billing</div>
+        <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);margin-top:8px">Studio plan · next charge $79.00 on Oct 1, 2026</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 372px;gap:14px;padding:22px 24px 30px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px 22px 22px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:18px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff">Usage this period</div>
+            <div style="flex:1"></div>
+            <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45)">Sep 1 – Sep 30</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 26px">
+            <sc-for list="{{ usage }}" as="u" hint-placeholder-count="4">
+              <div>
+                <div style="display:flex;align-items:baseline;gap:8px">
+                  <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">{{ u.k }}</div>
+                  <div style="flex:1"></div>
+                  <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;font-variant-numeric:tabular-nums;white-space:nowrap">{{ u.v }}</div>
+                </div>
+                <div style="height:4px;background:rgba(255,255,255,.1);border-radius:20px;overflow:hidden;margin:10px 0 8px"><div style="height:100%;width:{{ u.w }};background:#0a84ff"></div></div>
+                <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45)">{{ u.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px 22px 22px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px">
+            <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff">Invoices</div>
+            <div style="flex:1"></div>
+            <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#64a9ff;white-space:nowrap">Download all</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);border-radius:10px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1fr 130px 90px 60px;gap:14px;background:#131316;padding:11px 16px">
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(245,245,247,.45)">Date</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(245,245,247,.45)">Period</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(245,245,247,.45)">Amount</div>
+              <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(245,245,247,.45);text-align:right">PDF</div>
+            </div>
+            <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1fr 130px 90px 60px;gap:14px;align-items:center;background:#0b0b0d;padding:13px 16px">
+                <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">{{ i.d }}</div>
+                <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6)">{{ i.n }}</div>
+                <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7;font-variant-numeric:tabular-nums">{{ i.amt }}</div>
+                <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#64a9ff;text-align:right;white-space:nowrap">↓</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#0a1a2e;border:1px solid rgba(10,132,255,.3);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#d3e6ff;margin-bottom:14px">Current plan</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <div style="font:700 22px/1.1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:-.02em;color:#ffffff">Studio</div>
+            <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#d3e6ff">$79 / month</div>
+          </div>
+          <div style="font:400 13px/1.5 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#d3e6ff;margin-top:11px;text-wrap:pretty">Both products, 25 creators, 5,000 posts and 150 ad analyses a month.</div>
+          <div style="display:flex;gap:8px;margin-top:17px">
+            <div style="font:600 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;background:#0a84ff;color:#ffffff">Change plan</div>
+            <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;white-space:nowrap;flex:none;padding:10px 14px;border-radius:8px;border:1px solid rgba(10,132,255,.3);color:#d3e6ff">Cancel</div>
+          </div>
+        </div>
+
+        <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:15px">Payment method</div>
+          <div style="display:flex;align-items:center;gap:13px">
+            <div style="width:40px;height:26px;border-radius:5px;flex:none;background:repeating-linear-gradient(135deg,#1e1e21 0 9px,#171719 9px 18px);border:1px solid rgba(255,255,255,.1)"></div>
+            <div style="flex:1">
+              <div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">Visa ending 4429</div>
+              <div style="font:400 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.45);margin-top:6px">Expires 03 / 28</div>
+            </div>
+            <div style="font:500 11.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#64a9ff;white-space:nowrap">Update</div>
+          </div>
+        </div>
+
+        <div style="background:#0b0b0d;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:20px 22px 22px">
+          <div style="font:600 10.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#4da2ff;margin-bottom:15px">Billing details</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);width:96px;flex:none">Billed to</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">Jackson Reed</div></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);width:96px;flex:none">Email</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">jackson@creoslabs.co</div></div>
+            <div style="display:flex;align-items:baseline;gap:12px"><div style="font:400 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:rgba(245,245,247,.6);width:96px;flex:none">VAT</div><div style="font:500 12.5px/1 'Helvetica Neue',Helvetica,Arial,sans-serif;color:#f5f5f7">Not provided</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "build the Account tab too" · "light versions of <a class="dv-oid" href="#10a">10a</a> and <a class="dv-oid" href="#10b">10b</a>" · "drop the usage strip from <a class="dv-oid" href="#10a">10a</a> entirely"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const R = React.createElement;
+const mono = "'Helvetica Neue',Helvetica,Arial,sans-serif";
+
+class Component extends DCLogic {
+  state = { tip: null, fav: false, keeps: {Tone: true, 'Beat structure': true, Length: true} };
+  renderVals() {
+    const vids = [
+      {h:'@lifteddaily', d:'Sep 8', s:'6.4×', v:'1.2M', m:'188K', hot:1, thin:0, len:'0:31', slug:'reel_8842', hook:'“Stop doing this at the gym”'},
+      {h:'@marcusonmoney', d:'Sep 7', s:'5.1×', v:'840K', m:'165K', hot:1, thin:0, len:'0:44', slug:'reel_7710', hook:'Bank fee breakdown, screen-record'},
+      {h:'@sofiabuilds', d:'Sep 9', s:'4.8×', v:'312K', m:'65K', hot:1, thin:1, len:'0:22', slug:'reel_2291', hook:'“I quit at 4pm every day”'},
+      {h:'@nathan.eats', d:'Sep 5', s:'4.2×', v:'980K', m:'233K', hot:1, thin:0, len:'0:38', slug:'reel_5514', hook:'One-pan, six ingredients'},
+      {h:'@dailyrepsco', d:'Sep 8', s:'3.6×', v:'421K', m:'117K', hot:0, cool:1, thin:0, len:'0:29', slug:'reel_9083', hook:'Form check with overlay text'},
+      {h:'@quietluxe', d:'Sep 6', s:'3.1×', v:'268K', m:'86K', hot:0, cool:1, thin:0, len:'0:51', slug:'reel_4127', hook:'“Rich people don’t buy this”'},
+      {h:'@founderdiary', d:'Sep 9', s:'2.9×', v:'155K', m:'53K', hot:0, cool:1, thin:1, len:'0:35', slug:'reel_6602', hook:'Day-in-the-life, no voiceover'},
+      {h:'@thegreenhouseclub', d:'Sep 4', s:'2.7×', v:'189K', m:'70K', hot:0, cool:1, thin:0, len:'0:27', slug:'reel_3348', hook:'Repotting time-lapse + text list'},
+      {h:'@marcusonmoney', d:'Sep 2', s:'2.4×', v:'396K', m:'165K', hot:0, cool:1, thin:0, len:'1:02', slug:'reel_7688', hook:'Three accounts, one whiteboard'},
+      {h:'@lifteddaily', d:'Sep 1', s:'2.2×', v:'413K', m:'188K', hot:0, cool:1, thin:0, len:'0:19', slug:'reel_8790', hook:'Rack-pull PR, silent clip'},
+      {h:'@nathan.eats', d:'Aug 31', s:'2.1×', v:'489K', m:'233K', hot:0, cool:1, thin:0, len:'0:41', slug:'reel_5470', hook:'“Never boil pasta like this”'},
+      {h:'@sofiabuilds', d:'Aug 30', s:'2.0×', v:'130K', m:'65K', hot:0, cool:1, thin:1, len:'0:33', slug:'reel_2240', hook:'Notion teardown, fast cuts'}
+    ];
+    vids.forEach((v,i) => { v.ini = v.h.replace('@','').slice(0,2).toUpperCase(); v.plat = i % 3 === 2 ? 'TT' : 'IG'; });
+    const vids3 = vids.slice(0,10);
+    const vids5 = vids.slice(0,5);
+
+
+    const stats = [
+      {k:'Views', v:'1.20M', why:'Plays as reported by the API at the last pull, 12 minutes ago.'},
+      {k:'Median', v:'188K', why:'Derived, not from the API: median views across this creator’s trailing 20 posts — the baseline the score divides by.'},
+      {k:'Engagement', v:'8.7%', why:'(likes + comments + shares + saves) ÷ views, as returned by the API.'},
+      {k:'Likes', v:'71.4K', why:'Raw like count. Not used in the outlier score.'},
+      {k:'Comments', v:'2,108', why:'Comment count at pull time. Thin relative to saves here — this hook was banked, not debated.'},
+      {k:'Shares', v:'12.3K', why:'Sends to other people. The clearest sign a hook travels beyond the creator’s own audience.'},
+      {k:'Saves', v:'18.9K', why:'Saves are the strongest repurpose signal — 1.6% of views, unusually high for this niche.'},
+      {k:'Followers', v:'302K', why:'Creator-level, not post-level: followers at the last pull. Views above follower count mean the post left the existing audience.'}
+    ].map((s,i,a) => ({...s,
+      r: i === 0 ? '14px 8px 8px 8px' : i === 1 ? '8px 14px 8px 8px' : i === a.length - 2 ? '8px 8px 8px 14px' : i === a.length - 1 ? '8px 8px 14px 8px' : '8px',
+      tipL: i % 2 === 0 ? '0px' : 'auto',
+      tipR: i % 2 === 0 ? 'auto' : '0px',
+      show: this.state.tip === s.k,
+      over: () => this.setState({tip: s.k}),
+      out: () => this.setState({tip: null})
+    }));
+    const hl = 'oklch(0.95 0.04 155)';
+    const lines = [
+      {t:'0:00', x:'Stop doing this at the gym. I see it every single day.', bg:hl},
+      {t:'0:04', x:'You load the bar, you set your feet, and then you rush the first rep.', bg:hl},
+      {t:'0:09', x:'Here’s what that costs you — three things, fast.'},
+      {t:'0:12', x:'One: your bracing is gone before the weight even moves.'},
+      {t:'0:16', x:'Two: the bar drifts forward and your back takes the load.'},
+      {t:'0:21', x:'Three: you cap your top set two weeks early because your joints are absorbing it.'},
+      {t:'0:26', x:'Fix it like this — one full breath, ribs down, then pull.'},
+      {t:'0:29', x:'Do that for a month and tell me what your numbers look like.'},
+      {t:'0:31', x:'Save this before your next session.'}
+    ];
+    const linesDark = lines.map(l => ({...l, bg: l.bg ? 'oklch(0.3 0.06 158)' : 'transparent'}));
+    const usage = [
+      {k:'Creators tracked', short:'Creators', v:'18 / 25', sub:'Outlier · Studio plan', w:'72%'},
+      {k:'Posts pulled this month', short:'Posts pulled', v:'3,412 / 5,000', sub:'resets Oct 1', w:'68%'},
+      {k:'Transcription minutes', short:'Transcription', v:'214 / 400', sub:'whisper-large', w:'54%'},
+      {k:'Ads analysed', short:'Ads analysed', v:'87 / 150', sub:'Signal · Studio plan', w:'58%'}
+    ];
+    const invoices = [
+      {d:'Sep 1, 2026', n:'INV-2026-0914', amt:'$79.00', s:'Paid'},
+      {d:'Aug 1, 2026', n:'INV-2026-0811', amt:'$79.00', s:'Paid'},
+      {d:'Jul 1, 2026', n:'INV-2026-0702', amt:'$79.00', s:'Paid'},
+      {d:'Jun 1, 2026', n:'INV-2026-0618', amt:'$29.00', s:'Paid'}
+    ];
+    const accountRows = [
+      {k:'Name', v:'Jackson Reed'},
+      {k:'Email', v:'jackson@creoslabs.co'},
+      {k:'Password', v:'Last changed 4 months ago'},
+      {k:'Two-factor', v:'Authenticator app'},
+      {k:'Default theme', v:'Dark'},
+      {k:'Time zone', v:'Australia / Brisbane'}
+    ];
+    const connections = [
+      {k:'Instagram Graph API', v:'Connected · token valid 41 days'},
+      {k:'TikTok Research API', v:'Connected · token valid 12 days', warn:1},
+      {k:'Meta Ad Library', v:'Connected · Signal'},
+      {k:'YouTube Data API', v:'Not connected'}
+    ];
+    connections.forEach(c => {
+      const off = c.v === 'Not connected';
+      c.ink = c.warn ? '#ff8f75' : (off ? 'rgba(245,245,247,.45)' : 'rgba(245,245,247,.6)');
+      c.btn = off ? 'Connect' : (c.warn ? 'Renew' : 'Manage');
+      c.btnBorder = c.warn ? 'rgba(255,107,74,.3)' : 'rgba(255,255,255,.1)';
+      c.btnInk = c.warn ? '#ff8f75' : '#f5f5f7';
+    });
+    const linesSignal = lines.map(l => ({...l,
+      bg: l.bg ? '#0a1a2e' : 'transparent',
+      ink: l.bg ? '#d3e6ff' : 'rgba(245,245,247,.6)',
+      tsInk: l.bg ? 'rgba(211,230,255,.75)' : 'rgba(245,245,247,.45)'}));
+    const linesSignalLight = lines.map(l => ({...l,
+      bg: l.bg ? '#e8f1ff' : 'transparent',
+      ink: l.bg ? '#0b2a52' : 'rgba(0,0,0,.55)',
+      tsInk: l.bg ? '#0b2a52' : 'rgba(0,0,0,.45)'}));
+    const beats = [
+      {n:'HOOK', t:'0:00–0:04', x:'Negative command + universal “I see this daily” authority claim. No greeting, no name.'},
+      {n:'SETUP', t:'0:04–0:09', x:'Names the specific mistake in second person so the viewer self-identifies.'},
+      {n:'PAYOFF', t:'0:09–0:26', x:'Three numbered costs, escalating from technical to consequence. ~5s each.'},
+      {n:'FIX', t:'0:26–0:29', x:'One-sentence prescription. Deliberately smaller than the problem.'},
+      {n:'CTA', t:'0:29–0:31', x:'Save-driven, not follow-driven. Tied to a moment (“next session”).'}
+    ];
+        const tags = ['negative command', 'numbered payoff', 'second person', 'save-CTA'];
+
+    const posts = [
+      {s:'6.4×', hot:1, x:'“Stop doing this at the gym”', v:'1.2M', d:'Sep 8', slug:'reel_8842'},
+      {s:'2.2×', cool:1, x:'Rack-pull PR, silent clip', v:'413K', d:'Sep 1', slug:'reel_8790'},
+      {s:'1.4×', cool:1, x:'Grip strength myths, 3 parts', v:'263K', d:'Aug 26', slug:'reel_8701'},
+      {s:'1.1×', cool:1, x:'Warm-up routine walkthrough', v:'207K', d:'Aug 21', slug:'reel_8644'},
+      {s:'0.8×', cool:1, x:'Gym bag essentials', v:'150K', d:'Aug 17', slug:'reel_8590'},
+      {s:'0.6×', cool:1, x:'Q&A: cutting vs bulking', v:'113K', d:'Aug 12', slug:'reel_8522'}
+    ];
+    const seed = [22,30,18,41,26,35,24,52,31,28,44,20,37,29,61,25,33,48,22,39,27,55,31,26,43,34,29,58,24,100];
+    const bars = seed.map(n => ({h: Math.max(6, Math.round(n*1.26)) + 'px', c: n >= 60 ? 'oklch(0.52 0.14 155)' : 'rgba(0,0,0,.14)'}));
+
+    const topics = [
+      {s:'4.1×', n:'“Stop doing X” corrections', who:'@lifteddaily, @dailyrepsco, @nathan.eats, +2', n2:9, spark:['8px','11px','9px','16px','22px']},
+      {s:'3.3×', n:'Fee / hidden-cost teardowns', who:'@marcusonmoney, @quietluxe, @founderdiary', n2:6, spark:['6px','9px','14px','12px','19px']},
+      {s:'2.8×', n:'Silent clips with text overlay only', who:'@sofiabuilds, @thegreenhouseclub, @lifteddaily', n2:7, spark:['11px','8px','13px','10px','17px']},
+      {s:'2.5×', n:'Quitting-early / anti-hustle framing', who:'@sofiabuilds, @founderdiary, @quietluxe', n2:5, spark:['7px','12px','10px','15px','14px']},
+      {s:'2.1×', n:'Six-ingredient constraint recipes', who:'@nathan.eats, @thegreenhouseclub, +1', n2:4, spark:['9px','7px','11px','13px','12px']}
+    ];
+    const hooks = [
+      {n:'Negative command', ex:'“Stop doing this…”', s:'3.8×', w:'96%'},
+      {n:'Numbered payoff (3)', ex:'“Three things, fast”', s:'3.1×', w:'80%'},
+      {n:'Authority claim', ex:'“I see this every day”', s:'2.6×', w:'66%'},
+      {n:'Cost framing', ex:'“Here’s what that costs you”', s:'2.4×', w:'60%'},
+      {n:'Cold open, no greeting', ex:'straight to frame 1', s:'2.2×', w:'55%'},
+      {n:'Save-CTA', ex:'“Save this before…”', s:'1.9×', w:'46%'}
+    ];
+
+    const keeps = ['Tone', 'Beat structure', 'Length'].map(k => {
+      const on = !!this.state.keeps[k];
+      return {k, on,
+        track: on ? 'oklch(0.52 0.14 155)' : '#fff',
+        boxBorder: on ? 'oklch(0.52 0.14 155)' : 'rgba(0,0,0,.22)',
+        mark: on ? '✓' : '',
+        chipBg: on ? 'oklch(0.96 0.03 155)' : '#fff',
+        chipBorder: on ? 'oklch(0.8 0.08 155)' : 'rgba(0,0,0,.12)',
+        ink: on ? '#191a1c' : '#7c8188',
+        toggle: () => this.setState(s => ({keeps: {...s.keeps, [k]: !s.keeps[k]}}))};
+    });
+    const fav = this.state.fav;
+    const platformName = 'Instagram';
+    const caption = 'Stop doing this at the gym. Three reasons you’re capping your top set two weeks early — and the one-breath fix. Save this before your next session, full programming in bio.';
+    const description = 'Single take to camera, phone at chest height in a commercial gym, no intro card. He holds eye contact for the first four seconds, then cuts to three short inserts of the mistake being made — each stamped with large on-screen text numbering the cost. Returns to camera for the fix, delivered in one sentence. Burned-in captions throughout, no music bed under the voice, hard cut to black on the CTA.';
+    const hashtags = ['#gymtips', '#strengthtraining', '#formcheck', '#liftheavy'];
+    const orig = [
+      {n:'HOOK · 0:00', x:'Stop doing this at the gym. I see it every single day.'},
+      {n:'SETUP · 0:04', x:'You load the bar, set your feet, and rush the first rep. Here’s what that costs you — three things, fast.'},
+      {n:'PAYOFF · 0:09', x:'One: your bracing is gone before the weight moves. Two: the bar drifts and your back takes it. Three: you cap your top set two weeks early.'},
+      {n:'FIX + CTA · 0:26', x:'One full breath, ribs down, then pull. Save this before your next session.'}
+    ];
+    const rework = [
+      {n:'HOOK · 0:00', x:'Stop doing this in your first 90 days. I watch founders do it every week.'},
+      {n:'SETUP · 0:04', x:'You raise, you hire, and you rush the first build. Here’s what that costs you — three things, fast.'},
+      {n:'PAYOFF · 0:09', x:'One: your thesis is gone before the code ships. Two: scope drifts and the team absorbs it. Three: you burn your runway two quarters early.'},
+      {n:'FIX + CTA · 0:26', x:'One week of customer calls, roadmap down, then build. Save this before your next sprint.'}
+    ];
+
+    const tiles = [
+      {k:'New outliers', v:'7', s:'since yesterday'},
+      {k:'Best score today', v:'6.4×', s:'@lifteddaily'},
+      {k:'Posts pulled', v:'486', s:'across 18 creators'},
+      {k:'Needs attention', v:'2', s:'thin history'}
+    ];
+    const jobs = [
+      {h:'@marcusonmoney · 12 new posts', stage:'Downloading video 8 of 12', pct:'64%'},
+      {h:'@lifteddaily · reel_8842', stage:'Transcribing audio', pct:'38%'},
+      {h:'@nathan.eats · 6 new posts', stage:'Scoring against median', pct:'81%'}
+    ];
+    const jobsFull = [
+      {h:'@marcusonmoney', sub:'12 new posts · IG', stage:'Downloading video 8 of 12', pct:'64%', eta:'~2 min left', step:2},
+      {h:'@lifteddaily', sub:'reel_8842 · IG', stage:'Transcribing audio (whisper-large)', pct:'38%', eta:'~4 min left', step:3},
+      {h:'@nathan.eats', sub:'6 new posts · TT', stage:'Scoring against trailing median', pct:'81%', eta:'~40 sec left', step:4}
+    ];
+    const queue = [
+      {n:'1', h:'@quietluxe', sub:'9 new posts · IG', w:'waiting on download slot'},
+      {n:'2', h:'@thegreenhouseclub', sub:'4 new posts · IG', w:'queued'},
+      {n:'3', h:'@sofiabuilds', sub:'full backfill · 60 posts', w:'queued'},
+      {n:'4', h:'@founderdiary', sub:'11 new posts · TT', w:'queued'},
+      {n:'5', h:'@dailyrepsco', sub:'3 new posts · IG', w:'queued'}
+    ];
+    const failed = [
+      {h:'@hormoziclips', sub:'reel_4410', why:'Video unavailable — post deleted before download finished.'},
+      {h:'@buildinpublic', sub:'8 posts', why:'Rate limited after 3 retries. Next attempt in 18 min.'}
+    ];
+    const done = [
+      {h:'@marcusonmoney', sub:'reel_7710 scored 5.1×', d:'4 min ago'},
+      {h:'@sofiabuilds', sub:'reel_2291 scored 4.8×', d:'11 min ago'},
+      {h:'@lifteddaily', sub:'62 posts backfilled', d:'26 min ago'}
+    ];
+    const pipeline = ['Pull metadata', 'Download', 'Transcribe', 'Score', 'Trend match']
+      .map((n, i, a) => ({n, arrow: i === a.length - 1 ? '' : '→'}));
+    const recent = [
+      {t:'How founders waste their first 90 days', s:'from @lifteddaily · 6.4×', d:'2h ago'},
+      {t:'The fee nobody reads in a term sheet', s:'from @marcusonmoney · 5.1×', d:'yesterday'}
+    ];
+    const chips = ['@hormoziclips', '@thegrowthlab', '@buildinpublic'];
+    const watchlist = [
+      {n:'Lifted Daily', ini:'LD', plats:'IG @lifteddaily · TT @lifteddaily', med:'188K', best:'6.4×', hits:'4', cad:'5 / wk', trend:'+34%', up:1, spark:['9px','12px','10px','16px','14px','22px']},
+      {n:'Marcus Hill', ini:'MH', plats:'IG @marcusonmoney · YT @marcusmoney', med:'165K', best:'5.1×', hits:'3', cad:'3 / wk', trend:'+12%', up:1, spark:['11px','9px','13px','12px','16px','18px']},
+      {n:'Nathan Eats', ini:'NE', plats:'IG @nathan.eats · TT @nathan.eats', med:'233K', best:'4.2×', hits:'2', cad:'4 / wk', trend:'−6%', up:0, spark:['18px','16px','14px','15px','12px','11px']},
+      {n:'Daily Reps Co', ini:'DR', plats:'IG @dailyrepsco', med:'117K', best:'3.6×', hits:'2', cad:'6 / wk', trend:'+8%', up:1, spark:['10px','11px','9px','13px','12px','15px']},
+      {n:'Quiet Luxe', ini:'QL', plats:'IG @quietluxe', med:'86K', best:'3.1×', hits:'1', cad:'2 / wk', trend:'+21%', up:1, spark:['8px','9px','11px','10px','14px','17px']},
+      {n:'The Greenhouse Club', ini:'GC', plats:'IG @thegreenhouseclub', med:'70K', best:'2.7×', hits:'1', cad:'3 / wk', trend:'+3%', up:1, spark:['12px','11px','13px','12px','13px','14px']},
+      {n:'Sofia Builds', ini:'SB', plats:'IG @sofiabuilds', med:'65K', best:'4.8×', hits:'2', cad:'2 / wk', trend:'—', up:1, thin:1, spark:['7px','10px','8px','12px','9px','13px']},
+      {n:'Founder Diary', ini:'FD', plats:'TT @founderdiary', med:'53K', best:'2.9×', hits:'1', cad:'4 / wk', trend:'—', up:1, thin:1, spark:['9px','8px','11px','10px','12px','12px']}
+    ];
+    watchlist.forEach(c => {
+      const flat = c.trend === '—';
+      c.trendInk = flat ? '#9a9fa5' : (c.up ? 'oklch(0.45 0.13 155)' : '#8a6a1e');
+      c.trendInkDark = flat ? 'rgba(245,245,247,.45)' : (c.up ? 'oklch(0.78 0.15 155)' : '#e8c877');
+      c.trendInkSignal = flat ? 'rgba(245,245,247,.45)' : (c.up ? '#64a9ff' : '#ff8f75');
+      c.trendInkSignalLight = flat ? 'rgba(0,0,0,.45)' : (c.up ? '#0a6cf0' : '#D14424');
+    });
+    const newHandles = [
+      {k:'Instagram', v:'@marcusonmoney'},
+      {k:'TikTok', v:'@marcus.money'}
+    ];
+    const manage = [
+      {n:'Lifted Daily', ini:'LD', h:'@lifteddaily', posts:'62 posts on Instagram', ok:1,
+        p:[{k:'IG', v:'@lifteddaily', c:'62 posts'}, {k:'TT', v:'@lifteddaily', c:'41 posts'}]},
+      {n:'Sofia Builds', ini:'SB', h:'@sofiabuilds', posts:'9 posts on Instagram', thin:1,
+        p:[{k:'IG', v:'@sofiabuilds', c:'9 posts'}]},
+      {n:'Marcus Hill', ini:'MH', h:'@marcusonmoney', posts:'48 posts on Instagram', ok:1,
+        p:[{k:'IG', v:'@marcusonmoney', c:'48 posts'}, {k:'YT', v:'@marcusmoney', c:'30 posts'}]},
+      {n:'Founder Diary', ini:'FD', h:'@founderdiary', posts:'11 posts on Instagram', thin:1,
+        p:[{k:'IG', v:'@founderdiary', c:'11 posts'}]}
+    ];
+
+    return {vids, vids3, vids5, newHandles, watchlist, tiles, jobs, jobsFull, queue, failed, done, pipeline, recent, stats, lines, beats, tags, posts, bars, topics, hooks, keeps, linesDark, linesSignal, linesSignalLight, usage, invoices, accountRows, connections, orig, rework, chips, manage, caption, description, hashtags, platformName,
+      favLabel: fav ? '★ Saved' : '☆ Favourite',
+      favBg: fav ? '#0a1a2e' : 'transparent',
+      favBorder: fav ? 'rgba(10,132,255,.3)' : 'rgba(255,255,255,.1)',
+      favInk: fav ? '#d3e6ff' : 'rgba(245,245,247,.6)',
+      favBgLight: fav ? '#e8f1ff' : '#ffffff',
+      favBorderLight: fav ? 'rgba(10,108,240,.3)' : 'rgba(0,0,0,.09)',
+      favInkLight: fav ? '#0b2a52' : 'rgba(0,0,0,.55)',
+      toggleFav: () => this.setState(s => ({fav: !s.fav}))};
+  }
+}
+</script>
+</body>
+</html>
