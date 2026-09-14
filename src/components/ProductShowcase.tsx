@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type PointerEventHandler } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+const CYCLE_MS = 6000;
 
 export type ProductHighlight = {
   label: string;
@@ -25,14 +27,53 @@ export type ProductData = {
 
 export function ProductShowcase({ product }: { product: ProductData }) {
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const count = product.highlights.length;
   const current = product.highlights[active];
 
+  useEffect(() => {
+    if (paused) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const id = setTimeout(() => {
+      setActive((a) => (a + 1) % count);
+    }, CYCLE_MS);
+
+    return () => clearTimeout(id);
+  }, [active, paused, count]);
+
+  const handlePointerMove: PointerEventHandler<HTMLDivElement> = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty(
+      "--x",
+      `${((e.clientX - rect.left) / rect.width) * 100}%`
+    );
+    e.currentTarget.style.setProperty(
+      "--y",
+      `${((e.clientY - rect.top) / rect.height) * 100}%`
+    );
+  };
+
   return (
-    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+    <div
+      className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
         <div className="relative">
           <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-accent-blue/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/50">
+          <div
+            onPointerMove={handlePointerMove}
+            className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/50"
+          >
             <div className="flex items-center gap-1.5 border-b border-black/10 bg-[#f5f5f7] px-4 py-2.5">
               <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
@@ -47,6 +88,14 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                 className="h-auto w-full"
               />
             </div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{
+                background:
+                  "radial-gradient(220px circle at var(--x, 50%) var(--y, 50%), rgba(41,151,255,0.14), transparent 70%)",
+              }}
+            />
           </div>
         </div>
       </div>
@@ -94,6 +143,16 @@ export function ProductShowcase({ product }: { product: ProductData }) {
               <span className="mt-1.5 block text-sm leading-relaxed text-muted">
                 {item.description}
               </span>
+
+              {i === active && (
+                <span className="relative mt-4 block h-1 w-full overflow-hidden rounded-full bg-white/10">
+                  <span
+                    key={active}
+                    className={cn("progress-fill absolute inset-y-0 left-0 rounded-full", item.dotClassName)}
+                    style={{ animationPlayState: paused ? "paused" : "running" }}
+                  />
+                </span>
+              )}
             </button>
           ))}
         </div>

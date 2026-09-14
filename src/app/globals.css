@@ -97,6 +97,26 @@ body {
   }
 }
 
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.progress-fill {
+  animation: progress-fill 6s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-fill {
+    animation: none;
+    width: 100%;
+  }
+}
+
 .grid-overlay {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
