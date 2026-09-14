@@ -9,10 +9,9 @@ export type ProductHighlight = {
   description: string;
   dotClassName: string;
   glowClassName: string;
-  screenshot: string;
   screenshotAlt: string;
-  screenshotWidth: number;
-  screenshotHeight: number;
+  zoomOffsetY: number;
+  zoomHeight: number;
 };
 
 export type ProductData = {
@@ -20,22 +19,19 @@ export type ProductData = {
   tagline: string;
   description: string;
   imageSide: "left" | "right";
+  filmstripSrc: string;
+  filmstripWidth: number;
+  filmstripHeight: number;
   highlights: ProductHighlight[];
 };
 
 export function ProductShowcase({ product }: { product: ProductData }) {
   const [active, setActive] = useState(0);
-  const [direction, setDirection] = useState<"down" | "up">("down");
-  const prevActiveRef = useRef(0);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
   const count = product.highlights.length;
   const current = product.highlights[active];
-
-  useEffect(() => {
-    if (active > prevActiveRef.current) setDirection("down");
-    else if (active < prevActiveRef.current) setDirection("up");
-    prevActiveRef.current = active;
-  }, [active]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -52,6 +48,17 @@ export function ProductShowcase({ product }: { product: ProductData }) {
 
     stepRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setFrameSize({ width, height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   const handlePointerMove: PointerEventHandler<HTMLDivElement> = (e) => {
@@ -84,6 +91,11 @@ export function ProductShowcase({ product }: { product: ProductData }) {
     });
   };
 
+  const scale = frameSize.height > 0 ? frameSize.height / current.zoomHeight : 1;
+  const translateX =
+    frameSize.width / (2 * scale) - product.filmstripWidth / 2;
+  const translateY = -current.zoomOffsetY;
+
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
@@ -111,18 +123,30 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
               </div>
+
               <div
-                key={current.screenshot}
-                className={direction === "down" ? "animate-image-in-down" : "animate-image-in-up"}
+                ref={frameRef}
+                className="relative h-[280px] w-full overflow-hidden sm:h-[360px] lg:h-[440px]"
               >
-                <Image
-                  src={current.screenshot}
-                  alt={current.screenshotAlt}
-                  width={current.screenshotWidth}
-                  height={current.screenshotHeight}
-                  className="h-auto w-full"
-                />
+                <div
+                  className="absolute top-0 left-0"
+                  style={{
+                    transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)`,
+                    transformOrigin: "0 0",
+                    transition: "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                >
+                  <Image
+                    src={product.filmstripSrc}
+                    alt={current.screenshotAlt}
+                    width={product.filmstripWidth}
+                    height={product.filmstripHeight}
+                    className="max-w-none"
+                    priority
+                  />
+                </div>
               </div>
+
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
