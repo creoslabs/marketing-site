@@ -8,7 +8,7 @@ export type ProductHighlight = {
   label: string;
   description: string;
   dotClassName: string;
-  activeClassName: string;
+  glowClassName: string;
   screenshot: string;
   screenshotAlt: string;
   screenshotWidth: number;
@@ -26,6 +26,7 @@ export type ProductData = {
 export function ProductShowcase({ product }: { product: ProductData }) {
   const [active, setActive] = useState(0);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const count = product.highlights.length;
   const current = product.highlights[active];
 
   useEffect(() => {
@@ -47,14 +48,17 @@ export function ProductShowcase({ product }: { product: ProductData }) {
 
   const handlePointerMove: PointerEventHandler<HTMLDivElement> = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty(
-      "--x",
-      `${((e.clientX - rect.left) / rect.width) * 100}%`
-    );
-    e.currentTarget.style.setProperty(
-      "--y",
-      `${((e.clientY - rect.top) / rect.height) * 100}%`
-    );
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    e.currentTarget.style.setProperty("--x", `${px * 100}%`);
+    e.currentTarget.style.setProperty("--y", `${py * 100}%`);
+    e.currentTarget.style.setProperty("--rx", `${(0.5 - py) * 6}deg`);
+    e.currentTarget.style.setProperty("--ry", `${(px - 0.5) * 6}deg`);
+  };
+
+  const handlePointerLeave: PointerEventHandler<HTMLDivElement> = (e) => {
+    e.currentTarget.style.setProperty("--rx", "0deg");
+    e.currentTarget.style.setProperty("--ry", "0deg");
   };
 
   const jumpTo = (i: number) => {
@@ -72,18 +76,27 @@ export function ProductShowcase({ product }: { product: ProductData }) {
     <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
         <div className="lg:sticky lg:top-28">
-          <div className="relative">
-            <div className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-accent-blue/10 blur-3xl" />
+          <div className="relative" style={{ perspective: "1200px" }}>
+            <div
+              className={cn(
+                "pointer-events-none absolute -inset-6 rounded-[2rem] blur-3xl transition-colors duration-500",
+                current.glowClassName
+              )}
+            />
             <div
               onPointerMove={handlePointerMove}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/50"
+              onPointerLeave={handlePointerLeave}
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl shadow-black/50 transition-transform duration-300 ease-out will-change-transform"
+              style={{
+                transform: "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))",
+              }}
             >
               <div className="flex items-center gap-1.5 border-b border-black/10 bg-[#f5f5f7] px-4 py-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
               </div>
-              <div key={current.screenshot} className="animate-fade-in">
+              <div key={current.screenshot} className="animate-image-in">
                 <Image
                   src={current.screenshot}
                   alt={current.screenshotAlt}
@@ -125,7 +138,18 @@ export function ProductShowcase({ product }: { product: ProductData }) {
           {product.description}
         </p>
 
-        <div className="mt-4 flex flex-col lg:mt-8">
+        <div className="relative mt-6 lg:mt-10">
+          <div className="absolute top-0 bottom-0 left-5 w-px bg-white/10" />
+          <div
+            className={cn(
+              "absolute top-0 left-5 w-px transition-[height] duration-500 ease-out",
+              current.dotClassName
+            )}
+            style={{
+              height: count > 1 ? `${(active / (count - 1)) * 100}%` : "0%",
+            }}
+          />
+
           {product.highlights.map((item, i) => (
             <div
               key={item.label}
@@ -133,25 +157,42 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                 stepRefs.current[i] = el;
               }}
               data-index={i}
-              className="flex flex-col justify-center py-6 lg:min-h-[60vh] lg:py-0"
+              className="flex lg:min-h-[60vh] lg:items-center"
             >
               <button
                 type="button"
                 onClick={() => jumpTo(i)}
                 aria-pressed={i === active}
-                className={cn(
-                  "border-l-2 py-1 pl-6 text-left transition-colors duration-300",
-                  i === active ? item.activeClassName : "border-white/10"
-                )}
+                className="group/step flex w-full items-start gap-5 py-6 text-left lg:py-0"
               >
                 <span
-                  className={`inline-block h-2 w-2 rounded-full ${item.dotClassName}`}
-                />
-                <span className="mt-3 block text-xl font-semibold tracking-tight sm:text-2xl">
-                  {item.label}
+                  className={cn(
+                    "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors duration-300",
+                    i === active
+                      ? cn(item.dotClassName, "border-transparent text-black")
+                      : "border-white/15 bg-background text-muted group-hover/step:border-white/30"
+                  )}
+                >
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="mt-2 block max-w-sm leading-relaxed text-muted">
-                  {item.description}
+
+                <span className="pt-1.5">
+                  <span
+                    className={cn(
+                      "block text-xl font-semibold tracking-tight transition-colors duration-300 sm:text-2xl",
+                      i === active ? "text-foreground" : "text-muted"
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-2 block max-w-sm leading-relaxed text-muted transition-opacity duration-300",
+                      i === active ? "opacity-100" : "opacity-50"
+                    )}
+                  >
+                    {item.description}
+                  </span>
                 </span>
               </button>
             </div>
