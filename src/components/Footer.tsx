@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 py-10">
@@ -7,6 +9,9 @@ export default function Footer() {
           hello@creos-labs.com
         </a>
         <p>© {new Date().getFullYear()} Creos Labs. All rights reserved.</p>
+        <Link href="/login" className="transition hover:text-foreground">
+          Log in
+        </Link>
       </div>
     </footer>
   );
