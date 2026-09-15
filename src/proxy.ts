@@ -13,6 +13,15 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isProtected = PROTECTED_ROUTES.some((route) => path.startsWith(route));
 
+  // Only /login and the protected app routes ever need an auth decision.
+  // Every other request (the entire public marketing site) skips Supabase
+  // entirely — calling getUser() here was previously unconditional, which
+  // meant every marketing-page request paid for a full network round-trip
+  // to Supabase's auth server for no reason.
+  if (!isProtected && path !== "/login") {
+    return NextResponse.next();
+  }
+
   // Supabase isn't configured yet (still using .env.local placeholders) —
   // keep the public marketing site working, but still block /dashboard
   // since no one can possibly be authenticated without real credentials.
@@ -48,8 +57,8 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refreshes the session token on every request — required by Supabase's
-  // SSR auth pattern, otherwise sessions expire prematurely.
+  // Refreshes the session token on every protected/login request — required
+  // by Supabase's SSR auth pattern, otherwise sessions expire prematurely.
   const {
     data: { user },
   } = await supabase.auth.getUser();

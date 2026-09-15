@@ -27,7 +27,7 @@ export default async function BillingPage() {
       .join(" ") || "—";
 
   return (
-    <>
+    <div className="ws-page-in">
       <WorkspacePageHeader
         title="Billing"
         subtitle={`${PLAN.name} plan · next charge $${PLAN.price.toFixed(2)} on ${PLAN.renewsOnFull}`}
@@ -217,6 +217,6 @@ export default async function BillingPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

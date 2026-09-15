@@ -72,7 +72,7 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
   };
 
   return (
-    <div>
+    <div className="ws-page-in">
       <div className="flex items-center gap-[16px] px-6" style={{ height: 56, borderBottom: "1px solid var(--ws-hairline)" }}>
         <Link href="/outlier" className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
           ← Home

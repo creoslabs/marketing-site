@@ -16,7 +16,7 @@ export default function CreatorsPage() {
   const thinCount = CREATORS.filter((creator) => creator.handles.some((h) => h.thin)).length;
 
   return (
-    <div className="px-6 py-[22px]">
+    <div className="ws-page-in px-6 py-[22px]">
       <div className="flex flex-wrap items-center justify-between gap-[16px]">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>

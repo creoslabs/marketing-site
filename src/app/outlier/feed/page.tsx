@@ -13,7 +13,7 @@ export default function FeedPage() {
   const above2x = POSTS.filter((post) => post.score >= 2).length;
 
   return (
-    <div className="px-6 py-[22px]">
+    <div className="ws-page-in px-6 py-[22px]">
       <div className="flex flex-wrap items-center justify-between gap-[16px]">
         <div>
           <h1 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>

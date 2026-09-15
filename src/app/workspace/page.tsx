@@ -32,7 +32,7 @@ export default async function OverviewPage() {
   });
 
   return (
-    <>
+    <div className="ws-page-in">
       <WorkspacePageHeader
         title={`${greeting()}, ${firstName}`}
         subtitle={`${today} · 7 new outliers and 12 failing assets since you last looked`}
@@ -172,6 +172,6 @@ export default async function OverviewPage() {
           Manage plan
         </Link>
       </div>
-    </>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   const isThin = creator.handles.some((h) => h.thin);
 
   return (
-    <div className="px-6 py-[22px]">
+    <div className="ws-page-in px-6 py-[22px]">
       <Link href="/outlier/creators" className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
         ← Creators
       </Link>

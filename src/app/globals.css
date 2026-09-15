@@ -296,3 +296,85 @@ body {
   opacity: 1;
   visibility: visible;
 }
+
+/* Navigation & micro-interactions. Kept to transform/opacity only, per the
+   design spec's own rule: "No transitions on state-carrying colours — a CSS
+   transition on the toggle track caused a visible stale-paint bug in the
+   prototype. Animate opacity/transform if anything." */
+
+.ws .ws-btn-primary,
+.ws .ws-btn-ghost {
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.ws .ws-btn-primary:active,
+.ws .ws-btn-ghost:active {
+  transform: scale(0.97);
+}
+
+.ws .ws-tab-indicator {
+  position: absolute;
+  transition:
+    left 0.22s cubic-bezier(0.65, 0, 0.35, 1),
+    width 0.22s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.ws .ws-dropdown-in {
+  animation: ws-dropdown-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top right;
+}
+
+@keyframes ws-dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.ws .ws-page-in {
+  animation: ws-page-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ws-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ws .ws-badge-pulse {
+  animation: ws-badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ws-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws .ws-tab-indicator,
+  .ws .ws-dropdown-in,
+  .ws .ws-page-in,
+  .ws .ws-badge-pulse,
+  .ws .ws-btn-primary,
+  .ws .ws-btn-ghost {
+    animation: none !important;
+    transition: none !important;
+  }
+}

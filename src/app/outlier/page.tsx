@@ -32,7 +32,7 @@ export default function OutlierHomePage() {
   const bestToday = POSTS.reduce((best, post) => (post.score > best.score ? post : best), POSTS[0]);
 
   return (
-    <div className="px-6 py-[22px]">
+    <div className="ws-page-in px-6 py-[22px]">
       <div className="flex flex-wrap items-start justify-between gap-[16px]">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>

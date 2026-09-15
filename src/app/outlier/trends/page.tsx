@@ -11,7 +11,7 @@ export default function TrendsPage() {
   const maxHookScore = Math.max(...HOOK_STYLES.map((h) => h.avgMultiplier));
 
   return (
-    <div className="px-6 py-[22px]">
+    <div className="ws-page-in px-6 py-[22px]">
       <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
         Trends
       </h1>

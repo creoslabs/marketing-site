@@ -50,7 +50,7 @@ export default async function AccountPage() {
     .toUpperCase();
 
   return (
-    <>
+    <div className="ws-page-in">
       <WorkspacePageHeader title="Account" subtitle="Profile, sign-in and connected platforms." />
 
       <div className="grid grid-cols-1 gap-[14px] px-6 pb-[30px] pt-[22px] lg:grid-cols-[1fr_372px]">
@@ -137,6 +137,6 @@ export default async function AccountPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

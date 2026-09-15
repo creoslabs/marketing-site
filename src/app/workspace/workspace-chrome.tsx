@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useWsTheme } from "@/components/ws-theme";
+import { WsTabNav } from "@/components/ws-tab-nav";
 
 const TABS = [
-  { href: "/workspace", label: "Overview" },
+  { href: "/workspace", label: "Overview", exact: true },
   { href: "/workspace/account", label: "Account" },
   { href: "/workspace/billing", label: "Billing" },
 ];
@@ -20,16 +22,10 @@ export function WorkspaceChrome({
   email: string;
   initials: string;
 }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const [theme, setThemeState] = useState<"dark" | "light">("dark");
+  const [theme, setTheme] = useWsTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = document.querySelector(".ws");
-    setThemeState(root?.getAttribute("data-theme") === "light" ? "light" : "dark");
-  }, []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -40,16 +36,6 @@ export function WorkspaceChrome({
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
-
-  function setTheme(next: "dark" | "light") {
-    document.querySelector(".ws")?.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("ws-theme", next);
-    } catch {
-      // ignore — private browsing etc.
-    }
-    setThemeState(next);
-  }
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -107,7 +93,7 @@ export function WorkspaceChrome({
 
           {menuOpen && (
             <div
-              className="ws-card absolute right-0 top-[calc(100%+8px)] z-20 w-[220px] p-[6px]"
+              className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+8px)] z-20 w-[220px] p-[6px]"
             >
               <p
                 className="truncate px-[10px] py-[8px] text-[11.5px]"
@@ -157,32 +143,8 @@ export function WorkspaceChrome({
         </div>
       </header>
 
-      <nav
-        className="flex items-center gap-[26px] px-6"
-        style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}
-      >
-        {TABS.map((tab) => {
-          const active =
-            tab.href === "/workspace" ? pathname === "/workspace" : pathname.startsWith(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className="text-[12.5px] leading-[44px]"
-              style={
-                active
-                  ? {
-                      fontWeight: 600,
-                      color: "var(--ws-ink)",
-                      boxShadow: "inset 0 -1px 0 var(--ws-accent)",
-                    }
-                  : { fontWeight: 500, color: "var(--ws-ink-60)" }
-              }
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
+      <nav className="px-6" style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}>
+        <WsTabNav tabs={TABS} variant="underline" />
       </nav>
     </>
   );
