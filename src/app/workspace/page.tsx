@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getUser } from "@/lib/supabase/data";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "./page-header";
 import { PRODUCTS, USAGE, PLAN } from "./data";
 
@@ -16,15 +16,9 @@ function greeting() {
   return "Good evening";
 }
 
-function deriveFirstName(email: string) {
-  const localPart = email.split("@")[0] ?? "";
-  const first = localPart.split(/[._-]/).filter(Boolean)[0];
-  return first ? first[0].toUpperCase() + first.slice(1) : "there";
-}
-
 export default async function OverviewPage() {
   const user = await getUser();
-  const firstName = deriveFirstName(user?.email ?? "");
+  const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",

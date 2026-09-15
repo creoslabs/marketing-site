@@ -36,7 +36,11 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
   }, [pathname, tabs]);
 
   return (
-    <div ref={containerRef} className="relative flex items-center" style={{ gap: variant === "pill" ? 4 : 26 }}>
+    <div
+      ref={containerRef}
+      className="relative flex items-center"
+      style={{ gap: variant === "pill" ? 4 : 26, height: variant === "underline" ? "100%" : undefined }}
+    >
       {indicator && (
         <div
           className="ws-tab-indicator"
@@ -83,7 +87,8 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
                     zIndex: 1,
                   }
                 : {
-                    height: 44,
+                    height: "100%",
+                    gap: 6,
                     fontWeight: active ? 600 : 500,
                     color: active ? "var(--ws-ink)" : "var(--ws-ink-60)",
                     zIndex: 1,

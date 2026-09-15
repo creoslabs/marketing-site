@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import {
   CREATORS,
   POSTS,
@@ -22,7 +23,9 @@ function greeting() {
   return "Good evening";
 }
 
-export default function OutlierHomePage() {
+export default async function OutlierHomePage() {
+  const user = await getUser();
+  const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const topOutliers = POSTS.slice(0, 5);
   const runningJobs = JOBS.filter((job) => job.state === "running");
@@ -36,7 +39,7 @@ export default function OutlierHomePage() {
       <div className="flex flex-wrap items-start justify-between gap-[16px]">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-            {greeting()}, Jackson
+            {greeting()}, {firstName}
           </h1>
           <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
             {today} · 7 new outliers since you last looked

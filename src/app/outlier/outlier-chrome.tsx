@@ -19,12 +19,12 @@ export function OutlierChrome() {
       label: "Progress",
       badge:
         runningCount > 0
-          ? (active) => (
+          ? () => (
               <span
                 className="ws-tabular ws-badge-pulse flex h-[16px] min-w-[16px] items-center justify-center rounded-full text-[10px] font-semibold"
                 style={{
-                  background: active ? "var(--ws-ground)" : "var(--ws-accent)",
-                  color: active ? "var(--ws-ink)" : "var(--ws-accent-ink)",
+                  background: "var(--ws-accent)",
+                  color: "var(--ws-accent-ink)",
                   padding: "0 4px",
                 }}
               >
@@ -54,7 +54,7 @@ export function OutlierChrome() {
         </Link>
       </div>
 
-      <WsTabNav tabs={TABS} variant="pill" />
+      <WsTabNav tabs={TABS} variant="underline" />
 
       <div className="flex-1" />
 

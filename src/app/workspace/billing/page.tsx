@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getUser } from "@/lib/supabase/data";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
 import { PLAN, USAGE, INVOICES, PAYMENT_METHOD } from "../data";
 import {
@@ -18,13 +18,7 @@ export const metadata: Metadata = {
 export default async function BillingPage() {
   const user = await getUser();
   const email = user?.email ?? "";
-  const localPart = email.split("@")[0] ?? "";
-  const billedTo =
-    localPart
-      .split(/[._-]/)
-      .filter(Boolean)
-      .map((p) => p[0].toUpperCase() + p.slice(1))
-      .join(" ") || "—";
+  const billedTo = getDisplayName(user);
 
   return (
     <div className="ws-page-in">

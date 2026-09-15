@@ -17,3 +17,23 @@ export const getUser = cache(async () => {
   } = await supabase.auth.getSession();
   return session?.user ?? null;
 });
+
+type NamedUser = { email?: string | null; user_metadata?: { full_name?: unknown } | null } | null;
+
+// Prefers the real display name set via the Account tab (stored in Supabase
+// auth's user_metadata); falls back to a name derived from the email's local
+// part for accounts that haven't set one yet.
+export function getDisplayName(user: NamedUser) {
+  const fullName = user?.user_metadata?.full_name;
+  if (typeof fullName === "string" && fullName.trim()) {
+    return fullName.trim();
+  }
+  const localPart = user?.email?.split("@")[0] ?? "";
+  return (
+    localPart
+      .split(/[._-]/)
+      .filter(Boolean)
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(" ") || "Account"
+  );
+}

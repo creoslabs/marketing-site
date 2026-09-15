@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { getUser } from "@/lib/supabase/data";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
-import { EditRowButton, ConnectButton, DeleteAccountButton } from "./account-actions";
+import { ConnectButton, DeleteAccountButton } from "./account-actions";
+import { EditableNameRow, EditableEmailRow, EditablePasswordRow } from "./editable-fields";
 
 export const metadata: Metadata = {
   title: "Account — Creos Labs",
@@ -34,13 +35,7 @@ function Row({
 export default async function AccountPage() {
   const user = await getUser();
   const email = user?.email ?? "";
-  const localPart = email.split("@")[0] ?? "";
-  const name =
-    localPart
-      .split(/[._-]/)
-      .filter(Boolean)
-      .map((p) => p[0].toUpperCase() + p.slice(1))
-      .join(" ") || "—";
+  const name = getDisplayName(user);
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -60,20 +55,17 @@ export default async function AccountPage() {
               PROFILE
             </p>
             <div className="ws-stack" style={{ border: "none", borderRadius: 0 }}>
-              <Row label="Name" value={name} action={<EditRowButton />} />
+              <EditableNameRow initialValue={name} />
               <Row
                 label="Avatar"
                 value=""
                 action={
-                  <div className="flex items-center gap-[13px]">
-                    <span
-                      className="ws-placeholder flex h-[26px] w-[26px] items-center justify-center rounded-full text-[9.5px] font-semibold"
-                      style={{ color: "var(--ws-ink-60)", border: "1px solid var(--ws-hairline)" }}
-                    >
-                      {initials || "?"}
-                    </span>
-                    <EditRowButton label="Change" />
-                  </div>
+                  <span
+                    className="ws-placeholder flex h-[26px] w-[26px] items-center justify-center rounded-full text-[9.5px] font-semibold"
+                    style={{ color: "var(--ws-ink-60)", border: "1px solid var(--ws-hairline)" }}
+                  >
+                    {initials || "?"}
+                  </span>
                 }
               />
             </div>
@@ -84,8 +76,8 @@ export default async function AccountPage() {
               SIGN-IN
             </p>
             <div className="ws-stack" style={{ border: "none", borderRadius: 0 }}>
-              <Row label="Email" value={email || "—"} action={<EditRowButton />} />
-              <Row label="Password" value="••••••••" action={<EditRowButton label="Change" />} />
+              <EditableEmailRow initialValue={email} />
+              <EditablePasswordRow />
             </div>
           </div>
         </div>

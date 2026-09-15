@@ -1,17 +1,5 @@
 "use client";
 
-export function EditRowButton({ label = "Edit" }: { label?: string }) {
-  return (
-    <button
-      type="button"
-      onClick={() => alert("Editing account details isn't available yet.")}
-      className="ws-link-accent whitespace-nowrap text-[11.5px] font-medium"
-    >
-      {label}
-    </button>
-  );
-}
-
 export function ConnectButton({ label = "Connect" }: { label?: string }) {
   return (
     <button

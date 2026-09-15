@@ -1,16 +1,6 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/supabase/data";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspaceChrome } from "./workspace-chrome";
-
-function deriveName(email: string) {
-  const localPart = email.split("@")[0] ?? "";
-  const name = localPart
-    .split(/[._-]/)
-    .filter(Boolean)
-    .map((part) => part[0].toUpperCase() + part.slice(1))
-    .join(" ");
-  return name || "Account";
-}
 
 function deriveInitials(name: string) {
   return (
@@ -36,7 +26,7 @@ export default async function WorkspaceLayout({
   }
 
   const email = user.email ?? "";
-  const name = deriveName(email);
+  const name = getDisplayName(user);
   const initials = deriveInitials(name);
 
   return (
