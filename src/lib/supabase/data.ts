@@ -11,11 +11,19 @@ import { createClient } from "./server";
 // hitting Supabase separately). getSession() reads the refreshed cookie with
 // no network call. cache() further dedupes repeat calls within one request.
 export const getUser = cache(async () => {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user ?? null;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.user ?? null;
+  } catch {
+    // Supabase isn't configured yet (placeholder .env.local values) —
+    // createClient() throws synchronously on an invalid URL. No one can
+    // possibly be signed in without real credentials, so treat this the
+    // same as "not signed in" rather than crashing every caller.
+    return null;
+  }
 });
 
 type NamedUser = { email?: string | null; user_metadata?: { full_name?: unknown } | null } | null;

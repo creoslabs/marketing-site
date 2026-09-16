@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
 import { ConnectButton, DeleteAccountButton } from "./account-actions";
-import { EditableNameRow, EditableEmailRow, EditablePasswordRow } from "./editable-fields";
+import { EditableNameRow, EditableEmailRow, EditablePasswordRow, EditableApiKeyRow } from "./editable-fields";
 
 export const metadata: Metadata = {
   title: "Account — Creos Labs",
@@ -36,6 +36,9 @@ export default async function AccountPage() {
   const user = await getUser();
   const email = user?.email ?? "";
   const name = getDisplayName(user);
+  const hasAnthropicKey = Boolean(
+    typeof user?.user_metadata?.signal_anthropic_api_key === "string" && user.user_metadata.signal_anthropic_api_key
+  );
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -78,6 +81,19 @@ export default async function AccountPage() {
             <div className="ws-stack" style={{ border: "none", borderRadius: 0 }}>
               <EditableEmailRow initialValue={email} />
               <EditablePasswordRow />
+            </div>
+          </div>
+
+          <div className="ws-card" style={{ padding: "20px 0" }}>
+            <div style={{ padding: "0 22px", marginBottom: 15 }}>
+              <p className="ws-eyebrow">TESTING · API KEYS</p>
+              <p className="mt-[8px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-ink-45)" }}>
+                Only used by your own account, never shared. Setting this here skips configuring a server
+                env var while testing — remove it once Signal has its own key configured.
+              </p>
+            </div>
+            <div className="ws-stack" style={{ border: "none", borderRadius: 0 }}>
+              <EditableApiKeyRow label="Anthropic API key" initialIsSet={hasAnthropicKey} />
             </div>
           </div>
         </div>

@@ -236,6 +236,105 @@ export function EditableEmailRow({ initialValue }: { initialValue: string }) {
   );
 }
 
+export function EditableApiKeyRow({ label, initialIsSet }: { label: string; initialIsSet: boolean }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [isSet, setIsSet] = useState(initialIsSet);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save(value: string | null) {
+    setSaving(true);
+    setError("");
+    const result = tryCreateClient();
+    if ("error" in result) {
+      setSaving(false);
+      setError(result.error);
+      return;
+    }
+    const { error: updateError } = await result.client.auth.updateUser({
+      data: { signal_anthropic_api_key: value },
+    });
+    setSaving(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setIsSet(Boolean(value));
+    setDraft("");
+    setEditing(false);
+    router.refresh();
+  }
+
+  async function handleSave(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setError("Paste a key, or use Remove to clear it.");
+      return;
+    }
+    await save(trimmed);
+  }
+
+  if (editing) {
+    return (
+      <div style={{ padding: "16px 22px" }}>
+        <form onSubmit={handleSave} className="flex items-center gap-[10px]">
+          <RowLabel>{label}</RowLabel>
+          <input
+            autoFocus
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="sk-ant-…"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            style={{ ...inputStyle, flex: 1, maxWidth: 320 }}
+          />
+          <SaveButton saving={saving} />
+          <CancelButton
+            onClick={() => {
+              setDraft("");
+              setError("");
+              setEditing(false);
+            }}
+          />
+        </form>
+        {error && <ErrorText>{error}</ErrorText>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center" style={{ padding: "16px 22px" }}>
+      <RowLabel>{label}</RowLabel>
+      <span className="text-[12.5px] font-medium" style={{ color: isSet ? "var(--ws-ink)" : "var(--ws-ink-45)" }}>
+        {isSet ? "••••••••••••" : "Not set"}
+      </span>
+      <div className="flex-1" />
+      {isSet && (
+        <button
+          type="button"
+          onClick={() => save(null)}
+          disabled={saving}
+          className="mr-[14px] text-[11.5px] font-medium"
+          style={{ color: "var(--ws-warn-text)", opacity: saving ? 0.6 : 1 }}
+        >
+          Remove
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="ws-link-accent text-[11.5px] font-medium"
+      >
+        {isSet ? "Change" : "Set"}
+      </button>
+    </div>
+  );
+}
+
 export function EditablePasswordRow() {
   const [editing, setEditing] = useState(false);
   const [password, setPassword] = useState("");

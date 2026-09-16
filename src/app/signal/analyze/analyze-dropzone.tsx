@@ -1,23 +1,53 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
-import Link from "next/link";
-import { VIDEO_ASSET, STATIC_ASSET } from "../data";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
-type Stage = "idle" | "analyzing" | "done";
+type Stage = "idle" | "uploading" | "analyzing" | "error";
 
 export function AnalyzeDropzone() {
+  const router = useRouter();
   const [dragOver, setDragOver] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
-  const [detectedFormat, setDetectedFormat] = useState<"video" | "static" | null>(null);
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined) {
     if (!file) return;
     const format = file.type.startsWith("video/") ? "video" : "static";
-    setDetectedFormat(format);
-    setStage("analyzing");
-    setTimeout(() => setStage("done"), 1400);
+    setError("");
+    setStage("uploading");
+
+    try {
+      const urlRes = await fetch("/api/signal/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name }),
+      });
+      const urlData = await urlRes.json();
+      if (!urlRes.ok) throw new Error(urlData.error ?? "Could not start the upload.");
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from("signal-assets")
+        .uploadToSignedUrl(urlData.path, urlData.token, file);
+      if (uploadError) throw uploadError;
+
+      setStage("analyzing");
+      const analyzeRes = await fetch("/api/signal/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: urlData.path, filename: file.name, format }),
+      });
+      const analyzeData = await analyzeRes.json();
+      if (!analyzeRes.ok) throw new Error(analyzeData.error ?? "Analysis failed.");
+
+      router.push(`/signal/report/${analyzeData.assetId}`);
+    } catch (err) {
+      setStage("error");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    }
   }
 
   function handleDrop(e: DragEvent<HTMLDivElement>) {
@@ -25,8 +55,6 @@ export function AnalyzeDropzone() {
     setDragOver(false);
     handleFile(e.dataTransfer.files?.[0]);
   }
-
-  const reportId = detectedFormat === "video" ? VIDEO_ASSET.id : STATIC_ASSET.id;
 
   return (
     <div
@@ -77,11 +105,13 @@ export function AnalyzeDropzone() {
         </>
       )}
 
-      {stage === "analyzing" && (
+      {(stage === "uploading" || stage === "analyzing") && (
         <>
-          <p className="ws-eyebrow">ANALYZING</p>
+          <p className="ws-eyebrow">{stage === "uploading" ? "UPLOADING" : "ANALYZING"}</p>
           <p className="mt-[10px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            Detecting format and running the criteria set…
+            {stage === "uploading"
+              ? "Sending the asset to storage…"
+              : "Detecting format and running the criteria set — this can take a minute for video."}
           </p>
           <div
             className="mt-[16px] h-[4px] w-full overflow-hidden rounded-[3px]"
@@ -95,21 +125,22 @@ export function AnalyzeDropzone() {
         </>
       )}
 
-      {stage === "done" && (
+      {stage === "error" && (
         <>
-          <p className="ws-eyebrow" style={{ color: "var(--ws-accent-text)" }}>
-            ANALYSIS COMPLETE
+          <p className="ws-eyebrow" style={{ color: "var(--ws-warn-text)" }}>
+            COULDN&apos;T ANALYZE THAT ASSET
           </p>
-          <p className="mt-[10px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            Format detected: <span style={{ color: "var(--ws-ink)", fontWeight: 600 }}>{detectedFormat}</span>
+          <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-ink-60)" }}>
+            {error}
           </p>
-          <Link
-            href={`/signal/report/${reportId}`}
-            className="ws-btn-primary mt-[16px] rounded-[8px] text-[12.5px] font-semibold"
-            style={{ padding: "10px 16px" }}
+          <button
+            type="button"
+            onClick={() => setStage("idle")}
+            className="ws-btn-ghost mt-[16px] rounded-[8px] text-[12.5px] font-medium"
+            style={{ padding: "9px 14px" }}
           >
-            View report →
-          </Link>
+            Try again
+          </button>
         </>
       )}
     </div>

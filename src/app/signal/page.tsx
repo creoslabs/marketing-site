@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ASSETS, MEDIAN_BY_FORMAT, getPercentile, ACCOUNT_PATTERN } from "./data";
+import { ASSETS, MEDIAN_BY_FORMAT, getPercentile as getFixturePercentile, ACCOUNT_PATTERN } from "./data";
+import { getLibrary, medianOf, percentileWithin } from "./live-data";
 import { ScoreBadge, IssuePill, Thumb } from "./components";
 import { AppearanceCard } from "./appearance-card";
 
@@ -11,9 +12,23 @@ export const metadata: Metadata = {
 
 const GRID_COUNT = 8;
 
-export default function LibraryPage() {
-  const gridAssets = ASSETS.slice(0, GRID_COUNT);
-  const overflowAssets = ASSETS.slice(GRID_COUNT);
+export default async function LibraryPage() {
+  const live = await getLibrary();
+  const assets = live.isLive ? live.assets : ASSETS;
+  const isLive = live.isLive;
+
+  const medians = isLive
+    ? {
+        static: medianOf(assets.filter((a) => a.format === "static").map((a) => a.score)),
+        video: medianOf(assets.filter((a) => a.format === "video").map((a) => a.score)),
+      }
+    : MEDIAN_BY_FORMAT;
+
+  const getPercentile = (asset: (typeof assets)[number]) =>
+    isLive ? percentileWithin(asset.score, asset.format, assets) : getFixturePercentile(asset);
+
+  const gridAssets = assets.slice(0, GRID_COUNT);
+  const overflowAssets = assets.slice(GRID_COUNT);
 
   return (
     <div className="ws-page-in grid grid-cols-1 gap-[26px] lg:grid-cols-[1fr_340px]" style={{ padding: "26px 22px" }}>
@@ -25,8 +40,7 @@ export default function LibraryPage() {
               Library
             </h1>
             <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-              {ASSETS.length} assets · statics median {MEDIAN_BY_FORMAT.static} · videos median{" "}
-              {MEDIAN_BY_FORMAT.video}
+              {assets.length} assets · statics median {medians.static} · videos median {medians.video}
             </p>
           </div>
           <div className="flex items-center gap-[9px]">
@@ -48,7 +62,7 @@ export default function LibraryPage() {
 
         <div className="mt-[18px] grid grid-cols-2 gap-[16px] sm:grid-cols-4">
           {gridAssets.map((asset) => {
-            const hasReport = asset.criteria.length > 0;
+            const hasReport = isLive || asset.criteria.length > 0;
             const card = (
               <>
                 <Thumb aspectRatio="auto" radius={10} style={{ height: 190 }}>
@@ -100,7 +114,7 @@ export default function LibraryPage() {
               <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>FAILED CHECKS</span>
             </div>
             {overflowAssets.map((asset) => {
-              const hasReport = asset.criteria.length > 0;
+              const hasReport = isLive || asset.criteria.length > 0;
               const row = (
                 <div
                   className="ws-row-hover grid items-center"

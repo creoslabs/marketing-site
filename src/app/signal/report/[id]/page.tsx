@@ -3,19 +3,21 @@ import { notFound } from "next/navigation";
 import {
   getAsset,
   getFullCriteria,
-  getPercentile,
+  getPercentile as getFixturePercentile,
   MEDIAN_BY_FORMAT,
   VIDEO_FINDINGS,
   VIDEO_TOP_FIX,
   STATIC_FINDINGS,
   STATIC_TOP_FIX,
 } from "../../data";
+import { getAssetDetail, getLibrary, medianOf, percentileWithin } from "../../live-data";
 import { VideoReport } from "./video-report";
 import { StaticReport } from "./static-report";
 
 export async function generateMetadata(props: PageProps<"/signal/report/[id]">): Promise<Metadata> {
   const { id } = await props.params;
-  const asset = getAsset(id);
+  const live = await getAssetDetail(id);
+  const asset = live?.asset ?? getAsset(id);
   return {
     title: asset ? `${asset.score} — Signal` : "Report — Signal",
     robots: { index: false, follow: false },
@@ -24,13 +26,47 @@ export async function generateMetadata(props: PageProps<"/signal/report/[id]">):
 
 export default async function ReportPage(props: PageProps<"/signal/report/[id]">) {
   const { id } = await props.params;
+
+  const live = await getAssetDetail(id);
+  if (live) {
+    const library = await getLibrary();
+    const median = medianOf(library.assets.filter((a) => a.format === live.asset.format).map((a) => a.score));
+    const percentile = percentileWithin(live.asset.score, live.asset.format, library.assets);
+
+    if (live.asset.format === "video") {
+      return (
+        <VideoReport
+          asset={live.asset}
+          criteria={live.criteria}
+          findings={live.findings as import("../../data").VideoFinding[]}
+          topFix={live.topFix}
+          median={median}
+          percentile={percentile}
+        />
+      );
+    }
+    return (
+      <StaticReport
+        asset={live.asset}
+        criteria={live.criteria}
+        findings={live.findings as import("../../data").StaticFinding[]}
+        topFix={live.topFix}
+        median={median}
+        percentile={percentile}
+      />
+    );
+  }
+
+  // Fall back to the fixture examples — lets the two canonical reports stay
+  // browsable before Signal's pipeline is configured (or for either of the
+  // two seeded demo ids specifically).
   const asset = getAsset(id);
   if (!asset) notFound();
 
   const criteria = getFullCriteria(id);
   if (criteria.length === 0) notFound();
 
-  const percentile = getPercentile(asset);
+  const percentile = getFixturePercentile(asset);
 
   if (asset.format === "video") {
     return (
