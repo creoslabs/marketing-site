@@ -86,8 +86,13 @@ export function EditableNameRow({ initialValue }: { initialValue: string }) {
     }
     setSaving(true);
     setError("");
-    const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ data: { full_name: trimmed } });
+    const result = tryCreateClient();
+    if ("error" in result) {
+      setSaving(false);
+      setError(result.error);
+      return;
+    }
+    const { error: updateError } = await result.client.auth.updateUser({ data: { full_name: trimmed } });
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
@@ -163,8 +168,13 @@ export function EditableEmailRow({ initialValue }: { initialValue: string }) {
     }
     setSaving(true);
     setError("");
-    const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ email: trimmed });
+    const result = tryCreateClient();
+    if ("error" in result) {
+      setSaving(false);
+      setError(result.error);
+      return;
+    }
+    const { error: updateError } = await result.client.auth.updateUser({ email: trimmed });
     setSaving(false);
     if (updateError) {
       setError(updateError.message);
@@ -246,8 +256,13 @@ export function EditablePasswordRow() {
     }
     setSaving(true);
     setError("");
-    const supabase = createClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
+    const result = tryCreateClient();
+    if ("error" in result) {
+      setSaving(false);
+      setError(result.error);
+      return;
+    }
+    const { error: updateError } = await result.client.auth.updateUser({ password });
     setSaving(false);
     if (updateError) {
       setError(updateError.message);

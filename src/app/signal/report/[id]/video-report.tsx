@@ -1,0 +1,413 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import type { Asset, Criterion, VideoFinding } from "../../data";
+import { VerdictLabel } from "../../components";
+
+function formatTime(t: number) {
+  return `0:${String(t).padStart(2, "0")}`;
+}
+
+function tickState(t: number): "good" | "weak" | "warn" {
+  const inSafeZoneViolation = (t >= 4 && t <= 7) || (t >= 17 && t <= 18);
+  if (inSafeZoneViolation) return "warn";
+  if (t <= 3) return "good";
+  return "weak";
+}
+
+function describeFrame(t: number, findings: VideoFinding[]) {
+  const nearby = findings.find((f) => Math.abs(f.t - t) <= 1);
+  if (nearby) return nearby.body;
+  if (t >= 4 && t <= 7) return "Caption outside safe zone.";
+  if (t >= 17) return "Caption re-enters the safe zone.";
+  return "Nothing flagged at this frame.";
+}
+
+export function VideoReport({
+  asset,
+  criteria,
+  findings,
+  topFix,
+  median,
+  percentile,
+}: {
+  asset: Asset;
+  criteria: Criterion[];
+  findings: VideoFinding[];
+  topFix: { title: string; clears: number; body: string };
+  median: number;
+  percentile: number;
+}) {
+  const duration = 18;
+  const [t, setT] = useState(4);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!playing) return;
+    const interval = setInterval(() => {
+      setT((prev) => (prev >= duration ? 0 : prev + 1));
+    }, 650);
+    return () => clearInterval(interval);
+  }, [playing]);
+
+  const inViolation = (t >= 4 && t <= 7) || (t >= 17 && t <= 18);
+  const tier1 = criteria.filter((c) => c.tier === 1);
+  const tier2 = criteria.filter((c) => c.tier === 2);
+  const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
+  const tier2Issues = tier2.filter((c) => c.verdict !== "pass").length;
+  const counts = {
+    pass: criteria.filter((c) => c.verdict === "pass").length,
+    partial: criteria.filter((c) => c.verdict === "partial").length,
+    fail: criteria.filter((c) => c.verdict === "fail").length,
+  };
+
+  return (
+    <div className="ws-page-in">
+      <ReportSubHeader asset={asset} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]" style={{ minHeight: 0 }}>
+        {/* Left: player + score */}
+        <div className="flex flex-col gap-[22px] lg:flex-row" style={{ padding: "22px", borderRight: "1px solid var(--ws-hairline)" }}>
+          {/* Player column */}
+          <div style={{ width: 250, flexShrink: 0 }}>
+            <div
+              className="ws-placeholder relative overflow-hidden rounded-[10px]"
+              style={{ width: 250, height: 444 }}
+            >
+              {/* Safe-zone bands */}
+              <div
+                className="absolute inset-x-0 top-0"
+                style={{ height: 116, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
+              />
+              <div
+                className="absolute inset-x-0 bottom-0"
+                style={{ height: 158, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderTop: "1.5px dashed var(--ws-warn)" }}
+              />
+              <div
+                className="absolute"
+                style={{ top: 116, bottom: 158, left: 14, right: 14, border: "1.5px dashed var(--ws-accent)" }}
+              />
+              <span
+                className="absolute rounded-[4px] text-[9px] font-semibold uppercase"
+                style={{ bottom: 162, left: 14, letterSpacing: "0.06em", padding: "3px 6px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }}
+              >
+                SAFE ZONE · TIKTOK
+              </span>
+
+              {/* Violation overlay */}
+              <div
+                className="absolute rounded-[4px]"
+                style={{
+                  top: 4,
+                  left: 14,
+                  right: 14,
+                  height: 108,
+                  border: "1.5px solid var(--ws-warn)",
+                  background: "var(--ws-warn-tint)",
+                  opacity: inViolation ? 1 : 0,
+                  transition: "opacity 0.15s ease",
+                }}
+              >
+                <span
+                  className="absolute -top-[10px] left-[6px] rounded-[4px] text-[9px] font-semibold uppercase"
+                  style={{ letterSpacing: "0.06em", padding: "3px 6px", background: "var(--ws-warn)", color: "var(--ws-warn-ink)" }}
+                >
+                  OUTSIDE SAFE ZONE
+                </span>
+              </div>
+
+              <span
+                className="absolute left-[10px] top-[10px] rounded-[4px] text-[10px] font-semibold"
+                style={{ padding: "4px 7px", background: "var(--ws-ink)", color: "var(--ws-ground)" }}
+              >
+                {formatTime(t)} / 0:{duration}
+              </span>
+            </div>
+
+            <div className="mt-[10px] flex items-center gap-[6px]">
+              <button
+                type="button"
+                onClick={() => setT((prev) => Math.max(0, prev - 1))}
+                className="ws-btn-ghost rounded-[7px] text-[13px]"
+                style={{ padding: "9px 12px" }}
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlaying((p) => !p)}
+                className="ws-btn-primary flex-1 rounded-[7px] text-[12.5px] font-semibold"
+                style={{ padding: "9px 12px" }}
+              >
+                {playing ? "Pause" : "Play"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setT((prev) => Math.min(duration, prev + 1))}
+                className="ws-btn-ghost rounded-[7px] text-[13px]"
+                style={{ padding: "9px 12px" }}
+              >
+                ▶
+              </button>
+            </div>
+
+            <div className="ws-card mt-[10px]" style={{ padding: "12px 14px" }}>
+              <p className="ws-eyebrow">AT {formatTime(t)}</p>
+              <p className="mt-[6px] text-[12.5px] leading-[1.4]" style={{ color: "var(--ws-ink-60)" }}>
+                {describeFrame(t, findings)}
+              </p>
+            </div>
+          </div>
+
+          {/* Score column */}
+          <div className="flex-1">
+            <p className="ws-eyebrow">BEST PRACTICE SCORE (VIDEO) — 16 CRITERIA</p>
+            <div className="mt-[10px] flex items-end gap-[16px]">
+              <span className="font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
+                {asset.score}
+              </span>
+              <div className="pb-[6px]">
+                <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
+                  {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
+                </p>
+                <p className="mt-[2px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                  {percentile}th percentile among video ads in this set — not comparable to static scores.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-[14px]">
+              <div className="relative h-[8px] overflow-hidden rounded-[4px]" style={{ background: "rgba(128,128,128,.14)" }}>
+                <div className="h-full rounded-[4px]" style={{ width: `${asset.score}%`, background: "var(--ws-ink)" }} />
+                <div className="absolute top-0 h-full" style={{ left: `${median}%`, width: 2, background: "var(--ws-ink)" }} />
+              </div>
+              <div className="mt-[6px] flex justify-between text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                <span>0</span>
+                <span>video median {median}</span>
+                <span>100</span>
+              </div>
+            </div>
+
+            <p className="ws-eyebrow mt-[20px]">TIMELINE · CLICK TO SCRUB</p>
+            <div className="relative mt-[10px]">
+              <div className="flex" style={{ gap: 2 }}>
+                {Array.from({ length: duration + 1 }, (_, i) => i).map((second) => {
+                  const state = tickState(second);
+                  const isCurrent = second === t;
+                  return (
+                    <button
+                      key={second}
+                      type="button"
+                      onClick={() => setT(second)}
+                      className="flex-1 rounded-[3px]"
+                      style={{
+                        height: 52,
+                        background:
+                          state === "warn"
+                            ? "color-mix(in srgb, var(--ws-warn) 75%, transparent)"
+                            : state === "good"
+                              ? "color-mix(in srgb, var(--ws-accent) 70%, transparent)"
+                              : "rgba(128,128,128,.14)",
+                        boxShadow: isCurrent ? "inset 0 0 0 2px var(--ws-ink)" : "none",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div
+                className="pointer-events-none absolute rounded-[2px]"
+                style={{
+                  top: -4,
+                  bottom: -4,
+                  width: 2,
+                  left: `${(t / duration) * 100}%`,
+                  background: "var(--ws-ink)",
+                  transition: "left 0.15s ease",
+                }}
+              />
+              <div className="mt-[6px] flex" style={{ gap: 2 }}>
+                {Array.from({ length: duration + 1 }, (_, i) => i).map((second) => (
+                  <div key={second} className="flex-1 text-center text-[9px]" style={{ color: "var(--ws-ink-45)" }}>
+                    {second % 3 === 0 ? formatTime(second) : ""}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-[10px] flex items-center gap-[16px] text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
+              <LegendSwatch color="var(--ws-accent)" label="Meets guidance" />
+              <LegendSwatch color="rgba(128,128,128,.3)" label="Neutral" />
+              <LegendSwatch color="var(--ws-warn)" label="Fails a check" />
+            </div>
+
+            <CriteriaTable title="TIER 1 · STRUCTURAL" issues={tier1Issues} total={tier1.length} criteria={tier1} />
+            <div style={{ height: 16 }} />
+            <CriteriaTable title="TIER 2 · CONTEXTUAL" issues={tier2Issues} total={tier2.length} criteria={tier2} />
+          </div>
+        </div>
+
+        {/* Findings panel */}
+        <div style={{ padding: "22px" }}>
+          <div className="flex items-baseline justify-between">
+            <p className="ws-eyebrow">FINDINGS · TIMESTAMPED</p>
+            <span className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>Click a note to jump</span>
+          </div>
+
+          <div className="mt-[14px] flex flex-col gap-[10px]">
+            {findings.map((finding) => {
+              const active = Math.abs(finding.t - t) <= 1;
+              return (
+                <button
+                  key={finding.id}
+                  type="button"
+                  onClick={() => setT(finding.t)}
+                  className="rounded-[8px] text-left"
+                  style={{
+                    padding: "12px 14px",
+                    border: active ? "1px solid var(--ws-accent)" : "1px solid var(--ws-hairline)",
+                    background: active ? "var(--ws-accent-tint)" : "var(--ws-surface)",
+                    transition: "background-color 0.15s ease, border-color 0.15s ease",
+                  }}
+                >
+                  <div className="flex items-center gap-[8px]">
+                    <span
+                      className="ws-tabular rounded-[4px] text-[10.5px] font-semibold"
+                      style={{
+                        padding: "2px 6px",
+                        background: finding.failure ? "var(--ws-warn)" : "var(--ws-surface-header)",
+                        color: finding.failure ? "var(--ws-warn-ink)" : "var(--ws-ink-60)",
+                      }}
+                    >
+                      {formatTime(finding.t)}
+                    </span>
+                    <span className="text-[12.5px] font-semibold" style={{ color: active ? "var(--ws-accent-tint-ink)" : "var(--ws-ink)" }}>
+                      {finding.criterion}
+                    </span>
+                    <div className="flex-1" />
+                    <span
+                      className="text-[10px] font-semibold uppercase"
+                      style={{ letterSpacing: "0.06em", color: "var(--ws-ink-45)" }}
+                    >
+                      TIER {finding.tier}
+                    </span>
+                  </div>
+                  <p
+                    className="mt-[6px] text-[12.5px] leading-[1.5]"
+                    style={{ color: active ? "var(--ws-accent-tint-ink)" : "var(--ws-ink-60)" }}
+                  >
+                    {finding.body}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            className="mt-[16px] rounded-[10px]"
+            style={{ padding: "16px 18px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
+          >
+            <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
+              TOP FIX · CLEARS {topFix.clears} CHECKS
+            </p>
+            <p className="mt-[8px] text-[12.5px] font-semibold" style={{ color: "var(--ws-accent-tint-ink)" }}>
+              {topFix.title}
+            </p>
+            <p className="mt-[6px] text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
+              {topFix.body}
+            </p>
+            <button
+              type="button"
+              onClick={() => alert("Preview isn't available yet.")}
+              className="ws-btn-primary mt-[12px] rounded-[7px] text-[12px] font-semibold"
+              style={{ padding: "8px 12px" }}
+            >
+              Preview the cut
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegendSwatch({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-[6px]">
+      <span className="h-[8px] w-[8px] rounded-[2px]" style={{ background: color }} />
+      {label}
+    </span>
+  );
+}
+
+export function CriteriaTable({
+  title,
+  issues,
+  total,
+  criteria,
+}: {
+  title: string;
+  issues: number;
+  total: number;
+  criteria: Criterion[];
+}) {
+  return (
+    <div className="ws-stack mt-[16px]">
+      <div
+        className="flex items-center"
+        style={{ padding: "10px 14px", background: "var(--ws-surface-header)" }}
+      >
+        <span className="ws-eyebrow">{title}</span>
+        <div className="flex-1" />
+        <span className="ws-tabular text-[12px] font-semibold" style={{ color: "var(--ws-ink-60)" }}>
+          {issues} / {total}
+        </span>
+      </div>
+      {criteria.map((c) => (
+        <div key={c.name} className="flex items-center gap-[10px]" style={{ padding: "10px 14px" }}>
+          <span className="flex-1 text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>{c.name}</span>
+          <span className="w-[120px] shrink-0 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>{c.evidence}</span>
+          <span className="w-[52px] shrink-0 text-right">
+            <VerdictLabel verdict={c.verdict} />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ReportSubHeader({ asset }: { asset: Asset }) {
+  return (
+    <div
+      className="flex flex-wrap items-center gap-[14px] px-6"
+      style={{ minHeight: 56, padding: "12px 22px", borderBottom: "1px solid var(--ws-hairline)" }}
+    >
+      <Link href="/signal" className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+        ← Library
+      </Link>
+      <div className="h-[18px] w-px" style={{ background: "var(--ws-hairline)" }} />
+      <span className="text-[13.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>{asset.filename}</span>
+      <span
+        className="rounded-[4px] text-[11px] font-semibold uppercase"
+        style={{ letterSpacing: "0.06em", padding: "4px 7px", background: "var(--ws-ink)", color: "var(--ws-ground)" }}
+      >
+        {asset.format === "video" ? `VIDEO · ${asset.duration} · 9:16` : "STATIC · 4:5"}
+      </span>
+      <span className="text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
+        {asset.platform} · {asset.postedAt}
+      </span>
+      <div className="flex-1" />
+      <button type="button" className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium" style={{ padding: "9px 12px" }}>
+        Compare
+      </button>
+      <button
+        type="button"
+        onClick={() => alert("Apply fixes isn't available yet.")}
+        className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
+        style={{ padding: "9px 12px" }}
+      >
+        Apply fixes →
+      </button>
+    </div>
+  );
+}

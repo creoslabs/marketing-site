@@ -76,7 +76,7 @@ export const PRODUCTS = [
     ],
     openHref: "/signal",
     openLabel: "Open Signal",
-    secondaryHref: "/signal/upload",
+    secondaryHref: "/signal/analyze",
     secondaryLabel: "Upload asset",
     status: "Idle",
   },

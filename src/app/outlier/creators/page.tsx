@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CREATORS } from "../data";
-import { Avatar, ScoreChip, Sparkline, ThinHistoryPill } from "../components";
+import { Avatar, Sparkline, ThinHistoryPill } from "../components";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {

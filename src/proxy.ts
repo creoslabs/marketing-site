@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED_ROUTES = ["/workspace", "/outlier", "/dashboard"];
+const PROTECTED_ROUTES = ["/workspace", "/outlier", "/signal", "/dashboard"];
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
