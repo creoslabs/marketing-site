@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Asset, Criterion, StaticFinding } from "../../data";
 import { ReportSubHeader, CriteriaTable } from "./video-report";
+import { useCountUp, useRevealed } from "./score-reveal";
 
 const MARKER_STYLE: Record<StaticFinding["marker"], { bg: string; fg: string; label: string }> = {
   B: { bg: "var(--ws-warn)", fg: "var(--ws-warn-ink)", label: "B" },
@@ -28,6 +29,8 @@ export function StaticReport({
   assetUrl?: string | null;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const displayScore = useCountUp(asset.score);
+  const revealed = useRevealed();
   const tier1 = criteria.filter((c) => c.tier === 1);
   const tier2 = criteria.filter((c) => c.tier === 2);
   const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
@@ -87,9 +90,11 @@ export function StaticReport({
                         left: `${finding.region.left}%`,
                         width: `${finding.region.width}%`,
                         height: `${finding.region.height}%`,
-                        border: `1.5px solid ${style.bg}`,
+                        border: active ? `2.5px solid ${style.bg}` : `1.5px solid ${style.bg}`,
                         background: active ? "var(--ws-warn-tint)" : "transparent",
-                        transition: "background-color 0.15s ease",
+                        boxShadow: active ? "0 0 0 4px color-mix(in srgb, var(--ws-accent) 35%, transparent)" : "none",
+                        zIndex: active ? 3 : 2,
+                        transition: "background-color 0.15s ease, border-width 0.15s ease, box-shadow 0.15s ease",
                       }}
                     >
                       <span
@@ -116,8 +121,12 @@ export function StaticReport({
                       marginLeft: -13,
                       background: style.bg,
                       color: style.fg,
-                      boxShadow: active ? "0 0 0 3px var(--ws-accent-tint-border)" : "none",
-                      transition: "box-shadow 0.15s ease",
+                      boxShadow: active
+                        ? "0 0 0 3px var(--ws-accent), 0 0 0 8px color-mix(in srgb, var(--ws-accent) 35%, transparent)"
+                        : "none",
+                      transform: active ? "scale(1.25)" : "scale(1)",
+                      zIndex: active ? 3 : 2,
+                      transition: "box-shadow 0.15s ease, transform 0.15s ease",
                     }}
                   >
                     {style.label}
@@ -135,8 +144,8 @@ export function StaticReport({
           <div className="flex-1">
             <p className="ws-eyebrow">BEST PRACTICE SCORE (STATIC) — 7 CRITERIA</p>
             <div className="mt-[10px] flex items-end gap-[16px]">
-              <span className="font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
-                {asset.score}
+              <span className="ws-tabular font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
+                {displayScore}
               </span>
               <div className="pb-[6px]">
                 <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
@@ -152,7 +161,14 @@ export function StaticReport({
 
             <div className="mt-[14px]">
               <div className="relative h-[8px] overflow-hidden rounded-[4px]" style={{ background: "rgba(128,128,128,.14)" }}>
-                <div className="h-full rounded-[4px]" style={{ width: `${asset.score}%`, background: "var(--ws-accent)" }} />
+                <div
+                  className="h-full rounded-[4px]"
+                  style={{
+                    width: revealed ? `${asset.score}%` : "0%",
+                    background: "var(--ws-accent)",
+                    transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                />
                 <div className="absolute top-0 h-full" style={{ left: `${median}%`, width: 2, background: "var(--ws-ink)" }} />
               </div>
               <div className="mt-[6px] flex justify-between text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
@@ -230,14 +246,6 @@ export function StaticReport({
             <p className="mt-[6px] text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
               {topFix.body}
             </p>
-            <button
-              type="button"
-              onClick={() => alert("Preview isn't available yet.")}
-              className="ws-btn-primary mt-[12px] rounded-[7px] text-[12px] font-semibold"
-              style={{ padding: "8px 12px" }}
-            >
-              Preview the cut
-            </button>
           </div>
         </div>
       </div>

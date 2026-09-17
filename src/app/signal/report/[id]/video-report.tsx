@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Asset, Criterion, VideoFinding } from "../../data";
 import { VerdictLabel } from "../../components";
+import { useCountUp, useRevealed } from "./score-reveal";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -80,6 +81,8 @@ export function VideoReport({
   const inViolation = findings.some(
     (f) => f.failure && f.criterion.toLowerCase().includes("safe-zone") && Math.abs(f.t - t) <= 1
   );
+  const displayScore = useCountUp(asset.score);
+  const revealed = useRevealed();
   const tier1 = criteria.filter((c) => c.tier === 1);
   const tier2 = criteria.filter((c) => c.tier === 2);
   const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
@@ -205,8 +208,8 @@ export function VideoReport({
           <div className="flex-1">
             <p className="ws-eyebrow">BEST PRACTICE SCORE (VIDEO) — 16 CRITERIA</p>
             <div className="mt-[10px] flex items-end gap-[16px]">
-              <span className="font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
-                {asset.score}
+              <span className="ws-tabular font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
+                {displayScore}
               </span>
               <div className="pb-[6px]">
                 <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
@@ -222,7 +225,14 @@ export function VideoReport({
 
             <div className="mt-[14px]">
               <div className="relative h-[8px] overflow-hidden rounded-[4px]" style={{ background: "rgba(128,128,128,.14)" }}>
-                <div className="h-full rounded-[4px]" style={{ width: `${asset.score}%`, background: "var(--ws-ink)" }} />
+                <div
+                  className="h-full rounded-[4px]"
+                  style={{
+                    width: revealed ? `${asset.score}%` : "0%",
+                    background: "var(--ws-ink)",
+                    transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
+                />
                 <div className="absolute top-0 h-full" style={{ left: `${median}%`, width: 2, background: "var(--ws-ink)" }} />
               </div>
               <div className="mt-[6px] flex justify-between text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
@@ -359,14 +369,6 @@ export function VideoReport({
             <p className="mt-[6px] text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
               {topFix.body}
             </p>
-            <button
-              type="button"
-              onClick={() => alert("Preview isn't available yet.")}
-              className="ws-btn-primary mt-[12px] rounded-[7px] text-[12px] font-semibold"
-              style={{ padding: "8px 12px" }}
-            >
-              Preview the cut
-            </button>
           </div>
         </div>
       </div>
@@ -461,14 +463,6 @@ export function ReportSubHeader({ asset }: { asset: Asset }) {
       <div className="flex-1" />
       <button type="button" className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium" style={{ padding: "9px 12px" }}>
         Compare
-      </button>
-      <button
-        type="button"
-        onClick={() => alert("Apply fixes isn't available yet.")}
-        className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-        style={{ padding: "9px 12px" }}
-      >
-        Apply fixes →
       </button>
     </div>
   );
