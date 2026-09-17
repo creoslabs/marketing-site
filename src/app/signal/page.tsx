@@ -66,6 +66,23 @@ export default async function LibraryPage() {
             const card = (
               <>
                 <Thumb aspectRatio="auto" radius={10} style={{ height: 190 }}>
+                  {asset.assetUrl &&
+                    (asset.format === "video" ? (
+                      <video
+                        src={asset.assetUrl}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
+                      <img
+                        src={asset.assetUrl}
+                        alt={asset.filename}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ))}
                   <div className="absolute left-[10px] top-[10px]" style={{ zIndex: 2 }}>
                     <ScoreBadge score={asset.score} format={asset.format} />
                   </div>

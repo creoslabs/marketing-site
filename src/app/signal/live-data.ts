@@ -45,6 +45,7 @@ type LibraryRow = {
   duration_seconds: number | null;
   created_at: string;
   status: string;
+  storage_path: string;
 };
 
 // Signal reads from Supabase once it's configured and has at least one
@@ -56,25 +57,36 @@ export async function getLibrary(): Promise<{ assets: Asset[]; isLive: boolean }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("signal_assets")
-    .select("id, filename, format, platform, score, failed_checks, duration_seconds, created_at, status")
+    .select("id, filename, format, platform, score, failed_checks, duration_seconds, created_at, status, storage_path")
     .order("created_at", { ascending: false })
     .returns<LibraryRow[]>();
 
   if (error || !data) return { assets: [], isLive: false };
 
-  const assets: Asset[] = data
-    .filter((row) => row.status === "done")
-    .map((row) => ({
-      id: row.id,
-      filename: row.filename,
-      format: row.format,
-      platform: (row.platform as Asset["platform"]) ?? "Instagram",
-      score: row.score ?? 0,
-      failedChecks: row.failed_checks ?? 0,
-      postedAt: formatDate(row.created_at),
-      duration: row.duration_seconds ? formatDuration(row.duration_seconds) : undefined,
-      criteria: [],
-    }));
+  const doneRows = data.filter((row) => row.status === "done");
+
+  // One batched signed-URL request for every asset's preview, rather than
+  // one round-trip per card.
+  const { data: signedUrls } = await supabase.storage
+    .from("signal-assets")
+    .createSignedUrls(
+      doneRows.map((row) => row.storage_path),
+      60 * 60
+    );
+  const urlByPath = new Map((signedUrls ?? []).map((s) => [s.path, s.signedUrl]));
+
+  const assets: Asset[] = doneRows.map((row) => ({
+    id: row.id,
+    filename: row.filename,
+    format: row.format,
+    platform: (row.platform as Asset["platform"]) ?? "Instagram",
+    score: row.score ?? 0,
+    failedChecks: row.failed_checks ?? 0,
+    postedAt: formatDate(row.created_at),
+    duration: row.duration_seconds ? formatDuration(row.duration_seconds) : undefined,
+    criteria: [],
+    assetUrl: urlByPath.get(row.storage_path) ?? null,
+  }));
 
   return { assets, isLive: true };
 }

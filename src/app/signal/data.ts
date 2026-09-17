@@ -70,6 +70,7 @@ export type Asset = {
   duration?: string;
   issuePill?: string;
   criteria: Criterion[];
+  assetUrl?: string | null;
 };
 
 function countVerdicts(criteria: Criterion[]) {
