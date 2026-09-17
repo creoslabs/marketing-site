@@ -4,16 +4,18 @@ export function Thumb({
   aspectRatio,
   radius = 10,
   style,
+  className,
   children,
 }: {
   aspectRatio: string;
   radius?: number;
   style?: React.CSSProperties;
+  className?: string;
   children?: React.ReactNode;
 }) {
   return (
     <div
-      className="ws-placeholder relative shrink-0 overflow-hidden"
+      className={`ws-placeholder relative shrink-0 overflow-hidden${className ? ` ${className}` : ""}`}
       style={{ aspectRatio, borderRadius: radius, ...style }}
     >
       {children}

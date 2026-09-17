@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Asset } from "./data";
 import { ASSETS, MEDIAN_BY_FORMAT, getPercentile as getFixturePercentile, ACCOUNT_PATTERN } from "./data";
 import { getLibrary, medianOf, percentileWithin } from "./live-data";
 import { ScoreBadge, IssuePill, Thumb } from "./components";
@@ -10,7 +11,122 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const GRID_COUNT = 8;
+function ordinalSuffix(n: number) {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+
+function AssetCard({
+  asset,
+  hasReport,
+  percentile,
+}: {
+  asset: Asset;
+  hasReport: boolean;
+  percentile: number | null;
+}) {
+  const card = (
+    <>
+      <div className="group">
+        <Thumb
+          aspectRatio={asset.format === "video" ? "9/16" : "4/5"}
+          radius={10}
+          style={{ border: "1px solid var(--ws-hairline)", transition: "border-color 0.15s ease" }}
+          className="group-hover:[border-color:var(--ws-hairline-strong)]"
+        >
+          {asset.assetUrl &&
+            (asset.format === "video" ? (
+              <video
+                src={asset.assetUrl}
+                muted
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
+              <img
+                src={asset.assetUrl}
+                alt={asset.filename}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+              />
+            ))}
+          {asset.assetUrl && (
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-[64px]"
+              style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.45), transparent)" }}
+            />
+          )}
+          <div className="absolute left-[10px] top-[10px]" style={{ zIndex: 2 }}>
+            <ScoreBadge score={asset.score} format={asset.format} />
+          </div>
+          {asset.issuePill && (
+            <div className="absolute bottom-[10px] left-[10px]" style={{ zIndex: 2 }}>
+              <IssuePill>{asset.issuePill}</IssuePill>
+            </div>
+          )}
+        </Thumb>
+      </div>
+      <div className="mt-[10px]">
+        <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+          {asset.filename}
+        </p>
+        <p className="mt-[3px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+          {asset.postedAt} ·{" "}
+          {percentile === null ? `first ${asset.format}` : `${percentile}${ordinalSuffix(percentile)} of ${asset.format}s`}
+        </p>
+      </div>
+    </>
+  );
+
+  return hasReport ? (
+    <Link href={`/signal/report/${asset.id}`} className="block">
+      {card}
+    </Link>
+  ) : (
+    <div>{card}</div>
+  );
+}
+
+function AssetSection({
+  title,
+  assets,
+  median,
+  isLive,
+  getPercentile,
+}: {
+  title: string;
+  assets: Asset[];
+  median: number;
+  isLive: boolean;
+  getPercentile: (asset: Asset) => number | null;
+}) {
+  if (assets.length === 0) return null;
+  return (
+    <div className="mt-[24px] first:mt-[18px]">
+      <div className="flex items-baseline gap-[10px]">
+        <p className="ws-eyebrow">{title}</p>
+        <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+          {assets.length} · median {median}
+        </span>
+      </div>
+      <div className="mt-[12px] grid grid-cols-2 items-start gap-[16px] sm:grid-cols-4">
+        {assets.map((asset) => (
+          <AssetCard
+            key={asset.id}
+            asset={asset}
+            hasReport={isLive || asset.criteria.length > 0}
+            percentile={getPercentile(asset)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default async function LibraryPage() {
   const live = await getLibrary();
@@ -24,11 +140,11 @@ export default async function LibraryPage() {
       }
     : MEDIAN_BY_FORMAT;
 
-  const getPercentile = (asset: (typeof assets)[number]) =>
+  const getPercentile = (asset: Asset) =>
     isLive ? percentileWithin(asset.score, asset.format, assets) : getFixturePercentile(asset);
 
-  const gridAssets = assets.slice(0, GRID_COUNT);
-  const overflowAssets = assets.slice(GRID_COUNT);
+  const videoAssets = assets.filter((a) => a.format === "video");
+  const staticAssets = assets.filter((a) => a.format === "static");
 
   return (
     <div className="ws-page-in grid grid-cols-1 gap-[26px] lg:grid-cols-[1fr_340px]" style={{ padding: "26px 22px" }}>
@@ -60,122 +176,20 @@ export default async function LibraryPage() {
           </div>
         </div>
 
-        <div className="mt-[18px] grid grid-cols-2 gap-[16px] sm:grid-cols-4">
-          {gridAssets.map((asset) => {
-            const hasReport = isLive || asset.criteria.length > 0;
-            const card = (
-              <>
-                <Thumb aspectRatio="auto" radius={10} style={{ height: 190 }}>
-                  {asset.assetUrl &&
-                    (asset.format === "video" ? (
-                      <video
-                        src={asset.assetUrl}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
-                      <img
-                        src={asset.assetUrl}
-                        alt={asset.filename}
-                        className="absolute inset-0 h-full w-full object-cover"
-                      />
-                    ))}
-                  <div className="absolute left-[10px] top-[10px]" style={{ zIndex: 2 }}>
-                    <ScoreBadge score={asset.score} format={asset.format} />
-                  </div>
-                  {asset.issuePill && (
-                    <div className="absolute bottom-[10px] left-[10px]" style={{ zIndex: 2 }}>
-                      <IssuePill>{asset.issuePill}</IssuePill>
-                    </div>
-                  )}
-                </Thumb>
-                <div className="mt-[10px]">
-                  <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {asset.filename}
-                  </p>
-                  <p className="mt-[3px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-                    {asset.postedAt} ·{" "}
-                    {(() => {
-                      const pct = getPercentile(asset);
-                      return pct === null ? `first ${asset.format}` : `${pct}${ordinalSuffix(pct)} of ${asset.format}s`;
-                    })()}
-                  </p>
-                </div>
-              </>
-            );
-            return hasReport ? (
-              <Link key={asset.id} href={`/signal/report/${asset.id}`} className="block">
-                {card}
-              </Link>
-            ) : (
-              <div key={asset.id}>{card}</div>
-            );
-          })}
-        </div>
-
-        {overflowAssets.length > 0 && (
-          <div className="ws-stack mt-[18px]">
-            <div
-              className="grid items-center"
-              style={{
-                gridTemplateColumns: "1fr 140px 70px 90px 110px",
-                gap: 14,
-                padding: "11px 16px",
-                background: "var(--ws-surface-header)",
-              }}
-            >
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>ASSET</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>FORMAT</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>SCORE</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>PERCENTILE</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>FAILED CHECKS</span>
-            </div>
-            {overflowAssets.map((asset) => {
-              const hasReport = isLive || asset.criteria.length > 0;
-              const row = (
-                <div
-                  className="ws-row-hover grid items-center"
-                  style={{ gridTemplateColumns: "1fr 140px 70px 90px 110px", gap: 14, padding: "13px 16px" }}
-                >
-                  <span className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {asset.filename}
-                  </span>
-                  <span className="text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
-                    {asset.format === "static" ? "Static · 7 criteria" : "Video · 16 criteria"}
-                  </span>
-                  <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {asset.score} / {asset.format}
-                  </span>
-                  <span className="ws-tabular text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
-                    {(() => {
-                      const pct = getPercentile(asset);
-                      return pct === null ? "—" : `${pct}${ordinalSuffix(pct)}`;
-                    })()}
-                  </span>
-                  <span
-                    className="ws-tabular text-[12.5px]"
-                    style={{
-                      color: asset.failedChecks > 5 ? "var(--ws-warn-text)" : "var(--ws-ink-60)",
-                      fontWeight: asset.failedChecks > 5 ? 600 : 500,
-                    }}
-                  >
-                    {asset.failedChecks}
-                  </span>
-                </div>
-              );
-              return hasReport ? (
-                <Link key={asset.id} href={`/signal/report/${asset.id}`}>
-                  {row}
-                </Link>
-              ) : (
-                <div key={asset.id}>{row}</div>
-              );
-            })}
-          </div>
-        )}
+        <AssetSection
+          title="VIDEOS"
+          assets={videoAssets}
+          median={medians.video}
+          isLive={isLive}
+          getPercentile={getPercentile}
+        />
+        <AssetSection
+          title="STATICS"
+          assets={staticAssets}
+          median={medians.static}
+          isLive={isLive}
+          getPercentile={getPercentile}
+        />
       </div>
 
       {/* Right column */}
@@ -229,13 +243,4 @@ export default async function LibraryPage() {
       </div>
     </div>
   );
-}
-
-function ordinalSuffix(n: number) {
-  const j = n % 10;
-  const k = n % 100;
-  if (j === 1 && k !== 11) return "st";
-  if (j === 2 && k !== 12) return "nd";
-  if (j === 3 && k !== 13) return "rd";
-  return "th";
 }
