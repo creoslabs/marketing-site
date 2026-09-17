@@ -80,8 +80,11 @@ export default async function LibraryPage() {
                     {asset.filename}
                   </p>
                   <p className="mt-[3px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-                    {asset.postedAt} · {getPercentile(asset)}
-                    {ordinalSuffix(getPercentile(asset))} of {asset.format}s
+                    {asset.postedAt} ·{" "}
+                    {(() => {
+                      const pct = getPercentile(asset);
+                      return pct === null ? `first ${asset.format}` : `${pct}${ordinalSuffix(pct)} of ${asset.format}s`;
+                    })()}
                   </p>
                 </div>
               </>
@@ -130,8 +133,10 @@ export default async function LibraryPage() {
                     {asset.score} / {asset.format}
                   </span>
                   <span className="ws-tabular text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
-                    {getPercentile(asset)}
-                    {ordinalSuffix(getPercentile(asset))}
+                    {(() => {
+                      const pct = getPercentile(asset);
+                      return pct === null ? "—" : `${pct}${ordinalSuffix(pct)}`;
+                    })()}
                   </span>
                   <span
                     className="ws-tabular text-[12.5px]"

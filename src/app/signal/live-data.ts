@@ -21,9 +21,16 @@ export function medianOf(nums: number[]) {
   return sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2) : sorted[mid];
 }
 
-export function percentileWithin(score: number, format: Format, assets: { score: number; format: Format }[]) {
+// Returns null when there's no real peer set to compare against yet (this
+// is the only asset of its format) — showing "0th percentile" in that case
+// would misleadingly read as the worst possible score rather than "no data".
+export function percentileWithin(
+  score: number,
+  format: Format,
+  assets: { score: number; format: Format }[]
+): number | null {
   const scores = assets.filter((a) => a.format === format).map((a) => a.score);
-  if (scores.length === 0) return 0;
+  if (scores.length <= 1) return null;
   const below = scores.filter((s) => s < score).length;
   return Math.round((below / scores.length) * 100);
 }
@@ -77,6 +84,8 @@ type AssetDetail = {
   criteria: Criterion[];
   findings: VideoFinding[] | StaticFinding[];
   topFix: { title: string; clears: number; body: string };
+  assetUrl: string | null;
+  durationSeconds: number | undefined;
 };
 
 export async function getAssetDetail(id: string): Promise<AssetDetail | null> {
@@ -142,5 +151,19 @@ export async function getAssetDetail(id: string): Promise<AssetDetail | null> {
           region: { top: r.region_top, left: r.region_left, width: r.region_width, height: r.region_height },
         })) as StaticFinding[]);
 
-  return { asset, criteria, findings, topFix };
+  // Signed, since the bucket is private — the RLS storage policy already
+  // lets this user read their own object, this just gets a browser-usable
+  // URL out of it. An hour is plenty for one report view.
+  const { data: signedUrlData } = await supabase.storage
+    .from("signal-assets")
+    .createSignedUrl(assetRow.storage_path, 60 * 60);
+
+  return {
+    asset,
+    criteria,
+    findings,
+    topFix,
+    assetUrl: signedUrlData?.signedUrl ?? null,
+    durationSeconds: assetRow.duration_seconds ?? undefined,
+  };
 }

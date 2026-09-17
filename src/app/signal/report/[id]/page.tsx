@@ -42,6 +42,8 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
           topFix={live.topFix}
           median={median}
           percentile={percentile}
+          assetUrl={live.assetUrl}
+          durationSeconds={live.durationSeconds}
         />
       );
     }
@@ -53,6 +55,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
         topFix={live.topFix}
         median={median}
         percentile={percentile}
+        assetUrl={live.assetUrl}
       />
     );
   }
@@ -77,6 +80,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
         topFix={VIDEO_TOP_FIX}
         median={MEDIAN_BY_FORMAT.video}
         percentile={percentile}
+        assetUrl={null}
       />
     );
   }
@@ -89,6 +93,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
       topFix={STATIC_TOP_FIX}
       median={MEDIAN_BY_FORMAT.static}
       percentile={percentile}
+      assetUrl={null}
     />
   );
 }

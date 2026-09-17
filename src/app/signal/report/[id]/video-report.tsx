@@ -1,27 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Asset, Criterion, VideoFinding } from "../../data";
 import { VerdictLabel } from "../../components";
 
-function formatTime(t: number) {
-  return `0:${String(t).padStart(2, "0")}`;
+function formatTime(totalSeconds: number) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = Math.floor(totalSeconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function tickState(t: number): "good" | "weak" | "warn" {
-  const inSafeZoneViolation = (t >= 4 && t <= 7) || (t >= 17 && t <= 18);
-  if (inSafeZoneViolation) return "warn";
-  if (t <= 3) return "good";
+// Derived from this asset's real findings rather than hardcoded timing, so
+// it's correct for any uploaded video, not just the one fixture example.
+function tickState(second: number, findings: VideoFinding[]): "good" | "weak" | "warn" {
+  const nearby = findings.filter((f) => Math.abs(f.t - second) <= 1);
+  if (nearby.some((f) => f.failure)) return "warn";
+  if (nearby.length > 0) return "good";
   return "weak";
 }
 
 function describeFrame(t: number, findings: VideoFinding[]) {
   const nearby = findings.find((f) => Math.abs(f.t - t) <= 1);
-  if (nearby) return nearby.body;
-  if (t >= 4 && t <= 7) return "Caption outside safe zone.";
-  if (t >= 17) return "Caption re-enters the safe zone.";
-  return "Nothing flagged at this frame.";
+  return nearby ? nearby.body : "Nothing flagged at this frame.";
 }
 
 export function VideoReport({
@@ -31,27 +32,54 @@ export function VideoReport({
   topFix,
   median,
   percentile,
+  assetUrl,
+  durationSeconds,
 }: {
   asset: Asset;
   criteria: Criterion[];
   findings: VideoFinding[];
   topFix: { title: string; clears: number; body: string };
   median: number;
-  percentile: number;
+  percentile: number | null;
+  assetUrl?: string | null;
+  durationSeconds?: number;
 }) {
-  const duration = 18;
-  const [t, setT] = useState(4);
+  const duration = Math.max(1, Math.round(durationSeconds ?? 18));
+  const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Without a real asset (the fixture demo), fake the clock instead —
+  // this is exactly the ±1s-step interval the design spec describes as a
+  // stand-in for real playback.
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || assetUrl) return;
     const interval = setInterval(() => {
       setT((prev) => (prev >= duration ? 0 : prev + 1));
     }, 650);
     return () => clearInterval(interval);
-  }, [playing]);
+  }, [playing, assetUrl, duration]);
 
-  const inViolation = (t >= 4 && t <= 7) || (t >= 17 && t <= 18);
+  function seekTo(next: number) {
+    const clamped = Math.max(0, Math.min(duration, next));
+    setT(clamped);
+    if (videoRef.current) {
+      videoRef.current.currentTime = clamped;
+    }
+  }
+
+  function togglePlay() {
+    if (videoRef.current) {
+      if (playing) videoRef.current.pause();
+      else videoRef.current.play();
+      return;
+    }
+    setPlaying((p) => !p);
+  }
+
+  const inViolation = findings.some(
+    (f) => f.failure && f.criterion.toLowerCase().includes("safe-zone") && Math.abs(f.t - t) <= 1
+  );
   const tier1 = criteria.filter((c) => c.tier === 1);
   const tier2 = criteria.filter((c) => c.tier === 2);
   const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
@@ -72,9 +100,22 @@ export function VideoReport({
           {/* Player column */}
           <div style={{ width: 250, flexShrink: 0 }}>
             <div
-              className="ws-placeholder relative overflow-hidden rounded-[10px]"
+              className={assetUrl ? "relative overflow-hidden rounded-[10px]" : "ws-placeholder relative overflow-hidden rounded-[10px]"}
               style={{ width: 250, height: 444 }}
             >
+              {assetUrl && (
+                <video
+                  ref={videoRef}
+                  src={assetUrl}
+                  muted
+                  playsInline
+                  className="absolute inset-0 h-full w-full object-cover"
+                  onTimeUpdate={(e) => setT(Math.round(e.currentTarget.currentTime))}
+                  onPlay={() => setPlaying(true)}
+                  onPause={() => setPlaying(false)}
+                  onEnded={() => setPlaying(false)}
+                />
+              )}
               {/* Safe-zone bands */}
               <div
                 className="absolute inset-x-0 top-0"
@@ -121,14 +162,14 @@ export function VideoReport({
                 className="absolute left-[10px] top-[10px] rounded-[4px] text-[10px] font-semibold"
                 style={{ padding: "4px 7px", background: "var(--ws-ink)", color: "var(--ws-ground)" }}
               >
-                {formatTime(t)} / 0:{duration}
+                {formatTime(t)} / {formatTime(duration)}
               </span>
             </div>
 
             <div className="mt-[10px] flex items-center gap-[6px]">
               <button
                 type="button"
-                onClick={() => setT((prev) => Math.max(0, prev - 1))}
+                onClick={() => seekTo(t - 1)}
                 className="ws-btn-ghost rounded-[7px] text-[13px]"
                 style={{ padding: "9px 12px" }}
               >
@@ -136,7 +177,7 @@ export function VideoReport({
               </button>
               <button
                 type="button"
-                onClick={() => setPlaying((p) => !p)}
+                onClick={togglePlay}
                 className="ws-btn-primary flex-1 rounded-[7px] text-[12.5px] font-semibold"
                 style={{ padding: "9px 12px" }}
               >
@@ -144,7 +185,7 @@ export function VideoReport({
               </button>
               <button
                 type="button"
-                onClick={() => setT((prev) => Math.min(duration, prev + 1))}
+                onClick={() => seekTo(t + 1)}
                 className="ws-btn-ghost rounded-[7px] text-[13px]"
                 style={{ padding: "9px 12px" }}
               >
@@ -172,7 +213,9 @@ export function VideoReport({
                   {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
                 </p>
                 <p className="mt-[2px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                  {percentile}th percentile among video ads in this set — not comparable to static scores.
+                  {percentile === null
+                    ? "First video analyzed in this set — not comparable to static scores."
+                    : `${percentile}th percentile among video ads in this set — not comparable to static scores.`}
                 </p>
               </div>
             </div>
@@ -193,13 +236,13 @@ export function VideoReport({
             <div className="relative mt-[10px]">
               <div className="flex" style={{ gap: 2 }}>
                 {Array.from({ length: duration + 1 }, (_, i) => i).map((second) => {
-                  const state = tickState(second);
+                  const state = tickState(second, findings);
                   const isCurrent = second === t;
                   return (
                     <button
                       key={second}
                       type="button"
-                      onClick={() => setT(second)}
+                      onClick={() => seekTo(second)}
                       className="flex-1 rounded-[3px]"
                       style={{
                         height: 52,
@@ -261,7 +304,7 @@ export function VideoReport({
                 <button
                   key={finding.id}
                   type="button"
-                  onClick={() => setT(finding.t)}
+                  onClick={() => seekTo(finding.t)}
                   className="rounded-[8px] text-left"
                   style={{
                     padding: "12px 14px",
@@ -308,7 +351,7 @@ export function VideoReport({
             style={{ padding: "16px 18px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
           >
             <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
-              TOP FIX · CLEARS {topFix.clears} CHECKS
+              TOP FIX · CLEARS {topFix.clears} CHECK{topFix.clears === 1 ? "" : "S"}
             </p>
             <p className="mt-[8px] text-[12.5px] font-semibold" style={{ color: "var(--ws-accent-tint-ink)" }}>
               {topFix.title}
@@ -351,27 +394,46 @@ export function CriteriaTable({
   total: number;
   criteria: Criterion[];
 }) {
+  const [open, setOpen] = useState(true);
+
   return (
     <div className="ws-stack mt-[16px]">
-      <div
-        className="flex items-center"
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-[8px] text-left"
         style={{ padding: "10px 14px", background: "var(--ws-surface-header)" }}
       >
+        <span
+          className="inline-block text-[9px]"
+          style={{
+            color: "var(--ws-ink-45)",
+            transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: "transform 0.15s ease",
+          }}
+        >
+          ▾
+        </span>
         <span className="ws-eyebrow">{title}</span>
         <div className="flex-1" />
         <span className="ws-tabular text-[12px] font-semibold" style={{ color: "var(--ws-ink-60)" }}>
           {issues} / {total}
         </span>
-      </div>
-      {criteria.map((c) => (
-        <div key={c.name} className="flex items-center gap-[10px]" style={{ padding: "10px 14px" }}>
-          <span className="flex-1 text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>{c.name}</span>
-          <span className="w-[120px] shrink-0 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>{c.evidence}</span>
-          <span className="w-[52px] shrink-0 text-right">
-            <VerdictLabel verdict={c.verdict} />
-          </span>
-        </div>
-      ))}
+      </button>
+      {open &&
+        criteria.map((c) => (
+          <div key={c.name} style={{ padding: "10px 14px" }}>
+            <div className="flex items-center gap-[10px]">
+              <span className="flex-1 text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                {c.name}
+              </span>
+              <VerdictLabel verdict={c.verdict} />
+            </div>
+            <p className="mt-[4px] text-[11.5px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
+              {c.evidence}
+            </p>
+          </div>
+        ))}
     </div>
   );
 }

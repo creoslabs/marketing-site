@@ -17,13 +17,15 @@ export function StaticReport({
   topFix,
   median,
   percentile,
+  assetUrl,
 }: {
   asset: Asset;
   criteria: Criterion[];
   findings: StaticFinding[];
   topFix: { title: string; clears: number; body: string };
   median: number;
-  percentile: number;
+  percentile: number | null;
+  assetUrl?: string | null;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const tier1 = criteria.filter((c) => c.tier === 1);
@@ -48,9 +50,17 @@ export function StaticReport({
           {/* Frame column */}
           <div style={{ width: FRAME_W, flexShrink: 0 }}>
             <div
-              className="ws-placeholder relative overflow-hidden rounded-[10px]"
+              className={assetUrl ? "relative overflow-hidden rounded-[10px]" : "ws-placeholder relative overflow-hidden rounded-[10px]"}
               style={{ width: FRAME_W, height: FRAME_H }}
             >
+              {assetUrl && (
+                // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
+                <img
+                  src={assetUrl}
+                  alt={asset.filename}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
               <div
                 className="absolute inset-x-0 top-0"
                 style={{ height: 52, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
@@ -133,7 +143,9 @@ export function StaticReport({
                   {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
                 </p>
                 <p className="mt-[2px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                  {percentile}th percentile among statics in this set — not comparable to video scores.
+                  {percentile === null
+                    ? "First static analyzed in this set — not comparable to video scores."
+                    : `${percentile}th percentile among statics in this set — not comparable to video scores.`}
                 </p>
               </div>
             </div>
@@ -210,7 +222,7 @@ export function StaticReport({
             style={{ padding: "16px 18px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
           >
             <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
-              TOP FIX · CLEARS {topFix.clears} CHECKS
+              TOP FIX · CLEARS {topFix.clears} CHECK{topFix.clears === 1 ? "" : "S"}
             </p>
             <p className="mt-[8px] text-[12.5px] font-semibold" style={{ color: "var(--ws-accent-tint-ink)" }}>
               {topFix.title}
