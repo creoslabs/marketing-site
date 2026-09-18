@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { Platform } from "../data";
 
-const SORT_OPTIONS = [
+export type SortValue = "score" | "views" | "recent";
+
+const SORT_OPTIONS: { value: SortValue; label: string }[] = [
   { value: "score", label: "Score" },
   { value: "views", label: "Views" },
   { value: "recent", label: "Most recent" },
-] as const;
+];
 
 const PLATFORM_OPTIONS: { value: Platform; label: string }[] = [
   { value: "TT", label: "TikTok" },
@@ -28,21 +29,15 @@ function useOutsideClose(onClose: () => void) {
   return ref;
 }
 
-export function SortDropdown({ current }: { current: string }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+// Sort/filter are applied to data already loaded client-side (no server
+// round trip), so these just update local state directly instead of
+// pushing a new URL — that used to re-run the whole page's Supabase
+// queries on every single checkbox click.
+export function SortDropdown({ current, onChange }: { current: SortValue; onChange: (value: SortValue) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(() => setOpen(false));
 
   const label = SORT_OPTIONS.find((o) => o.value === current)?.label ?? "Score";
-
-  function select(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("sort", value);
-    router.push(`${pathname}?${params.toString()}`);
-    setOpen(false);
-  }
 
   return (
     <div ref={ref} className="relative">
@@ -60,7 +55,10 @@ export function SortDropdown({ current }: { current: string }) {
             <button
               key={o.value}
               type="button"
-              onClick={() => select(o.value)}
+              onClick={() => {
+                onChange(o.value);
+                setOpen(false);
+              }}
               className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
               style={{ color: o.value === current ? "var(--ws-accent-text)" : "var(--ws-ink)" }}
             >
@@ -73,10 +71,7 @@ export function SortDropdown({ current }: { current: string }) {
   );
 }
 
-export function PlatformFilter({ selected }: { selected: Platform[] }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+export function PlatformFilter({ selected, onChange }: { selected: Platform[]; onChange: (platforms: Platform[]) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useOutsideClose(() => setOpen(false));
 
@@ -84,13 +79,7 @@ export function PlatformFilter({ selected }: { selected: Platform[] }) {
 
   function toggle(platform: Platform) {
     const next = selected.includes(platform) ? selected.filter((p) => p !== platform) : [...selected, platform];
-    const params = new URLSearchParams(searchParams.toString());
-    if (next.length === PLATFORM_OPTIONS.length || next.length === 0) {
-      params.delete("platforms");
-    } else {
-      params.set("platforms", next.join(","));
-    }
-    router.push(`${pathname}?${params.toString()}`);
+    onChange(next);
   }
 
   return (

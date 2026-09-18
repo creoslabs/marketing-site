@@ -42,11 +42,11 @@ export default function Waitlist() {
     <section id="waitlist" className="relative border-t border-white/10 py-28">
       <Reveal className="mx-auto max-w-xl px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Be first to get access.
+          Get in while it&apos;s early.
         </h2>
         <p className="mt-4 text-muted">
-          Outlier and Signal haven&apos;t launched yet. Join the waitlist
-          and we&apos;ll let you know the moment they&apos;re ready.
+          Outlier and Signal are live and already scoring real content for
+          early users. Join the waitlist and we&apos;ll get you set up.
         </p>
 
         {status === "success" ? (

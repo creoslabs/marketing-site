@@ -6,6 +6,7 @@ import type { Asset, Criterion, VideoFinding } from "../../data";
 import { VerdictLabel } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import { CompareButton } from "./compare-button";
+import { ExportPdfButton, type PdfReportData } from "./report-pdf";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -89,9 +90,11 @@ export function VideoReport({
     fail: criteria.filter((c) => c.verdict === "fail").length,
   };
 
+  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile };
+
   return (
     <div className="ws-page-in">
-      <ReportSubHeader asset={asset} />
+      <ReportSubHeader asset={asset} pdfData={pdfData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]" style={{ minHeight: 0 }}>
         {/* Left: player + score */}
@@ -431,7 +434,7 @@ export function CriteriaTable({
   );
 }
 
-export function ReportSubHeader({ asset }: { asset: Asset }) {
+export function ReportSubHeader({ asset, pdfData }: { asset: Asset; pdfData: PdfReportData }) {
   return (
     <div
       className="flex flex-wrap items-center gap-[14px] px-6"
@@ -452,6 +455,7 @@ export function ReportSubHeader({ asset }: { asset: Asset }) {
         {asset.platform} · {asset.postedAt}
       </span>
       <div className="flex-1" />
+      <ExportPdfButton data={pdfData} />
       <CompareButton assetId={asset.id} format={asset.format} />
     </div>
   );

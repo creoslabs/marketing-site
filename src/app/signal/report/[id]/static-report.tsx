@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Asset, Criterion, StaticFinding } from "../../data";
 import { ReportSubHeader, CriteriaTable } from "./video-report";
 import { useCountUp, useRevealed } from "./score-reveal";
+import type { PdfReportData } from "./report-pdf";
 
 const MARKER_STYLE: Record<StaticFinding["marker"], { bg: string; fg: string; label: string }> = {
   B: { bg: "var(--ws-warn)", fg: "var(--ws-warn-ink)", label: "B" },
@@ -44,9 +45,11 @@ export function StaticReport({
   const FRAME_W = 300;
   const FRAME_H = 375;
 
+  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile };
+
   return (
     <div className="ws-page-in">
-      <ReportSubHeader asset={asset} />
+      <ReportSubHeader asset={asset} pdfData={pdfData} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]">
         <div className="flex flex-col gap-[22px] lg:flex-row" style={{ padding: "22px", borderRight: "1px solid var(--ws-hairline)" }}>

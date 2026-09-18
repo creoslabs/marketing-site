@@ -112,25 +112,57 @@ export function ScoreChip({ score, size = "sm" }: { score: number; size?: "sm" |
   );
 }
 
-// Views and engagement rate are the two numbers that actually explain why a
-// post is or isn't an outlier — shown together, bolder than surrounding
-// metadata, so they read at a glance instead of blending into gray captions.
-export function StatRow({ views, engagement, size = "md" }: { views: number; engagement: number; size?: "md" | "sm" }) {
-  const valueSize = size === "md" ? 13 : 11;
-  const labelSize = size === "md" ? 10.5 : 9.5;
+function EyeIcon({ size }: { size: number }) {
   return (
-    <div className="flex items-center" style={{ gap: size === "md" ? 10 : 7 }}>
-      <span className="ws-tabular font-semibold" style={{ fontSize: valueSize, color: "var(--ws-ink)" }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M2 12c1.9-4.2 5.6-7 10-7s8.1 2.8 10 7c-1.9 4.2-5.6 7-10 7s-8.1-2.8-10-7Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function BoltIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.5 2.5 4 14h6l-1 7.5L20 10h-6l-1.5-7.5Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+// Views and engagement rate are the two numbers that actually explain why a
+// post is or isn't an outlier — shown as small labeled chips (icon + value)
+// so they read at a glance instead of blending into gray metadata text.
+export function StatRow({ views, engagement, size = "md" }: { views: number; engagement: number; size?: "md" | "sm" }) {
+  const valueSize = size === "md" ? 12.5 : 11;
+  const iconSize = size === "md" ? 11 : 10;
+  const padding = size === "md" ? "4px 8px 5px" : "3px 6px 4px";
+  const gap = size === "md" ? 6 : 5;
+  return (
+    <div className="flex items-center" style={{ gap }}>
+      <span
+        className="ws-tabular inline-flex items-center rounded-[6px] font-semibold"
+        style={{ gap: 4, padding, background: "var(--ws-surface-header)", color: "var(--ws-ink)", fontSize: valueSize }}
+      >
+        <EyeIcon size={iconSize} />
         {formatCompact(views)}
-        <span className="ml-[3px] font-medium" style={{ fontSize: labelSize, color: "var(--ws-ink-45)" }}>
-          views
-        </span>
       </span>
-      <span className="ws-tabular font-semibold" style={{ fontSize: valueSize, color: "var(--ws-accent-text)" }}>
+      <span
+        className="ws-tabular inline-flex items-center rounded-[6px] font-semibold"
+        style={{
+          gap: 4,
+          padding,
+          background: "var(--ws-accent-tint)",
+          color: "var(--ws-accent-tint-ink)",
+          fontSize: valueSize,
+        }}
+      >
+        <BoltIcon size={iconSize} />
         {engagement.toFixed(1)}%
-        <span className="ml-[3px] font-medium" style={{ fontSize: labelSize, color: "var(--ws-ink-45)" }}>
-          eng
-        </span>
       </span>
     </div>
   );

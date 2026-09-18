@@ -25,10 +25,16 @@ export function FavouriteButton({ postId, initialFavourited }: { postId: string;
       toast("Couldn't update favourite.", "error");
       return;
     }
-    router.refresh();
     if (next) {
       toast("Added to Favourites.", "success");
-      router.push("/outlier/favourites");
+      // A plain router.push() can serve a stale, previously-cached render of
+      // /outlier/favourites (no router.refresh() targets a route you're
+      // navigating *to*) — a full navigation guarantees the freshly
+      // favourited post is actually there when the page loads.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional hard navigation to bypass a stale client router cache
+      window.location.href = "/outlier/favourites";
+    } else {
+      router.refresh();
     }
   }
 

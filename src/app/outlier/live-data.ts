@@ -148,7 +148,10 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
 
 // Fetches every creator this user tracks, each with all of its handles'
 // posts combined (a person tracked on two platforms is one Creator card).
-async function loadAll() {
+// cache()-wrapped because getCreators/getPosts/getCreatorDetail all call
+// this — without dedup, a page needing both (e.g. Feed calling
+// getCreators() and getPosts() together) ran all three queries twice.
+const loadAll = cache(async () => {
   const supabase = await createClient();
 
   const { data: creatorRows } = await supabase
@@ -196,7 +199,7 @@ async function loadAll() {
     .filter((c) => c.handles.length > 0); // a creator that just lost its last handle shouldn't linger
 
   return { supabase, creators, handlesByCreator, postsByHandle };
-}
+});
 
 export const getCreators = cache(async (): Promise<Creator[]> => {
   if (!isSupabaseConfigured()) return [];
