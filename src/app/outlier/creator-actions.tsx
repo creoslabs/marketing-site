@@ -233,6 +233,7 @@ export function PullHandlesButton({
     setPulling(true);
     let totalNew = 0;
     let failures = 0;
+    let autoAnalyzedCount = 0;
     for (const h of handles) {
       const res = await fetch("/api/outlier/pull", {
         method: "POST",
@@ -240,15 +241,20 @@ export function PullHandlesButton({
         body: JSON.stringify({ handleId: h.id, postLimit }),
       });
       const data = await res.json().catch(() => null);
-      if (res.ok) totalNew += data.newCount ?? 0;
-      else failures += 1;
+      if (res.ok) {
+        totalNew += data.newCount ?? 0;
+        if (data.autoAnalyzed) autoAnalyzedCount += 1;
+      } else {
+        failures += 1;
+      }
     }
     setPulling(false);
+    const analyzedSuffix = autoAnalyzedCount > 0 ? ` · top outlier${autoAnalyzedCount === 1 ? "" : "s"} analyzed automatically` : "";
     if (handles.length === 1) {
-      if (failures === 0) toast(`Pulled @${handles[0].handle} — ${totalNew} new post${totalNew === 1 ? "" : "s"}.`, "success");
+      if (failures === 0) toast(`Pulled @${handles[0].handle} — ${totalNew} new post${totalNew === 1 ? "" : "s"}${analyzedSuffix}.`, "success");
       else toast(`Couldn't pull @${handles[0].handle}.`, "error");
     } else if (failures === 0) {
-      toast(`Pulled ${handles.length} handle${handles.length === 1 ? "" : "s"} — ${totalNew} new posts.`, "success");
+      toast(`Pulled ${handles.length} handle${handles.length === 1 ? "" : "s"} — ${totalNew} new posts${analyzedSuffix}.`, "success");
     } else {
       toast(`Pulled with ${failures} failure${failures === 1 ? "" : "s"} — ${totalNew} new posts.`, "error");
     }

@@ -72,14 +72,12 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
 
   // Statics keep their original file as the preview. Videos no longer have
   // one (the source is deleted after analysis) — one of the persisted
-  // keyframes stands in as the thumbnail instead.
-  const [{ data: signedStaticUrls }, { data: frameRows }] = await Promise.all([
-    staticRows.length > 0
-      ? supabase.storage.from("signal-assets").createSignedUrls(
-          staticRows.map((row) => row.storage_path),
-          60 * 60
-        )
-      : Promise.resolve({ data: [] as { path: string; signedUrl: string }[] }),
+  // keyframes stands in as the thumbnail instead. Signed one at a time
+  // (Promise.all) rather than via the batched createSignedUrls — its
+  // returned path strings aren't guaranteed to match the input strings
+  // byte-for-byte, which silently broke path-based matching.
+  const [signedStaticUrls, { data: frameRows }] = await Promise.all([
+    Promise.all(staticRows.map((row) => supabase.storage.from("signal-assets").createSignedUrl(row.storage_path, 60 * 60))),
     videoRows.length > 0
       ? supabase
           .from("signal_frames")
@@ -92,7 +90,9 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
       : Promise.resolve({ data: [] as { asset_id: string; t: number; storage_path: string }[] }),
   ]);
 
-  const urlByStaticPath = new Map((signedStaticUrls ?? []).map((s) => [s.path, s.signedUrl]));
+  const urlByStaticPath = new Map(
+    staticRows.map((row, i) => [row.storage_path, signedStaticUrls[i]?.data?.signedUrl ?? null])
+  );
 
   // Pick the middle sampled frame per video as its representative thumbnail.
   const framesByAsset = new Map<string, { t: number; storage_path: string }[]>();
@@ -103,18 +103,17 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
     assetId,
     path: frames[Math.floor(frames.length / 2)].storage_path,
   }));
-  const { data: signedFrameUrls } =
-    previewFrames.length > 0
-      ? await supabase.storage.from("signal-assets").createSignedUrls(
-          previewFrames.map((p) => p.path),
-          60 * 60
-        )
-      : { data: [] as { path: string; signedUrl: string }[] };
-  // Matched by path, not array position — createSignedUrls' result order
-  // isn't a documented guarantee, and matching by index silently attached
-  // the wrong (or no) frame to an asset whenever it didn't hold.
-  const urlByFramePath = new Map((signedFrameUrls ?? []).map((s) => [s.path, s.signedUrl]));
-  const previewUrlByAssetId = new Map(previewFrames.map((p) => [p.assetId, urlByFramePath.get(p.path) ?? null]));
+  // One createSignedUrl call per frame rather than a single batched
+  // createSignedUrls — the batched endpoint's returned path strings aren't
+  // guaranteed to match the input strings byte-for-byte, which silently
+  // broke path-based matching. Promise.all's result order is a language
+  // guarantee, so pairing by array index here is actually safe.
+  const signedPreviewUrls = await Promise.all(
+    previewFrames.map((p) => supabase.storage.from("signal-assets").createSignedUrl(p.path, 60 * 60))
+  );
+  const previewUrlByAssetId = new Map(
+    previewFrames.map((p, i) => [p.assetId, signedPreviewUrls[i]?.data?.signedUrl ?? null])
+  );
 
   const assets: Asset[] = doneRows.map((row) => ({
     id: row.id,
@@ -214,13 +213,15 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
 
   let frames: { t: number; url: string }[] | undefined;
   if (isVideo && frameRows && frameRows.length > 0) {
-    const { data: signedFrameUrls } = await supabase.storage.from("signal-assets").createSignedUrls(
-      frameRows.map((f) => f.storage_path),
-      60 * 60
+    // One createSignedUrl call per frame, not the batched createSignedUrls —
+    // see getLibrary() above for why the batched endpoint's path-matching
+    // can't be trusted.
+    const signedFrameUrls = await Promise.all(
+      frameRows.map((f) => supabase.storage.from("signal-assets").createSignedUrl(f.storage_path, 60 * 60))
     );
-    // Matched by path, not array position — see getLibrary() above for why.
-    const urlByPath = new Map((signedFrameUrls ?? []).map((s) => [s.path, s.signedUrl]));
-    frames = frameRows.map((f) => ({ t: f.t, url: urlByPath.get(f.storage_path) ?? "" })).filter((f) => f.url);
+    frames = frameRows
+      .map((f, i) => ({ t: f.t, url: signedFrameUrls[i]?.data?.signedUrl ?? "" }))
+      .filter((f) => f.url);
   }
 
   const asset: Asset = {

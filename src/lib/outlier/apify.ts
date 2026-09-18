@@ -188,5 +188,12 @@ export async function fetchTikTokVideoUrl(postUrl: string, token: string): Promi
   );
   const item = items.find((i) => i && !i.error);
   const mediaUrl = item?.mediaUrls?.[0];
-  return typeof mediaUrl === "string" ? mediaUrl : null;
+  if (typeof mediaUrl !== "string") return null;
+
+  // mediaUrls points at a record in the run's own key-value store, which
+  // isn't public by default — same token-as-query-param auth every other
+  // Apify API call here already uses, without it the download 403s.
+  const url = new URL(mediaUrl);
+  url.searchParams.set("token", token);
+  return url.toString();
 }

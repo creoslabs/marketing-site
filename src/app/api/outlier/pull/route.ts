@@ -2,11 +2,20 @@ import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getApifyToken, pullTikTok, pullInstagram, pullYouTube } from "@/lib/outlier/apify";
+import { analyzeOutlierPost } from "@/lib/outlier/analyze-post";
 
-// A metadata-only Apify scrape of ~30 posts should finish well within this,
-// but actor run times vary — matches the ceiling used for Signal's pipeline.
+function medianOf(nums: number[]) {
+  if (nums.length === 0) return 0;
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2) : sorted[mid];
+}
+
+// A metadata-only pull is fast, but the best new outlier now also gets
+// auto-analyzed (download + transcribe + Claude) in the same request —
+// that's the slow part, same ceiling as Signal's video pipeline.
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   const user = await getUser();
@@ -103,14 +112,43 @@ export async function POST(request: Request) {
         .eq("id", jobId);
     }
 
+    // Auto-analyze the single best new outlier — analyzing every pulled
+    // post (or even every new one) would multiply download+transcribe+
+    // Claude cost across a whole pull for posts nobody will ever look at,
+    // and could easily blow well past this request's time budget. The rest
+    // stay one click away via the manual "Transcribe & analyze" button.
+    let autoAnalyzed: string | null = null;
+    const { data: allPostRows } = await admin
+      .from("outlier_posts")
+      .select("id, external_id, caption, url, video_url, duration_seconds, views")
+      .eq("handle_id", handleId);
+    const median = medianOf((allPostRows ?? []).map((r) => r.views));
+    const bestNew = (allPostRows ?? [])
+      .filter((r) => !existingIds.has(r.external_id) && handle.platform !== "YT" && median > 0 && r.views / median >= 2)
+      .sort((a, b) => b.views - a.views)[0];
+
+    if (bestNew) {
+      const result = await analyzeOutlierPost({
+        admin,
+        post: { ...bestNew, platform: handle.platform },
+        userApifyKey,
+        userGroqKey: typeof user.user_metadata?.outlier_groq_api_key === "string" ? user.user_metadata.outlier_groq_api_key : null,
+        userAnthropicKey:
+          typeof user.user_metadata?.signal_anthropic_api_key === "string" ? user.user_metadata.signal_anthropic_api_key : null,
+      });
+      if (result.ok) autoAnalyzed = bestNew.id;
+    }
+
     await admin.from("notifications").insert({
       user_id: user.id,
       title: `Pulled @${handle.handle}`,
-      body: `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total this pull.`,
-      href: "/outlier/feed",
+      body: autoAnalyzed
+        ? `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total · top outlier analyzed automatically.`
+        : `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total this pull.`,
+      href: autoAnalyzed ? `/outlier/video/${autoAnalyzed}` : "/outlier/feed",
     });
 
-    return NextResponse.json({ newCount, totalPulled: rawPosts.length });
+    return NextResponse.json({ newCount, totalPulled: rawPosts.length, autoAnalyzed });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Pull failed.";
     await admin.from("outlier_handles").update({ status: "error", error: message }).eq("id", handleId);
