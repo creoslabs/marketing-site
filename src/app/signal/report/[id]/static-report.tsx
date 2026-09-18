@@ -45,7 +45,7 @@ export function StaticReport({
   const FRAME_W = 300;
   const FRAME_H = 375;
 
-  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile };
+  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile, thumbnailUrl: assetUrl };
 
   return (
     <div className="ws-page-in">

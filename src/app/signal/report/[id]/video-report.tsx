@@ -90,7 +90,15 @@ export function VideoReport({
     fail: criteria.filter((c) => c.verdict === "fail").length,
   };
 
-  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile };
+  const pdfData: PdfReportData = {
+    asset,
+    criteria,
+    findings,
+    topFix,
+    median,
+    percentile,
+    thumbnailUrl: frames && frames.length > 0 ? frames[0].url : null,
+  };
 
   return (
     <div className="ws-page-in">

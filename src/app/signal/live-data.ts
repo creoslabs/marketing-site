@@ -2,6 +2,38 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Asset, Criterion, Format, StaticFinding, VideoFinding } from "./data";
 
+// TEMP-PREVIEW
+const DEMO_MODE = true;
+
+const DEMO_CRITERIA: Criterion[] = [
+  { name: "Aspect ratio", tier: 1, evidence: "1080×1920 (9:16), correct for the placement.", verdict: "pass" },
+  { name: "Duration", tier: 1, evidence: "0:18, within platform pacing guidance.", verdict: "pass" },
+  { name: "Safe-zone overlap, full runtime", tier: 1, evidence: "Caption sits inside the bottom UI band from 0:04 to 0:07.", verdict: "fail" },
+  { name: "Hook window — motion detected", tier: 1, evidence: "No motion cue in the first second; slow push on a static frame.", verdict: "fail" },
+  { name: "Hook window — text on screen", tier: 1, evidence: "Headline appears by 0:01, within the 4-second hook window.", verdict: "pass" },
+  { name: "On-screen text coverage", tier: 1, evidence: "61% of runtime carries a text overlay.", verdict: "partial" },
+  { name: "Product first appearance", tier: 2, evidence: "Product logo doesn't appear until 0:08, over 40% into the runtime.", verdict: "fail" },
+  { name: "Sound-off redundancy", tier: 2, evidence: "First 8 seconds carry no captions restating spoken content.", verdict: "partial" },
+  { name: "Text legibility & hold time", tier: 2, evidence: "High-contrast CTA text holds for 2+ seconds at the end card.", verdict: "pass" },
+];
+
+const DEMO_VIDEO_FINDINGS: VideoFinding[] = [
+  { id: "df-1", t: 0, criterion: "Hook window — motion detected", tier: 1, failure: true, body: "The opening frame is a static hold — no motion cue for the first full second." },
+  { id: "df-2", t: 1, criterion: "Hook window — text on screen", tier: 1, failure: false, body: "Headline text appears within the first second and holds through 0:03." },
+  { id: "df-4", t: 4, criterion: "Safe-zone overlap, full runtime", tier: 1, failure: true, body: "Caption text sits inside the platform's bottom UI band from 0:04 to 0:07." },
+  { id: "df-8", t: 8, criterion: "Product first appearance", tier: 2, failure: true, body: "The product logo and name first appear at 0:08, leaving little runtime to register the brand." },
+  { id: "df-13", t: 13, criterion: "Text legibility & hold time", tier: 2, failure: false, body: "The end-card CTA uses high-contrast text and holds for the full final two seconds." },
+];
+
+const DEMO_LIBRARY: Asset[] = [
+  { id: "demo-v1", filename: "ugc_routine_9x16.mp4", format: "video", platform: "TikTok", score: 51, failedChecks: 4, postedAt: "Sep 18", duration: "0:18", criteria: [], assetUrl: null },
+  { id: "demo-v2", filename: "founder_story_reel.mp4", format: "video", platform: "Instagram", score: 74, failedChecks: 2, postedAt: "Sep 12", duration: "0:22", criteria: [], assetUrl: null },
+  { id: "demo-v3", filename: "before_after_15s.mp4", format: "video", platform: "TikTok", score: 38, failedChecks: 6, postedAt: "Sep 6", duration: "0:15", criteria: [], assetUrl: null },
+  { id: "demo-s1", filename: "bundle_promo_4x5.png", format: "static", platform: "Instagram", score: 81, failedChecks: 1, postedAt: "Sep 14", criteria: [], assetUrl: null },
+  { id: "demo-s2", filename: "spf_duo_1x1.png", format: "static", platform: "Instagram", score: 76, failedChecks: 2, postedAt: "Sep 10", criteria: [], assetUrl: null },
+  { id: "demo-s3", filename: "serum_hero_v3.png", format: "static", platform: "Instagram", score: 58, failedChecks: 3, postedAt: "Sep 3", criteria: [], assetUrl: null },
+];
+
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   return Boolean(url && /^https?:\/\//.test(url));
@@ -55,6 +87,7 @@ type LibraryRow = {
 // cache() dedupes repeat calls within one request (e.g. if a future caller
 // needs the full library more than once), same reasoning as getUser().
 export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boolean }> => {
+  if (DEMO_MODE) return { assets: DEMO_LIBRARY, isLive: true };
   if (!isSupabaseConfigured()) return { assets: [], isLive: false };
 
   const supabase = await createClient();
@@ -139,6 +172,7 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
 // report view paid for a signed-URL request for the *entire* library just
 // to compute one number.
 export const getFormatScores = cache(async (): Promise<{ score: number; format: Format }[]> => {
+  if (DEMO_MODE) return DEMO_LIBRARY.map((a) => ({ score: a.score, format: a.format }));
   if (!isSupabaseConfigured()) return [];
 
   const supabase = await createClient();
@@ -189,6 +223,22 @@ type AssetDetail = {
 // which both need the same asset — without it, every report view paid for
 // this whole function's queries twice.
 export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | null> => {
+  if (DEMO_MODE) {
+    const asset = DEMO_LIBRARY.find((a) => a.id === id) ?? DEMO_LIBRARY[0];
+    return {
+      asset,
+      criteria: DEMO_CRITERIA,
+      findings: asset.format === "video" ? DEMO_VIDEO_FINDINGS : ([] as StaticFinding[]),
+      topFix: {
+        title: "Move the product logo and name into the first 2-3 seconds.",
+        clears: 3,
+        body: "Right now the hook window carries zero brand cues, so anyone who drops off before 0:08 never sees what's being advertised.",
+      },
+      assetUrl: null,
+      frames: undefined,
+      durationSeconds: 18,
+    };
+  }
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();

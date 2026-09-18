@@ -168,7 +168,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
         <div className="mt-3 flex">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-accent-blue" />
-            In development — coming soon
+            Live — early access
           </span>
         </div>
 
