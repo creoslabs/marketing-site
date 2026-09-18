@@ -98,7 +98,7 @@ export async function judgeVideoCriteria({
   audioOnsetSeconds,
   apiKey,
 }: {
-  frames: { t: number; dataUrl: string }[];
+  frames: { t: number; buffer: Buffer }[];
   durationSeconds: number;
   audioOnsetSeconds: number | null;
   apiKey?: string | null;
@@ -109,7 +109,7 @@ export async function judgeVideoCriteria({
     { type: "text" as const, text: `Frame at 0:${String(frame.t).padStart(2, "0")}:` },
     {
       type: "image" as const,
-      source: { type: "base64" as const, media_type: "image/jpeg" as const, data: frame.dataUrl.split(",")[1] },
+      source: { type: "base64" as const, media_type: "image/jpeg" as const, data: frame.buffer.toString("base64") },
     },
   ]);
 

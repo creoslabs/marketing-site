@@ -10,7 +10,7 @@ import {
   STATIC_FINDINGS,
   STATIC_TOP_FIX,
 } from "../../data";
-import { getAssetDetail, getLibrary, medianOf, percentileWithin } from "../../live-data";
+import { getAssetDetail, getFormatScores, medianOf, percentileWithin } from "../../live-data";
 import { VideoReport } from "./video-report";
 import { StaticReport } from "./static-report";
 
@@ -27,11 +27,11 @@ export async function generateMetadata(props: PageProps<"/signal/report/[id]">):
 export default async function ReportPage(props: PageProps<"/signal/report/[id]">) {
   const { id } = await props.params;
 
-  const live = await getAssetDetail(id);
+  // Independent of each other — run together rather than waterfalling.
+  const [live, scores] = await Promise.all([getAssetDetail(id), getFormatScores()]);
   if (live) {
-    const library = await getLibrary();
-    const median = medianOf(library.assets.filter((a) => a.format === live.asset.format).map((a) => a.score));
-    const percentile = percentileWithin(live.asset.score, live.asset.format, library.assets);
+    const median = medianOf(scores.filter((a) => a.format === live.asset.format).map((a) => a.score));
+    const percentile = percentileWithin(live.asset.score, live.asset.format, scores);
 
     if (live.asset.format === "video") {
       return (
@@ -42,7 +42,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
           topFix={live.topFix}
           median={median}
           percentile={percentile}
-          assetUrl={live.assetUrl}
+          frames={live.frames}
           durationSeconds={live.durationSeconds}
         />
       );
@@ -80,7 +80,6 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
         topFix={VIDEO_TOP_FIX}
         median={MEDIAN_BY_FORMAT.video}
         percentile={percentile}
-        assetUrl={null}
       />
     );
   }

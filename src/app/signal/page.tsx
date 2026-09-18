@@ -38,23 +38,14 @@ function AssetCard({
           style={{ border: "1px solid var(--ws-hairline)", transition: "border-color 0.15s ease" }}
           className="group-hover:[border-color:var(--ws-hairline-strong)]"
         >
-          {asset.assetUrl &&
-            (asset.format === "video" ? (
-              <video
-                src={asset.assetUrl}
-                muted
-                playsInline
-                preload="metadata"
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
-              <img
-                src={asset.assetUrl}
-                alt={asset.filename}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-              />
-            ))}
+          {asset.assetUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
+            <img
+              src={asset.assetUrl}
+              alt={asset.filename}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+            />
+          )}
           {asset.assetUrl && (
             <div
               className="pointer-events-none absolute inset-x-0 top-0 h-[64px]"

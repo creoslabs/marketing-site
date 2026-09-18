@@ -106,6 +106,32 @@ export async function POST(request: Request) {
           sort_order: i,
         }))
       );
+
+      // Persist the sampled keyframes as the report's only visual record of
+      // this video, then drop the original upload — Claude never analyzed
+      // continuous video, only these frames, and they're a fraction of the
+      // storage cost of the source file.
+      const frames = result.frames ?? [];
+      if (frames.length > 0) {
+        await Promise.all(
+          frames.map((frame) =>
+            admin.storage
+              .from("signal-assets")
+              .upload(`${user.id}/${assetId}/frames/${frame.t}.jpg`, frame.buffer, {
+                contentType: "image/jpeg",
+                upsert: true,
+              })
+          )
+        );
+        await admin.from("signal_frames").insert(
+          frames.map((frame) => ({
+            asset_id: assetId,
+            t: frame.t,
+            storage_path: `${user.id}/${assetId}/frames/${frame.t}.jpg`,
+          }))
+        );
+        await admin.storage.from("signal-assets").remove([storagePath]);
+      }
     } else {
       const findings = result.findings as StaticFinding[];
       await admin.from("signal_findings").insert(

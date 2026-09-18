@@ -12,6 +12,7 @@ export type PipelineResult = {
   criteria: Criterion[];
   findings: VideoFinding[] | StaticFinding[];
   topFix: { title: string; clears: number; body: string };
+  frames?: { t: number; buffer: Buffer }[];
 };
 
 function computeScore(criteria: Criterion[]) {
@@ -62,6 +63,7 @@ export async function runVideoPipeline(filePath: string, apiKey?: string | null)
     criteria: allCriteria,
     findings: judged.findings,
     topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, body: judged.topFix.body },
+    frames,
   };
 }
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Asset, Criterion, Format, StaticFinding, VideoFinding } from "./data";
 
@@ -51,7 +52,9 @@ type LibraryRow = {
 // Signal reads from Supabase once it's configured and has at least one
 // completed analysis; otherwise it shows the fixture data so the UI is
 // still fully demonstrable before the pipeline is wired up.
-export async function getLibrary(): Promise<{ assets: Asset[]; isLive: boolean }> {
+// cache() dedupes repeat calls within one request (e.g. if a future caller
+// needs the full library more than once), same reasoning as getUser().
+export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boolean }> => {
   if (!isSupabaseConfigured()) return { assets: [], isLive: false };
 
   const supabase = await createClient();
@@ -64,16 +67,52 @@ export async function getLibrary(): Promise<{ assets: Asset[]; isLive: boolean }
   if (error || !data) return { assets: [], isLive: false };
 
   const doneRows = data.filter((row) => row.status === "done");
+  const staticRows = doneRows.filter((row) => row.format === "static");
+  const videoRows = doneRows.filter((row) => row.format === "video");
 
-  // One batched signed-URL request for every asset's preview, rather than
-  // one round-trip per card.
-  const { data: signedUrls } = await supabase.storage
-    .from("signal-assets")
-    .createSignedUrls(
-      doneRows.map((row) => row.storage_path),
-      60 * 60
-    );
-  const urlByPath = new Map((signedUrls ?? []).map((s) => [s.path, s.signedUrl]));
+  // Statics keep their original file as the preview. Videos no longer have
+  // one (the source is deleted after analysis) — one of the persisted
+  // keyframes stands in as the thumbnail instead.
+  const [{ data: signedStaticUrls }, { data: frameRows }] = await Promise.all([
+    staticRows.length > 0
+      ? supabase.storage.from("signal-assets").createSignedUrls(
+          staticRows.map((row) => row.storage_path),
+          60 * 60
+        )
+      : Promise.resolve({ data: [] as { path: string; signedUrl: string }[] }),
+    videoRows.length > 0
+      ? supabase
+          .from("signal_frames")
+          .select("asset_id, t, storage_path")
+          .in(
+            "asset_id",
+            videoRows.map((row) => row.id)
+          )
+          .order("t")
+      : Promise.resolve({ data: [] as { asset_id: string; t: number; storage_path: string }[] }),
+  ]);
+
+  const urlByStaticPath = new Map((signedStaticUrls ?? []).map((s) => [s.path, s.signedUrl]));
+
+  // Pick the middle sampled frame per video as its representative thumbnail.
+  const framesByAsset = new Map<string, { t: number; storage_path: string }[]>();
+  for (const frame of frameRows ?? []) {
+    framesByAsset.set(frame.asset_id, [...(framesByAsset.get(frame.asset_id) ?? []), frame]);
+  }
+  const previewFrames = [...framesByAsset.entries()].map(([assetId, frames]) => ({
+    assetId,
+    path: frames[Math.floor(frames.length / 2)].storage_path,
+  }));
+  const { data: signedFrameUrls } =
+    previewFrames.length > 0
+      ? await supabase.storage.from("signal-assets").createSignedUrls(
+          previewFrames.map((p) => p.path),
+          60 * 60
+        )
+      : { data: [] as { path: string; signedUrl: string }[] };
+  const previewUrlByAssetId = new Map(
+    previewFrames.map((p, i) => [p.assetId, signedFrameUrls?.[i]?.signedUrl ?? null])
+  );
 
   const assets: Asset[] = doneRows.map((row) => ({
     id: row.id,
@@ -85,11 +124,30 @@ export async function getLibrary(): Promise<{ assets: Asset[]; isLive: boolean }
     postedAt: formatDate(row.created_at),
     duration: row.duration_seconds ? formatDuration(row.duration_seconds) : undefined,
     criteria: [],
-    assetUrl: urlByPath.get(row.storage_path) ?? null,
+    assetUrl:
+      row.format === "video" ? previewUrlByAssetId.get(row.id) ?? null : urlByStaticPath.get(row.storage_path) ?? null,
   }));
 
   return { assets, isLive: true };
-}
+});
+
+// For median/percentile math the caller only needs score+format, not the
+// full asset objects with per-item signed preview URLs — calling the full
+// getLibrary() for this (as the report page originally did) meant every
+// report view paid for a signed-URL request for the *entire* library just
+// to compute one number.
+export const getFormatScores = cache(async (): Promise<{ score: number; format: Format }[]> => {
+  if (!isSupabaseConfigured()) return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("signal_assets")
+    .select("score, format")
+    .eq("status", "done")
+    .returns<{ score: number | null; format: Format }[]>();
+
+  return (data ?? []).map((row) => ({ score: row.score ?? 0, format: row.format }));
+});
 
 type AssetDetail = {
   asset: Asset;
@@ -97,27 +155,45 @@ type AssetDetail = {
   findings: VideoFinding[] | StaticFinding[];
   topFix: { title: string; clears: number; body: string };
   assetUrl: string | null;
+  frames?: { t: number; url: string }[];
   durationSeconds: number | undefined;
 };
 
-export async function getAssetDetail(id: string): Promise<AssetDetail | null> {
+// cache() dedupes this across generateMetadata and the page component,
+// which both need the same asset — without it, every report view paid for
+// this whole function's queries twice.
+export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | null> => {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
   const { data: assetRow } = await supabase.from("signal_assets").select("*").eq("id", id).eq("status", "done").single();
   if (!assetRow) return null;
 
-  const { data: criteriaRows } = await supabase
-    .from("signal_criteria")
-    .select("*")
-    .eq("asset_id", id)
-    .order("sort_order");
+  const isVideo = assetRow.format === "video";
 
-  const { data: findingRows } = await supabase
-    .from("signal_findings")
-    .select("*")
-    .eq("asset_id", id)
-    .order("sort_order");
+  // Independent of each other once assetRow is known — run together instead
+  // of waterfalling sequential round-trips. Videos no longer have a source
+  // file to sign (deleted after analysis) — they get their persisted
+  // keyframes instead; statics still sign their one original file.
+  const [{ data: criteriaRows }, { data: findingRows }, { data: signedUrlData }, { data: frameRows }] = await Promise.all([
+    supabase.from("signal_criteria").select("*").eq("asset_id", id).order("sort_order"),
+    supabase.from("signal_findings").select("*").eq("asset_id", id).order("sort_order"),
+    isVideo
+      ? Promise.resolve({ data: null })
+      : supabase.storage.from("signal-assets").createSignedUrl(assetRow.storage_path, 60 * 60),
+    isVideo
+      ? supabase.from("signal_frames").select("t, storage_path").eq("asset_id", id).order("t")
+      : Promise.resolve({ data: [] as { t: number; storage_path: string }[] }),
+  ]);
+
+  let frames: { t: number; url: string }[] | undefined;
+  if (isVideo && frameRows && frameRows.length > 0) {
+    const { data: signedFrameUrls } = await supabase.storage.from("signal-assets").createSignedUrls(
+      frameRows.map((f) => f.storage_path),
+      60 * 60
+    );
+    frames = frameRows.map((f, i) => ({ t: f.t, url: signedFrameUrls?.[i]?.signedUrl ?? "" })).filter((f) => f.url);
+  }
 
   const asset: Asset = {
     id: assetRow.id,
@@ -163,19 +239,13 @@ export async function getAssetDetail(id: string): Promise<AssetDetail | null> {
           region: { top: r.region_top, left: r.region_left, width: r.region_width, height: r.region_height },
         })) as StaticFinding[]);
 
-  // Signed, since the bucket is private — the RLS storage policy already
-  // lets this user read their own object, this just gets a browser-usable
-  // URL out of it. An hour is plenty for one report view.
-  const { data: signedUrlData } = await supabase.storage
-    .from("signal-assets")
-    .createSignedUrl(assetRow.storage_path, 60 * 60);
-
   return {
     asset,
     criteria,
     findings,
     topFix,
     assetUrl: signedUrlData?.signedUrl ?? null,
+    frames,
     durationSeconds: assetRow.duration_seconds ?? undefined,
   };
-}
+});

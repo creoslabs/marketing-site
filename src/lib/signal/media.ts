@@ -37,9 +37,11 @@ export async function probeVideo(filePath: string): Promise<VideoMetadata> {
   };
 }
 
-// Extracts one JPEG frame at each requested second offset. Returns each
-// frame as a base64 data URL, ready to send straight to Claude's vision API.
-export async function extractFrames(filePath: string, timestamps: number[]): Promise<{ t: number; dataUrl: string }[]> {
+// Extracts one JPEG frame at each requested second offset, as raw bytes —
+// callers use the same buffer both for Claude's vision request and for
+// persisting the frame to Storage, since these are the only visual record
+// Signal keeps of a video after analysis (see analyze/route.ts).
+export async function extractFrames(filePath: string, timestamps: number[]): Promise<{ t: number; buffer: Buffer }[]> {
   const dir = await mkdtemp(path.join(tmpdir(), "signal-frames-"));
   try {
     const frames = await Promise.all(
@@ -60,7 +62,7 @@ export async function extractFrames(filePath: string, timestamps: number[]): Pro
           outPath,
         ]);
         const buffer = await readFile(outPath);
-        return { t, dataUrl: `data:image/jpeg;base64,${buffer.toString("base64")}` };
+        return { t, buffer };
       })
     );
     return frames;

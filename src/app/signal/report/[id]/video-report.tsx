@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Asset, Criterion, VideoFinding } from "../../data";
 import { VerdictLabel } from "../../components";
@@ -33,7 +33,7 @@ export function VideoReport({
   topFix,
   median,
   percentile,
-  assetUrl,
+  frames,
   durationSeconds,
 }: {
   asset: Asset;
@@ -42,41 +42,36 @@ export function VideoReport({
   topFix: { title: string; clears: number; body: string };
   median: number;
   percentile: number | null;
-  assetUrl?: string | null;
+  frames?: { t: number; url: string }[];
   durationSeconds?: number;
 }) {
   const duration = Math.max(1, Math.round(durationSeconds ?? 18));
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Without a real asset (the fixture demo), fake the clock instead —
-  // this is exactly the ±1s-step interval the design spec describes as a
-  // stand-in for real playback.
+  // Claude only ever analyzed the sampled frames below, never continuous
+  // video, so there's no real playback to sync to — the clock is always a
+  // fake ±1s-step interval, same as the old fixture-only stand-in.
   useEffect(() => {
-    if (!playing || assetUrl) return;
+    if (!playing) return;
     const interval = setInterval(() => {
       setT((prev) => (prev >= duration ? 0 : prev + 1));
     }, 650);
     return () => clearInterval(interval);
-  }, [playing, assetUrl, duration]);
+  }, [playing, duration]);
 
   function seekTo(next: number) {
-    const clamped = Math.max(0, Math.min(duration, next));
-    setT(clamped);
-    if (videoRef.current) {
-      videoRef.current.currentTime = clamped;
-    }
+    setT(Math.max(0, Math.min(duration, next)));
   }
 
   function togglePlay() {
-    if (videoRef.current) {
-      if (playing) videoRef.current.pause();
-      else videoRef.current.play();
-      return;
-    }
     setPlaying((p) => !p);
   }
+
+  const currentFrame =
+    frames && frames.length > 0
+      ? frames.reduce((closest, frame) => (Math.abs(frame.t - t) < Math.abs(closest.t - t) ? frame : closest))
+      : null;
 
   const inViolation = findings.some(
     (f) => f.failure && f.criterion.toLowerCase().includes("safe-zone") && Math.abs(f.t - t) <= 1
@@ -103,20 +98,15 @@ export function VideoReport({
           {/* Player column */}
           <div style={{ width: 250, flexShrink: 0 }}>
             <div
-              className={assetUrl ? "relative overflow-hidden rounded-[10px]" : "ws-placeholder relative overflow-hidden rounded-[10px]"}
+              className={currentFrame ? "relative overflow-hidden rounded-[10px]" : "ws-placeholder relative overflow-hidden rounded-[10px]"}
               style={{ width: 250, height: 444 }}
             >
-              {assetUrl && (
-                <video
-                  ref={videoRef}
-                  src={assetUrl}
-                  muted
-                  playsInline
+              {currentFrame && (
+                // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
+                <img
+                  src={currentFrame.url}
+                  alt={`Frame at ${formatTime(currentFrame.t)}`}
                   className="absolute inset-0 h-full w-full object-cover"
-                  onTimeUpdate={(e) => setT(Math.round(e.currentTarget.currentTime))}
-                  onPlay={() => setPlaying(true)}
-                  onPause={() => setPlaying(false)}
-                  onEnded={() => setPlaying(false)}
                 />
               )}
               {/* Safe-zone bands */}
