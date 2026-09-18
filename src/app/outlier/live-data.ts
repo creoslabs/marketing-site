@@ -8,7 +8,7 @@ function isSupabaseConfigured() {
   return Boolean(url && /^https?:\/\//.test(url));
 }
 
-// Matches SETTINGS.thinHistoryFloor in data.ts.
+// Matches SETTINGS.thinHistoryFloor previously in data.ts.
 const THIN_HISTORY_FLOOR = 12;
 
 function medianOf(nums: number[]) {
@@ -28,8 +28,6 @@ function formatDuration(seconds: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// Posts/week over the actual date spread of what's been pulled — not a
-// fixed assumption, since a creator's real posting cadence varies.
 function computeCadence(postedAtIso: string[]): string {
   if (postedAtIso.length < 2) return "—";
   const times = postedAtIso.map((d) => new Date(d).getTime()).sort((a, b) => a - b);
@@ -39,9 +37,6 @@ function computeCadence(postedAtIso: string[]): string {
   return `${perWeek.toFixed(1)}/week`;
 }
 
-// Real trend: median of the more-recent half of pulled posts vs the older
-// half. Needs enough posts on both sides to mean anything — returns null
-// (rendered as "thin history, no reliable trend") otherwise.
 function computeMedianTrend(viewsMostRecentFirst: number[]): number | null {
   if (viewsMostRecentFirst.length < 6) return null;
   const half = Math.floor(viewsMostRecentFirst.length / 2);
@@ -51,11 +46,20 @@ function computeMedianTrend(viewsMostRecentFirst: number[]): number | null {
   return Math.round(((recentMedian - olderMedian) / olderMedian) * 100);
 }
 
-type CreatorRow = { id: string; platform: Platform; handle: string; display_name: string | null };
+type CreatorRow = { id: string; display_name: string | null };
+type HandleRow = {
+  id: string;
+  creator_id: string;
+  platform: Platform;
+  handle: string;
+  status: "active" | "pulling" | "error";
+  error: string | null;
+  last_pulled_at: string | null;
+};
 
 type PostRow = {
   id: string;
-  creator_id: string;
+  handle_id: string;
   platform: Platform;
   caption: string | null;
   url: string;
@@ -76,46 +80,40 @@ type PostRow = {
   hook_tags: string[] | null;
 };
 
-function buildCreatorStats(posts: { views: number; posted_at: string }[]) {
-  const views = posts.map((p) => p.views);
+function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<string, PostRow[]>): Creator {
+  const allPosts = handles.flatMap((h) => postsByHandle.get(h.id) ?? []);
+  const views = allPosts.map((p) => p.views);
   const median = medianOf(views);
   const scores = median > 0 ? views.map((v) => v / median) : [];
-  const sortedDesc = [...posts].sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
-  return {
-    median,
-    bestScore: scores.length > 0 ? Math.max(...scores) : 0,
-    hitsAbove2x: scores.filter((s) => s >= 2).length,
-    cadence: computeCadence(posts.map((p) => p.posted_at)),
-    medianTrend: computeMedianTrend(sortedDesc.map((p) => p.views)),
-    spark: sortedDesc.slice(0, 10).map((p) => p.views).reverse(),
-    postCount: posts.length,
-  };
-}
+  const sortedDesc = [...allPosts].sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime());
 
-// Each tracked handle is its own Creator card — a person tracked on both
-// TikTok and Instagram shows up as two entries rather than one merged
-// creator, since a pull operates on a single (platform, handle) at a time.
-function buildCreator(row: CreatorRow, posts: { views: number; posted_at: string }[]): Creator {
-  const stats = buildCreatorStats(posts);
-  const name = row.display_name ?? row.handle;
+  const name = row.display_name ?? handles[0]?.handle ?? "Unknown";
   const initials = name.replace(/^@/, "").slice(0, 2).toUpperCase();
+
   return {
     id: row.id,
     displayName: name,
     initials,
-    handles: [
-      { platform: row.platform, handle: row.handle, postCount: stats.postCount, thin: stats.postCount < THIN_HISTORY_FLOOR },
-    ],
-    median: stats.median,
-    bestScore: stats.bestScore,
-    hitsAbove2x: stats.hitsAbove2x,
-    cadence: stats.cadence,
-    medianTrend: stats.medianTrend,
-    spark: stats.spark,
+    handles: handles.map((h) => {
+      const handlePosts = postsByHandle.get(h.id) ?? [];
+      return {
+        id: h.id,
+        platform: h.platform,
+        handle: h.handle,
+        postCount: handlePosts.length,
+        thin: handlePosts.length < THIN_HISTORY_FLOOR,
+      };
+    }),
+    median,
+    bestScore: scores.length > 0 ? Math.max(...scores) : 0,
+    hitsAbove2x: scores.filter((s) => s >= 2).length,
+    cadence: computeCadence(allPosts.map((p) => p.posted_at)),
+    medianTrend: computeMedianTrend(sortedDesc.map((p) => p.views)),
+    spark: sortedDesc.slice(0, 10).map((p) => p.views).reverse(),
   };
 }
 
-function buildPost(row: PostRow, creatorMedian: number, thin: boolean): Post {
+function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin: boolean): Post {
   const likes = row.likes;
   const comments = row.comments;
   const shares = row.shares;
@@ -123,11 +121,9 @@ function buildPost(row: PostRow, creatorMedian: number, thin: boolean): Post {
   const engagement = row.views > 0 ? ((likes + comments + shares + saves) / row.views) * 100 : 0;
   return {
     id: row.id,
-    creatorId: row.creator_id,
+    creatorId,
     platform: row.platform,
     caption: row.caption ?? "",
-    // Real scraped posts don't have a separate "description" field distinct
-    // from the caption — the fixture's split was cosmetic, not real.
     description: "",
     views: row.views,
     median: creatorMedian,
@@ -145,87 +141,97 @@ function buildPost(row: PostRow, creatorMedian: number, thin: boolean): Post {
   };
 }
 
-export const getCreators = cache(async (): Promise<Creator[]> => {
-  if (!isSupabaseConfigured()) return [];
-
+// Fetches every creator this user tracks, each with all of its handles'
+// posts combined (a person tracked on two platforms is one Creator card).
+async function loadAll() {
   const supabase = await createClient();
+
   const { data: creatorRows } = await supabase
     .from("outlier_creators")
-    .select("id, platform, handle, display_name")
+    .select("id, display_name")
     .order("created_at", { ascending: false })
     .returns<CreatorRow[]>();
-  if (!creatorRows || creatorRows.length === 0) return [];
+  if (!creatorRows || creatorRows.length === 0) {
+    return { supabase, creators: [] as Creator[], handlesByCreator: new Map<string, HandleRow[]>(), postsByHandle: new Map<string, PostRow[]>() };
+  }
 
-  const { data: postRows } = await supabase
-    .from("outlier_posts")
-    .select("creator_id, views, posted_at")
+  const { data: handleRows } = await supabase
+    .from("outlier_handles")
+    .select("id, creator_id, platform, handle, status, error, last_pulled_at")
     .in(
       "creator_id",
       creatorRows.map((c) => c.id)
     )
-    .returns<{ creator_id: string; views: number; posted_at: string }[]>();
+    .returns<HandleRow[]>();
+  const handles = handleRows ?? [];
 
-  const postsByCreator = new Map<string, { views: number; posted_at: string }[]>();
-  for (const row of postRows ?? []) {
-    postsByCreator.set(row.creator_id, [...(postsByCreator.get(row.creator_id) ?? []), row]);
+  const { data: postRows } = await supabase
+    .from("outlier_posts")
+    .select("*")
+    .in(
+      "handle_id",
+      handles.map((h) => h.id)
+    )
+    .order("posted_at", { ascending: false })
+    .returns<PostRow[]>();
+  const posts = postRows ?? [];
+
+  const postsByHandle = new Map<string, PostRow[]>();
+  for (const post of posts) {
+    postsByHandle.set(post.handle_id, [...(postsByHandle.get(post.handle_id) ?? []), post]);
   }
 
-  return creatorRows.map((row) => buildCreator(row, postsByCreator.get(row.id) ?? []));
+  const handlesByCreator = new Map<string, HandleRow[]>();
+  for (const h of handles) {
+    handlesByCreator.set(h.creator_id, [...(handlesByCreator.get(h.creator_id) ?? []), h]);
+  }
+
+  const creators = creatorRows
+    .map((row) => buildCreator(row, handlesByCreator.get(row.id) ?? [], postsByHandle))
+    .filter((c) => c.handles.length > 0); // a creator that just lost its last handle shouldn't linger
+
+  return { supabase, creators, handlesByCreator, postsByHandle };
+}
+
+export const getCreators = cache(async (): Promise<Creator[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const { creators } = await loadAll();
+  return creators;
 });
 
 // Top outliers across the whole watchlist, for the Feed/Home pages.
 export const getPosts = cache(async (): Promise<Post[]> => {
   if (!isSupabaseConfigured()) return [];
-
-  const creators = await getCreators();
+  const { creators, handlesByCreator, postsByHandle } = await loadAll();
   if (creators.length === 0) return [];
 
-  const medianByCreatorId = new Map(creators.map((c) => [c.id, c.median]));
-  const thinByCreatorId = new Map(creators.map((c) => [c.id, c.handles[0].thin]));
-
-  const supabase = await createClient();
-  const { data: postRows } = await supabase
-    .from("outlier_posts")
-    .select("*")
-    .in(
-      "creator_id",
-      creators.map((c) => c.id)
-    )
-    .order("posted_at", { ascending: false })
-    .returns<PostRow[]>();
-
-  const posts = (postRows ?? []).map((row) =>
-    buildPost(row, medianByCreatorId.get(row.creator_id) ?? 0, thinByCreatorId.get(row.creator_id) ?? false)
-  );
+  const posts: Post[] = [];
+  for (const creator of creators) {
+    const handles = handlesByCreator.get(creator.id) ?? [];
+    const thin = creator.handles.every((h) => h.thin);
+    for (const handle of handles) {
+      const rows = postsByHandle.get(handle.id) ?? [];
+      for (const row of rows) {
+        posts.push(buildPost(row, creator.id, creator.median, thin));
+      }
+    }
+  }
 
   return posts.sort((a, b) => b.score - a.score);
 });
 
 export const getCreatorDetail = cache(async (id: string): Promise<{ creator: Creator; posts: Post[] } | null> => {
   if (!isSupabaseConfigured()) return null;
+  const { creators, handlesByCreator, postsByHandle } = await loadAll();
+  const creator = creators.find((c) => c.id === id);
+  if (!creator) return null;
 
-  const supabase = await createClient();
-  const { data: row } = await supabase
-    .from("outlier_creators")
-    .select("id, platform, handle, display_name")
-    .eq("id", id)
-    .maybeSingle<CreatorRow>();
-  if (!row) return null;
-
-  const { data: postRows } = await supabase
-    .from("outlier_posts")
-    .select("*")
-    .eq("creator_id", id)
-    .order("posted_at", { ascending: false })
-    .returns<PostRow[]>();
-  const rows = postRows ?? [];
-
-  const creator = buildCreator(
-    row,
-    rows.map((p) => ({ views: p.views, posted_at: p.posted_at }))
-  );
-  const thin = creator.handles[0].thin;
-  const posts = rows.map((p) => buildPost(p, creator.median, thin));
+  const handles = handlesByCreator.get(id) ?? [];
+  const overallThin = creator.handles.every((h) => h.thin);
+  const posts = handles
+    .flatMap((h) => postsByHandle.get(h.id) ?? [])
+    .map((row) => buildPost(row, id, creator.median, overallThin))
+    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
   return { creator, posts };
 });
@@ -238,7 +244,14 @@ export const getPostDetail = cache(
     const { data: row } = await supabase.from("outlier_posts").select("*").eq("id", id).maybeSingle<PostRow>();
     if (!row) return null;
 
-    const detail = await getCreatorDetail(row.creator_id);
+    const { data: handleRow } = await supabase
+      .from("outlier_handles")
+      .select("creator_id")
+      .eq("id", row.handle_id)
+      .maybeSingle<{ creator_id: string }>();
+    if (!handleRow) return null;
+
+    const detail = await getCreatorDetail(handleRow.creator_id);
     if (!detail) return null;
 
     const sorted = [...detail.posts].sort((a, b) => b.score - a.score);
@@ -252,7 +265,7 @@ export const getPostDetail = cache(
 
 type JobRow = {
   id: string;
-  creator_id: string;
+  handle_id: string;
   state: "queued" | "running" | "done" | "failed";
   stage: string | null;
   new_posts_count: number | null;
@@ -273,28 +286,47 @@ export const getJobs = cache(
       .limit(30)
       .returns<JobRow[]>();
     const rows = data ?? [];
+    if (rows.length === 0) return { jobs: [], finished: [] };
+
+    const { data: handleRows } = await supabase
+      .from("outlier_handles")
+      .select("id, creator_id, platform, handle")
+      .in(
+        "id",
+        rows.map((r) => r.handle_id)
+      )
+      .returns<{ id: string; creator_id: string; platform: Platform; handle: string }[]>();
+    const handleById = new Map((handleRows ?? []).map((h) => [h.id, h]));
 
     const jobs: Job[] = rows
       .filter((r) => r.state === "queued" || r.state === "running" || r.state === "failed")
-      .map((r) => ({
-        id: r.id,
-        creatorId: r.creator_id,
-        scope: "Pull",
-        stage: r.stage ?? (r.state === "running" ? "Pulling posts…" : r.state === "failed" ? "Failed" : "Queued"),
-        pct: r.state === "running" ? 50 : 0,
-        eta: "",
-        state: r.state,
-        error: r.error ?? undefined,
-      }));
+      .map((r) => {
+        const h = handleById.get(r.handle_id);
+        return {
+          id: r.id,
+          creatorId: h?.creator_id ?? "",
+          handle: h?.handle ?? "",
+          platform: h?.platform ?? "TT",
+          scope: "Pull",
+          stage: r.stage ?? (r.state === "running" ? "Pulling posts…" : r.state === "failed" ? "Failed" : "Queued"),
+          pct: r.state === "running" ? 50 : 0,
+          eta: "",
+          state: r.state,
+          error: r.error ?? undefined,
+        };
+      });
 
     const finished = rows
       .filter((r) => r.state === "done")
       .slice(0, 10)
-      .map((r) => ({
-        creatorId: r.creator_id,
-        label: `Pulled ${r.new_posts_count ?? 0} new post${r.new_posts_count === 1 ? "" : "s"}`,
-        relativeTime: relativeTime(r.finished_at ?? r.created_at),
-      }));
+      .map((r) => {
+        const h = handleById.get(r.handle_id);
+        return {
+          creatorId: h?.creator_id ?? "",
+          label: `Pulled ${r.new_posts_count ?? 0} new post${r.new_posts_count === 1 ? "" : "s"} for @${h?.handle ?? "?"}`,
+          relativeTime: relativeTime(r.finished_at ?? r.created_at),
+        };
+      });
 
     return { jobs, finished };
   }

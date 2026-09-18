@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getApifyToken, pullTikTok, pullInstagram } from "@/lib/outlier/apify";
+import { getApifyToken, pullTikTok, pullInstagram, pullYouTube } from "@/lib/outlier/apify";
 
 // A metadata-only Apify scrape of ~30 posts should finish well within this,
 // but actor run times vary — matches the ceiling used for Signal's pipeline.
@@ -15,9 +15,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const creatorId = typeof body?.creatorId === "string" ? body.creatorId : null;
-  if (!creatorId) {
-    return NextResponse.json({ error: "Missing creatorId." }, { status: 400 });
+  const handleId = typeof body?.handleId === "string" ? body.handleId : null;
+  if (!handleId) {
+    return NextResponse.json({ error: "Missing handleId." }, { status: 400 });
   }
 
   let admin;
@@ -27,24 +27,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Not configured." }, { status: 503 });
   }
 
-  const { data: creator } = await admin
-    .from("outlier_creators")
+  const { data: handle } = await admin
+    .from("outlier_handles")
     .select("id, user_id, platform, handle")
-    .eq("id", creatorId)
+    .eq("id", handleId)
     .single();
 
-  if (!creator || creator.user_id !== user.id) {
-    return NextResponse.json({ error: "Creator not found." }, { status: 404 });
+  if (!handle || handle.user_id !== user.id) {
+    return NextResponse.json({ error: "Handle not found." }, { status: 404 });
   }
 
   const { data: jobRow } = await admin
     .from("outlier_jobs")
-    .insert({ user_id: user.id, creator_id: creatorId, state: "running", stage: "Pulling posts…" })
+    .insert({ user_id: user.id, handle_id: handleId, state: "running", stage: "Pulling posts…" })
     .select("id")
     .single();
   const jobId = jobRow?.id as string | undefined;
 
-  await admin.from("outlier_creators").update({ status: "pulling", error: null }).eq("id", creatorId);
+  await admin.from("outlier_handles").update({ status: "pulling", error: null }).eq("id", handleId);
 
   try {
     const userApifyKey =
@@ -52,18 +52,22 @@ export async function POST(request: Request) {
     const token = getApifyToken(userApifyKey);
 
     const rawPosts =
-      creator.platform === "TT" ? await pullTikTok(creator.handle, token) : await pullInstagram(creator.handle, token);
+      handle.platform === "TT"
+        ? await pullTikTok(handle.handle, token)
+        : handle.platform === "IG"
+          ? await pullInstagram(handle.handle, token)
+          : await pullYouTube(handle.handle, token);
 
-    const { data: existing } = await admin.from("outlier_posts").select("external_id").eq("creator_id", creatorId);
+    const { data: existing } = await admin.from("outlier_posts").select("external_id").eq("handle_id", handleId);
     const existingIds = new Set((existing ?? []).map((r) => r.external_id));
     const newCount = rawPosts.filter((p) => !existingIds.has(p.externalId)).length;
 
     if (rawPosts.length > 0) {
       const { error: upsertError } = await admin.from("outlier_posts").upsert(
         rawPosts.map((p) => ({
-          creator_id: creatorId,
+          handle_id: handleId,
           external_id: p.externalId,
-          platform: creator.platform,
+          platform: handle.platform,
           caption: p.caption,
           url: p.url,
           video_url: p.videoUrl,
@@ -77,15 +81,15 @@ export async function POST(request: Request) {
           duration_seconds: p.durationSeconds,
           posted_at: p.postedAt,
         })),
-        { onConflict: "creator_id,external_id" }
+        { onConflict: "handle_id,external_id" }
       );
       if (upsertError) throw new Error(upsertError.message);
     }
 
     await admin
-      .from("outlier_creators")
+      .from("outlier_handles")
       .update({ status: "active", last_pulled_at: new Date().toISOString(), error: null })
-      .eq("id", creatorId);
+      .eq("id", handleId);
 
     if (jobId) {
       await admin
@@ -96,7 +100,7 @@ export async function POST(request: Request) {
 
     await admin.from("notifications").insert({
       user_id: user.id,
-      title: `Pulled @${creator.handle}`,
+      title: `Pulled @${handle.handle}`,
       body: `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total this pull.`,
       href: "/outlier/feed",
     });
@@ -104,13 +108,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ newCount, totalPulled: rawPosts.length });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Pull failed.";
-    await admin.from("outlier_creators").update({ status: "error", error: message }).eq("id", creatorId);
+    await admin.from("outlier_handles").update({ status: "error", error: message }).eq("id", handleId);
     if (jobId) {
       await admin.from("outlier_jobs").update({ state: "failed", error: message, finished_at: new Date().toISOString() }).eq("id", jobId);
     }
     await admin.from("notifications").insert({
       user_id: user.id,
-      title: `Pull failed — @${creator.handle}`,
+      title: `Pull failed — @${handle.handle}`,
       body: message,
       href: "/outlier/progress",
     });

@@ -35,11 +35,15 @@ export async function runVideoPipeline(filePath: string, apiKey?: string | null)
   ];
 
   // Sample evenly across the clip, capped at 12 frames to bound cost/latency.
+  // The last sample is clamped a little short of the real duration — a fast
+  // seek requested right at (or past) the final decodable frame can overshoot
+  // end-of-stream and come back empty, depending on the container/keyframes.
   const roundedDuration = Math.max(1, Math.floor(metadata.durationSeconds));
+  const safeMax = Math.max(0, Math.min(roundedDuration, metadata.durationSeconds - 0.5));
   const sampleCount = Math.min(12, Math.max(4, roundedDuration + 1));
   const timestamps = [
     ...new Set(
-      Array.from({ length: sampleCount }, (_, i) => Math.round((i / (sampleCount - 1)) * roundedDuration))
+      Array.from({ length: sampleCount }, (_, i) => Math.round((i / (sampleCount - 1)) * safeMax))
     ),
   ];
   const frames = await extractFrames(filePath, timestamps);

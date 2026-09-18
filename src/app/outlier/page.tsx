@@ -4,7 +4,7 @@ import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { RECENT_REPURPOSES } from "./data";
 import { getCreators, getPosts, getJobs } from "./live-data";
 import { Avatar, EmptyState, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
-import { AddCreatorButton, PullAllButton, PullCreatorButton } from "./creator-actions";
+import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
 import { formatCompact } from "./format";
 
 export const metadata: Metadata = {
@@ -25,6 +25,7 @@ export default async function OutlierHomePage() {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
+  const allHandles = creators.flatMap((c) => c.handles);
   const topOutliers = posts.slice(0, 5);
   const runningJobs = jobs.filter((job) => job.state === "running");
   const thinCreators = creators.filter((creator) => creator.handles.some((h) => h.thin));
@@ -64,7 +65,7 @@ export default async function OutlierHomePage() {
           <AddCreatorButton className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium" style={{ padding: "10px 14px" }}>
             Add creator
           </AddCreatorButton>
-          <PullAllButton creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))} />
+          <PullHandlesButton handles={allHandles} />
         </div>
       </div>
 
@@ -82,7 +83,9 @@ export default async function OutlierHomePage() {
             {bestToday ? `${bestToday.score.toFixed(1)}×` : "—"}
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {bestToday ? `@${creatorById.get(bestToday.creatorId)?.handles[0].handle}` : "no posts yet"}
+            {bestToday
+              ? `@${creatorById.get(bestToday.creatorId)?.handles.find((h) => h.platform === bestToday.platform)?.handle}`
+              : "no posts yet"}
           </p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
@@ -122,7 +125,7 @@ export default async function OutlierHomePage() {
             <div className="ws-stack mt-[14px]" style={{ border: "none", borderRadius: 0 }}>
               {topOutliers.map((post) => {
                 const creator = creatorById.get(post.creatorId);
-                const handle = creator?.handles[0].handle ?? "";
+                const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle ?? "";
                 return (
                   <Link
                     key={post.id}
@@ -157,8 +160,8 @@ export default async function OutlierHomePage() {
               title="No posts pulled yet"
               description="Pull your watchlist to start scoring posts against each creator's own median."
               action={
-                <PullAllButton
-                  creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))}
+                <PullHandlesButton
+                  handles={allHandles}
                   className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
                   style={{ padding: "9px 14px" }}
                 />
@@ -180,12 +183,11 @@ export default async function OutlierHomePage() {
             {runningJobs.length > 0 ? (
               <div className="mt-[14px] flex flex-col gap-[14px]">
                 {runningJobs.map((job) => {
-                  const creator = creatorById.get(job.creatorId);
                   return (
                     <div key={job.id}>
                       <div className="flex items-center">
                         <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {creator?.handles[0].handle} · {job.scope}
+                          @{job.handle} · {job.scope}
                         </span>
                         <div className="flex-1" />
                       </div>
@@ -221,14 +223,13 @@ export default async function OutlierHomePage() {
                           {thinHandle.postCount} posts — median not reliable yet
                         </p>
                       </div>
-                      <PullCreatorButton
-                        creatorId={creator.id}
-                        handle={thinHandle.handle}
+                      <PullHandlesButton
+                        handles={[thinHandle]}
                         className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
                         style={{ padding: "7px 10px" }}
                       >
                         Pull more
-                      </PullCreatorButton>
+                      </PullHandlesButton>
                     </div>
                   );
                 })}

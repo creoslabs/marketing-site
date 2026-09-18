@@ -55,7 +55,7 @@ export default async function ProgressPage() {
                   <div className="flex items-center gap-[10px]">
                     {creator && <Avatar initials={creator.initials} size={26} />}
                     <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                      {creator?.handles[0].handle}
+                      @{job.handle}
                     </span>
                     <span className="text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
                       {job.scope}
@@ -82,12 +82,11 @@ export default async function ProgressPage() {
             <p className="ws-eyebrow" style={{ color: "var(--ws-warn-text)" }}>FAILED</p>
             <div className="mt-[12px] flex flex-col gap-[12px]">
               {failed.map((job) => {
-                const creator = creatorById.get(job.creatorId);
                 return (
                   <div key={job.id}>
                     <div className="flex items-center gap-[8px]">
                       <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-warn-tint-ink)" }}>
-                        {creator?.handles[0].handle}
+                        @{job.handle}
                       </span>
                       <span className="text-[11.5px]" style={{ color: "var(--ws-warn-tint-ink)", opacity: 0.7 }}>
                         {job.scope}
@@ -120,7 +119,7 @@ export default async function ProgressPage() {
                       style={{ background: "var(--ws-accent)" }}
                     />
                     <span className="text-[12px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                      {creator?.handles[0].handle}
+                      {creator?.displayName}
                     </span>
                     <span className="text-[12px]" style={{ color: "var(--ws-ink-60)" }}>
                       {item.label}

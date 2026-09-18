@@ -161,7 +161,9 @@ export function AnalyzeDropzone() {
             <p className="mt-[10px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
               {running
                 ? "Uploading and running the criteria set — video can take a minute each."
-                : "All files processed."}
+                : queue.some((q) => q.status === "error")
+                  ? `${queue.filter((q) => q.status === "error").length} of ${queue.length} failed — see below.`
+                  : "All files processed."}
             </p>
             <div className="mt-[16px] h-[4px] w-full overflow-hidden rounded-[3px]" style={{ background: "var(--ws-hairline)" }}>
               <div
@@ -177,35 +179,42 @@ export function AnalyzeDropzone() {
         )}
       </div>
 
-      {queue.length > 1 && (
+      {queue.length > 0 && (
         <div className="ws-stack mt-[18px]">
           {queue.map((item) => (
-            <div key={item.id} className="flex items-center gap-[10px]" style={{ padding: "11px 14px" }}>
-              <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                {item.file.name}
-              </span>
-              {item.status === "done" && item.assetId ? (
-                <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
-                  View report →
-                </Link>
-              ) : item.status === "error" ? (
-                <span className="shrink-0 text-[11.5px]" style={{ color: "var(--ws-warn-text)" }} title={item.error}>
-                  Failed
+            <div key={item.id} style={{ padding: "11px 14px" }}>
+              <div className="flex items-center gap-[10px]">
+                <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                  {item.file.name}
                 </span>
-              ) : (
-                <span className="shrink-0 text-[11.5px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
-                  {item.status}
-                </span>
+                {item.status === "done" && item.assetId ? (
+                  <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
+                    View report →
+                  </Link>
+                ) : item.status === "error" ? (
+                  <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
+                    Failed
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[11.5px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
+                    {item.status}
+                  </span>
+                )}
+              </div>
+              {item.status === "error" && item.error && (
+                <p className="mt-[4px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-warn-text)" }}>
+                  {item.error}
+                </p>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {finished && queue.length > 1 && (
+      {finished && (
         <div className="mt-[16px] flex justify-center gap-[8px]">
           <button type="button" onClick={reset} className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium" style={{ padding: "9px 14px" }}>
-            Analyze more
+            {queue.some((q) => q.status === "error") ? "Try again" : "Analyze more"}
           </button>
           <Link href="/signal" className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 14px" }}>
             Go to Library

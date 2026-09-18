@@ -25,11 +25,11 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/outlier/po
 
   const { data: post } = await admin
     .from("outlier_posts")
-    .select("id, caption, video_url, duration_seconds, creator_id, outlier_creators!inner(user_id)")
+    .select("id, caption, video_url, duration_seconds, handle_id, outlier_handles!inner(user_id)")
     .eq("id", id)
     .single();
 
-  if (!post || (post.outlier_creators as unknown as { user_id: string }).user_id !== user.id) {
+  if (!post || (post.outlier_handles as unknown as { user_id: string }).user_id !== user.id) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
   if (!post.video_url) {

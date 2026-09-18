@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../../components";
-import { PullCreatorButton, RemoveCreatorButton } from "../../creator-actions";
+import { AddPlatformButton, PullHandlesButton, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
@@ -21,9 +21,8 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   if (!detail) notFound();
 
   const { creator, posts } = detail;
-  const handle = creator.handles[0];
-  const totalPosts = handle.postCount;
-  const isThin = handle.thin;
+  const totalPosts = posts.length;
+  const isThin = creator.handles.some((h) => h.thin);
 
   // Views-per-post, most recent first, for the bar chart below.
   const history = posts.slice(0, 12).map((post, index) => ({
@@ -49,13 +48,23 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
             </h1>
             {isThin && <ThinHistoryPill />}
           </div>
-          <p className="mt-[4px] text-[12.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {creator.handles.map((h) => `${h.platform} ${h.handle}`).join(" · ")}
-          </p>
+          <div className="mt-[6px] flex flex-wrap items-center gap-[6px]">
+            {creator.handles.map((h) => (
+              <span
+                key={h.id}
+                className="flex items-center gap-[6px] rounded-[20px] text-[11px] font-medium"
+                style={{ padding: "4px 6px 4px 10px", background: "var(--ws-surface-header)", color: "var(--ws-ink-60)" }}
+              >
+                {h.platform} @{h.handle}
+                <RemoveHandleButton handleId={h.id} handle={h.handle} />
+              </span>
+            ))}
+            <AddPlatformButton creatorId={creator.id} />
+          </div>
         </div>
         <div className="flex-1" />
-        <PullCreatorButton creatorId={creator.id} handle={handle.handle} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
-        <RemoveCreatorButton creatorId={creator.id} handle={handle.handle} />
+        <PullHandlesButton handles={creator.handles} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
+        <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} />
       </div>
 
       <div className="ws-stack-row mt-[18px]">

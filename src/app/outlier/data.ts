@@ -7,6 +7,7 @@
 export type Platform = "IG" | "TT" | "YT";
 
 export type Handle = {
+  id: string;
   platform: Platform;
   handle: string;
   postCount: number;
@@ -53,6 +54,8 @@ export type Beat = { name: string; timecode: string; analysis: string };
 export type Job = {
   id: string;
   creatorId: string;
+  handle: string;
+  platform: Platform;
   scope: string;
   stage: string;
   pct: number;

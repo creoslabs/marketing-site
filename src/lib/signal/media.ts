@@ -37,6 +37,25 @@ export async function probeVideo(filePath: string): Promise<VideoMetadata> {
   };
 }
 
+async function extractOneFrame(filePath: string, dir: string, t: number): Promise<Buffer> {
+  const outPath = path.join(dir, `frame-${t}.jpg`);
+  await run(ffmpegPath.path, [
+    "-ss",
+    String(t),
+    "-i",
+    filePath,
+    "-frames:v",
+    "1",
+    "-q:v",
+    "3",
+    "-vf",
+    "scale=480:-1",
+    "-y",
+    outPath,
+  ]);
+  return readFile(outPath);
+}
+
 // Extracts one JPEG frame at each requested second offset, as raw bytes —
 // callers use the same buffer both for Claude's vision request and for
 // persisting the frame to Storage, since these are the only visual record
@@ -44,27 +63,27 @@ export async function probeVideo(filePath: string): Promise<VideoMetadata> {
 export async function extractFrames(filePath: string, timestamps: number[]): Promise<{ t: number; buffer: Buffer }[]> {
   const dir = await mkdtemp(path.join(tmpdir(), "signal-frames-"));
   try {
-    const frames = await Promise.all(
+    const results = await Promise.all(
       timestamps.map(async (t) => {
-        const outPath = path.join(dir, `frame-${t}.jpg`);
-        await run(ffmpegPath.path, [
-          "-ss",
-          String(t),
-          "-i",
-          filePath,
-          "-frames:v",
-          "1",
-          "-q:v",
-          "3",
-          "-vf",
-          "scale=480:-1",
-          "-y",
-          outPath,
-        ]);
-        const buffer = await readFile(outPath);
-        return { t, buffer };
+        try {
+          return { t, buffer: await extractOneFrame(filePath, dir, t) };
+        } catch {
+          // A fast seek can occasionally land past the last decodable frame
+          // (duration rounding/keyframe imprecision) and write nothing —
+          // retry a little earlier once rather than failing the whole
+          // analysis over one frame.
+          try {
+            return { t, buffer: await extractOneFrame(filePath, dir, Math.max(0, t - 1)) };
+          } catch {
+            return null;
+          }
+        }
       })
     );
+    const frames = results.filter((f): f is { t: number; buffer: Buffer } => f !== null);
+    if (frames.length === 0) {
+      throw new Error("Could not extract any frames from this video.");
+    }
     return frames;
   } finally {
     await rm(dir, { recursive: true, force: true });

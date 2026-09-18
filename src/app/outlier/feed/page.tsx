@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCreators, getPosts } from "../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
-import { AddCreatorButton, PullAllButton } from "../creator-actions";
+import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {
@@ -63,7 +63,7 @@ export default async function FeedPage() {
                   + Add creator
                 </AddCreatorButton>
               ) : (
-                <PullAllButton creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))} />
+                <PullHandlesButton handles={creators.flatMap((c) => c.handles)} />
               )
             }
           />
@@ -72,6 +72,7 @@ export default async function FeedPage() {
       <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
         {posts.map((post) => {
           const creator = creatorById.get(post.creatorId);
+          const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle;
           return (
             <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
               <Thumb aspectRatio="9/13" radius={11}>
@@ -100,7 +101,7 @@ export default async function FeedPage() {
                 {creator && <Avatar initials={creator.initials} size={26} />}
                 <div className="min-w-0">
                   <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {creator?.handles[0].handle}
+                    {handle}
                   </p>
                   <p className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                     {formatCompact(post.views)} views · {post.postedAt}

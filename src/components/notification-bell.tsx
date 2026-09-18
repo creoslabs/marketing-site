@@ -86,7 +86,15 @@ export function NotificationBell() {
         className="relative flex h-[28px] w-[28px] items-center justify-center rounded-[7px] text-[13px] transition-transform active:scale-95"
         style={{ border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
       >
-        🔔
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M8 1.5C6.067 1.5 4.5 3.067 4.5 5v2.086c0 .464-.184.909-.513 1.237l-.94.94A1.25 1.25 0 0 0 4 11.5h8a1.25 1.25 0 0 0 .953-2.237l-.94-.94A1.75 1.75 0 0 1 11.5 7.086V5c0-1.933-1.567-3.5-3.5-3.5Z"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinejoin="round"
+          />
+          <path d="M6.25 13.25a1.75 1.75 0 0 0 3.5 0" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" />
+        </svg>
         {unreadCount > 0 && (
           <span
             className="ws-tabular absolute flex h-[15px] min-w-[15px] items-center justify-center rounded-full text-[9px] font-semibold"
