@@ -133,13 +133,16 @@ export async function POST(request: Request) {
           throw new Error("Could not persist any keyframes for this video.");
         }
 
-        await admin.from("signal_frames").insert(
+        const { error: framesInsertError } = await admin.from("signal_frames").insert(
           persisted.map((u) => ({
             asset_id: assetId,
             t: u.t,
             storage_path: u.storagePath,
           }))
         );
+        if (framesInsertError) {
+          throw new Error(`Could not save keyframe records: ${framesInsertError.message}`);
+        }
         await admin.storage.from("signal-assets").remove([storagePath]);
       }
     } else {
