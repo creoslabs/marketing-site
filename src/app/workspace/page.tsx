@@ -5,6 +5,7 @@ import { WorkspacePageHeader } from "./page-header";
 import { PRODUCTS } from "./data";
 import { CREATORS, POSTS, JOBS } from "@/app/outlier/data";
 import { getSignalSummary } from "@/app/signal/live-data";
+import { relativeTime } from "@/lib/relative-time";
 
 export const metadata: Metadata = {
   title: "Overview — Creos Labs",
@@ -16,16 +17,6 @@ function greeting() {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
-}
-
-function relativeTime(iso: string) {
-  const ms = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(ms / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
 }
 
 export default async function OverviewPage() {

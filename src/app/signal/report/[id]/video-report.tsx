@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Asset, Criterion, VideoFinding } from "../../data";
 import { VerdictLabel } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
+import { CompareButton } from "./compare-button";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -451,9 +452,7 @@ export function ReportSubHeader({ asset }: { asset: Asset }) {
         {asset.platform} · {asset.postedAt}
       </span>
       <div className="flex-1" />
-      <button type="button" className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium" style={{ padding: "9px 12px" }}>
-        Compare
-      </button>
+      <CompareButton assetId={asset.id} format={asset.format} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/data";
 import { OutlierChrome } from "./outlier-chrome";
+import { WsUIProvider } from "@/components/ws-ui-provider";
 
 export default async function OutlierLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
@@ -16,8 +17,10 @@ export default async function OutlierLayout({ children }: { children: React.Reac
             "try{var t=localStorage.getItem('ws-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
         }}
       />
-      <OutlierChrome />
-      {children}
+      <WsUIProvider>
+        <OutlierChrome />
+        {children}
+      </WsUIProvider>
     </div>
   );
 }

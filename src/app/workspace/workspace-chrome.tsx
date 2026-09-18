@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWsTheme } from "@/components/ws-theme";
+import { useCommandPalette } from "@/components/ws-command-palette";
+import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav } from "@/components/ws-tab-nav";
 
 const TABS = [
@@ -24,6 +26,7 @@ export function WorkspaceChrome({
 }) {
   const router = useRouter();
   const [theme, setTheme] = useWsTheme();
+  const openPalette = useCommandPalette();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +69,17 @@ export function WorkspaceChrome({
         <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
           Support
         </span>
+
+        <NotificationBell />
+
+        <button
+          type="button"
+          onClick={openPalette}
+          className="flex items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95"
+          style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
+        >
+          ⌘K
+        </button>
 
         <div
           ref={menuRef}

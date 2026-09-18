@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Asset } from "./data";
 import { getLibrary, medianOf, percentileWithin } from "./live-data";
 import { ScoreBadge, IssuePill, Thumb } from "./components";
-import { AppearanceCard } from "./appearance-card";
+import { DeleteAssetButton } from "./delete-asset-button";
 import { EmptyState } from "@/components/ws-empty-state";
 
 export const metadata: Metadata = {
@@ -73,9 +73,12 @@ function AssetCard({
   );
 
   return (
-    <Link href={`/signal/report/${asset.id}`} className="block">
-      {card}
-    </Link>
+    <div className="group relative">
+      <Link href={`/signal/report/${asset.id}`} className="block">
+        {card}
+      </Link>
+      <DeleteAssetButton assetId={asset.id} filename={asset.filename} />
+    </div>
   );
 }
 
@@ -211,8 +214,6 @@ export default async function LibraryPage() {
             Choose a file
           </Link>
         </div>
-
-        <AppearanceCard />
       </div>
     </div>
   );

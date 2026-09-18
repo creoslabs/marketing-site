@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useWsTheme } from "@/components/ws-theme";
+import { useCommandPalette } from "@/components/ws-command-palette";
+import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav, type WsTab } from "@/components/ws-tab-nav";
 
 const TABS: WsTab[] = [
@@ -12,6 +14,7 @@ const TABS: WsTab[] = [
 
 export function SignalChrome() {
   useWsTheme();
+  const openPalette = useCommandPalette();
 
   return (
     <header
@@ -36,12 +39,16 @@ export function SignalChrome() {
 
       <div className="flex-1" />
 
-      <div
+      <NotificationBell />
+
+      <button
+        type="button"
+        onClick={openPalette}
         className="flex items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95"
         style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
       >
         ⌘K
-      </div>
+      </button>
     </header>
   );
 }

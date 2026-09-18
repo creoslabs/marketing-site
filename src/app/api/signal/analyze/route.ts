@@ -151,10 +151,23 @@ export async function POST(request: Request) {
       );
     }
 
+    await admin.from("notifications").insert({
+      user_id: user.id,
+      title: `Analysis complete — ${filename}`,
+      body: `Scored ${result.score} · ${result.failedChecks} check${result.failedChecks === 1 ? "" : "s"} failing.`,
+      href: `/signal/report/${assetId}`,
+    });
+
     return NextResponse.json({ assetId });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed.";
     await admin.from("signal_assets").update({ status: "failed", error: message }).eq("id", assetId);
+    await admin.from("notifications").insert({
+      user_id: user.id,
+      title: `Analysis failed — ${filename}`,
+      body: message,
+      href: "/signal",
+    });
     return NextResponse.json({ error: message, assetId }, { status: 500 });
   } finally {
     await unlink(tempPath).catch(() => {});

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ws-toast";
 
 export function FavouriteButton() {
   const [saved, setSaved] = useState(false);
@@ -31,10 +32,11 @@ export function FavouriteButton() {
 }
 
 export function OpenOnPlatformButton({ label }: { label: string }) {
+  const toast = useToast();
   return (
     <button
       type="button"
-      onClick={() => alert("Opening the original post isn't available yet.")}
+      onClick={() => toast("Opening the original post isn't available yet.")}
       className="flex-1 rounded-[8px] text-[12.5px] font-medium"
       style={{
         padding: "9px 10px",
@@ -49,10 +51,11 @@ export function OpenOnPlatformButton({ label }: { label: string }) {
 }
 
 export function RepurposeButton() {
+  const toast = useToast();
   return (
     <button
       type="button"
-      onClick={() => alert("Repurpose isn't built yet — coming next.")}
+      onClick={() => toast("Repurpose isn't built yet — coming next.")}
       className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
       style={{ padding: "10px 14px" }}
     >

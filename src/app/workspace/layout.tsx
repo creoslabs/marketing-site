@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspaceChrome } from "./workspace-chrome";
+import { WsUIProvider } from "@/components/ws-ui-provider";
 
 function deriveInitials(name: string) {
   return (
@@ -40,8 +41,10 @@ export default async function WorkspaceLayout({
             "try{var t=localStorage.getItem('ws-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
         }}
       />
-      <WorkspaceChrome name={name} email={email} initials={initials} />
-      {children}
+      <WsUIProvider>
+        <WorkspaceChrome name={name} email={email} initials={initials} />
+        {children}
+      </WsUIProvider>
     </div>
   );
 }

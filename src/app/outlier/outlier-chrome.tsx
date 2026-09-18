@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useWsTheme } from "@/components/ws-theme";
+import { useCommandPalette } from "@/components/ws-command-palette";
+import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav, type WsTab } from "@/components/ws-tab-nav";
 import { JOBS } from "./data";
 
 export function OutlierChrome() {
   useWsTheme();
+  const openPalette = useCommandPalette();
   const runningCount = JOBS.filter((job) => job.state === "running").length;
 
   const TABS: WsTab[] = [
@@ -62,12 +65,16 @@ export function OutlierChrome() {
         pulled 12m ago
       </span>
 
-      <div
+      <NotificationBell />
+
+      <button
+        type="button"
+        onClick={openPalette}
         className="flex items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95"
         style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
       >
         ⌘K
-      </div>
+      </button>
     </header>
   );
 }

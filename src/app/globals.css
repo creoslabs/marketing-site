@@ -367,13 +367,88 @@ body {
   }
 }
 
+.ws .ws-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--ws-surface-header);
+}
+
+.ws .ws-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ws-ink) 8%, transparent),
+    transparent
+  );
+  animation: ws-skeleton-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes ws-skeleton-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.ws .ws-toast-in {
+  animation: ws-toast-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ws-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ws .ws-modal-in {
+  animation: ws-modal-in 0.14s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ws-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ws .ws-overlay-in {
+  animation: ws-overlay-in 0.14s ease both;
+}
+
+@keyframes ws-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ws .ws-tab-indicator,
   .ws .ws-dropdown-in,
   .ws .ws-page-in,
   .ws .ws-badge-pulse,
   .ws .ws-btn-primary,
-  .ws .ws-btn-ghost {
+  .ws .ws-btn-ghost,
+  .ws .ws-skeleton::after,
+  .ws .ws-toast-in,
+  .ws .ws-modal-in,
+  .ws .ws-overlay-in {
     animation: none !important;
     transition: none !important;
   }
