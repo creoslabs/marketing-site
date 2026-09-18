@@ -210,11 +210,13 @@ export function AddPlatformButton({ creatorId }: { creatorId: string }) {
 // what's passed in.
 export function PullHandlesButton({
   handles,
+  postLimit,
   className,
   style,
   children = "Pull now",
 }: {
   handles: { id: string; handle: string }[];
+  postLimit?: number;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -235,7 +237,7 @@ export function PullHandlesButton({
       const res = await fetch("/api/outlier/pull", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handleId: h.id }),
+        body: JSON.stringify({ handleId: h.id, postLimit }),
       });
       const data = await res.json().catch(() => null);
       if (res.ok) totalNew += data.newCount ?? 0;
@@ -263,6 +265,38 @@ export function PullHandlesButton({
     >
       {pulling ? "Pulling…" : children}
     </button>
+  );
+}
+
+// Pairs a "how many posts" picker with the pull action — used where fine-
+// tuning a pull is worth the extra control (Creator Detail). Other quick
+// pull actions (Home's "pull all", a thin-history nudge) just use
+// PullHandlesButton with its default limit, since those are meant to be
+// one-click, not a decision point.
+export function PullWithLimit({ handles }: { handles: { id: string; handle: string }[] }) {
+  const [postLimit, setPostLimit] = useState(30);
+
+  return (
+    <div className="flex items-center gap-[8px]">
+      <input
+        type="number"
+        min={5}
+        max={100}
+        value={postLimit}
+        onChange={(e) => setPostLimit(Math.min(100, Math.max(5, Number(e.target.value) || 30)))}
+        aria-label="Posts to pull"
+        className="text-[12.5px] outline-none"
+        style={{
+          width: 56,
+          padding: "9px 8px",
+          borderRadius: 7,
+          border: "1px solid var(--ws-hairline-strong)",
+          background: "var(--ws-surface)",
+          color: "var(--ws-ink)",
+        }}
+      />
+      <PullHandlesButton handles={handles} postLimit={postLimit} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
+    </div>
   );
 }
 

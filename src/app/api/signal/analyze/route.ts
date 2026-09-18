@@ -113,21 +113,31 @@ export async function POST(request: Request) {
       // storage cost of the source file.
       const frames = result.frames ?? [];
       if (frames.length > 0) {
-        await Promise.all(
-          frames.map((frame) =>
-            admin.storage
-              .from("signal-assets")
-              .upload(`${user.id}/${assetId}/frames/${frame.t}.jpg`, frame.buffer, {
-                contentType: "image/jpeg",
-                upsert: true,
-              })
-          )
+        // .upload() resolves with an { error } field on failure rather than
+        // throwing — awaiting it without checking silently produced
+        // signal_frames rows pointing at files that were never written,
+        // and the report showed no preview at all for those assets.
+        const uploads = await Promise.all(
+          frames.map(async (frame) => {
+            const framePath = `${user.id}/${assetId}/frames/${frame.t}.jpg`;
+            const { error } = await admin.storage.from("signal-assets").upload(framePath, frame.buffer, {
+              contentType: "image/jpeg",
+              upsert: true,
+            });
+            return { t: frame.t, storagePath: framePath, error };
+          })
         );
+
+        const persisted = uploads.filter((u) => !u.error);
+        if (persisted.length === 0) {
+          throw new Error("Could not persist any keyframes for this video.");
+        }
+
         await admin.from("signal_frames").insert(
-          frames.map((frame) => ({
+          persisted.map((u) => ({
             asset_id: assetId,
-            t: frame.t,
-            storage_path: `${user.id}/${assetId}/frames/${frame.t}.jpg`,
+            t: u.t,
+            storage_path: u.storagePath,
           }))
         );
         await admin.storage.from("signal-assets").remove([storagePath]);

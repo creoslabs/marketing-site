@@ -55,6 +55,7 @@ type HandleRow = {
   status: "active" | "pulling" | "error";
   error: string | null;
   last_pulled_at: string | null;
+  avatar_url: string | null;
 };
 
 type PostRow = {
@@ -89,11 +90,13 @@ function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<
 
   const name = row.display_name ?? handles[0]?.handle ?? "Unknown";
   const initials = name.replace(/^@/, "").slice(0, 2).toUpperCase();
+  const avatarUrl = handles.find((h) => h.avatar_url)?.avatar_url ?? null;
 
   return {
     id: row.id,
     displayName: name,
     initials,
+    avatarUrl,
     handles: handles.map((h) => {
       const handlePosts = postsByHandle.get(h.id) ?? [];
       return {
@@ -125,6 +128,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     platform: row.platform,
     caption: row.caption ?? "",
     description: "",
+    thumbnailUrl: row.thumbnail_url,
     views: row.views,
     median: creatorMedian,
     score: creatorMedian > 0 ? row.views / creatorMedian : 0,
@@ -157,7 +161,7 @@ async function loadAll() {
 
   const { data: handleRows } = await supabase
     .from("outlier_handles")
-    .select("id, creator_id, platform, handle, status, error, last_pulled_at")
+    .select("id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url")
     .in(
       "creator_id",
       creatorRows.map((c) => c.id)

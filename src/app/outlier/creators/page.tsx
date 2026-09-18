@@ -91,7 +91,7 @@ export default async function CreatorsPage() {
               style={{ gridTemplateColumns: COLUMNS, gap: 14, padding: "13px 16px" }}
             >
               <div className="flex min-w-0 items-center gap-[10px]">
-                <Avatar initials={creator.initials} size={30} />
+                <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={30} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-[7px]">
                     <span className="truncate text-[13px] font-medium" style={{ color: "var(--ws-ink)" }}>

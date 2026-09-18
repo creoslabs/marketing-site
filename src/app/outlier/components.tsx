@@ -1,7 +1,18 @@
 import type { Platform } from "./data";
 import { formatScore } from "./format";
 
-export function Avatar({ initials, size = 26 }: { initials: string; size?: number }) {
+export function Avatar({ initials, avatarUrl, size = 26 }: { initials: string; avatarUrl?: string | null; size?: number }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
+      <img
+        src={avatarUrl}
+        alt=""
+        className="shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size, border: "1px solid var(--ws-hairline)" }}
+      />
+    );
+  }
   return (
     <span
       className="ws-placeholder flex shrink-0 items-center justify-center rounded-full font-semibold"

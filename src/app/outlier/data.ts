@@ -18,6 +18,7 @@ export type Creator = {
   id: string;
   displayName: string;
   initials: string;
+  avatarUrl: string | null;
   handles: Handle[];
   median: number;
   bestScore: number;
@@ -33,6 +34,7 @@ export type Post = {
   platform: Platform;
   caption: string;
   description: string;
+  thumbnailUrl: string | null;
   views: number;
   median: number;
   score: number;

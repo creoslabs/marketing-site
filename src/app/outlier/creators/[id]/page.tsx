@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../../components";
-import { AddPlatformButton, PullHandlesButton, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
+import { AddPlatformButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
@@ -40,7 +40,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
       </Link>
 
       <div className="mt-[16px] flex flex-wrap items-center gap-[16px]">
-        <Avatar initials={creator.initials} size={48} />
+        <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={48} />
         <div>
           <div className="flex items-center gap-[8px]">
             <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
@@ -63,7 +63,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
           </div>
         </div>
         <div className="flex-1" />
-        <PullHandlesButton handles={creator.handles} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
+        <PullWithLimit handles={creator.handles} />
         <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} />
       </div>
 
@@ -143,6 +143,14 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
             {posts.map((post) => (
               <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
                 <Thumb aspectRatio="9/13" radius={10}>
+                  {post.thumbnailUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
+                    <img
+                      src={post.thumbnailUrl}
+                      alt={post.caption}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
                   <div className="absolute left-[7px] top-[7px]" style={{ zIndex: 2 }}>
                     <PlatformBadge platform={post.platform} />
                   </div>

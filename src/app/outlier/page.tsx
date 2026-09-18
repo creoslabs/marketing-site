@@ -133,7 +133,16 @@ export default async function OutlierHomePage() {
                     className="ws-row-hover flex items-center gap-[14px]"
                     style={{ padding: "12px 20px" }}
                   >
-                    <Thumb aspectRatio="44/60" radius={8} style={{ width: 44 }} />
+                    <Thumb aspectRatio="44/60" radius={8} style={{ width: 44 }}>
+                      {post.thumbnailUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
+                        <img
+                          src={post.thumbnailUrl}
+                          alt={post.caption}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      )}
+                    </Thumb>
                     <ScoreChip score={post.score} />
                     <div className="min-w-0 flex-1">
                       <p
@@ -143,7 +152,7 @@ export default async function OutlierHomePage() {
                         {post.caption}
                       </p>
                       <div className="mt-[4px] flex items-center gap-[7px]">
-                        {creator && <Avatar initials={creator.initials} size={20} />}
+                        {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={20} />}
                         <span className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                           {handle} · {formatCompact(post.views)} views · {post.postedAt}
                         </span>
@@ -214,7 +223,7 @@ export default async function OutlierHomePage() {
                   const thinHandle = creator.handles.find((h) => h.thin)!;
                   return (
                     <div key={creator.id} className="flex items-center gap-[10px]">
-                      <Avatar initials={creator.initials} size={26} />
+                      <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={26} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                           {creator.displayName}

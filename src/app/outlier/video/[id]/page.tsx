@@ -62,7 +62,7 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
           ← Home
         </Link>
         <div className="h-[20px] w-px" style={{ background: "var(--ws-hairline)" }} />
-        <Avatar initials={creator.initials} size={24} />
+        <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={24} />
         <span className="text-[13px] font-medium" style={{ color: "var(--ws-ink)" }}>
           {handle}
         </span>
@@ -207,11 +207,11 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
             ) : (
               <div className="ws-card mt-[10px]" style={{ padding: "14px 16px" }}>
                 <p className="text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
-                  {row.video_url
+                  {row.video_url || row.platform === "TT"
                     ? "Not analyzed yet — transcribe the audio and identify the hook, structure, and beats."
                     : "No downloadable video for this post, so structure can't be analyzed."}
                 </p>
-                {row.video_url && (
+                {(row.video_url || row.platform === "TT") && (
                   <div className="mt-[12px]">
                     <AnalyzePostButton postId={post.id} status={row.analysis_status} />
                   </div>

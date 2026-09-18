@@ -76,6 +76,14 @@ export default async function FeedPage() {
           return (
             <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
               <Thumb aspectRatio="9/13" radius={11}>
+                {post.thumbnailUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
+                  <img
+                    src={post.thumbnailUrl}
+                    alt={post.caption}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                )}
                 <div className="absolute left-[8px] top-[8px]" style={{ zIndex: 2 }}>
                   <PlatformBadge platform={post.platform} />
                 </div>
@@ -98,7 +106,7 @@ export default async function FeedPage() {
               </Thumb>
 
               <div className="mt-[8px] flex items-center gap-[7px]">
-                {creator && <Avatar initials={creator.initials} size={26} />}
+                {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={26} />}
                 <div className="min-w-0">
                   <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                     {handle}

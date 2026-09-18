@@ -53,7 +53,7 @@ export default async function ProgressPage() {
               return (
                 <div key={job.id} className="ws-card" style={{ padding: "14px 16px" }}>
                   <div className="flex items-center gap-[10px]">
-                    {creator && <Avatar initials={creator.initials} size={26} />}
+                    {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={26} />}
                     <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                       @{job.handle}
                     </span>

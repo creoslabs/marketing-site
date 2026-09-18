@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   if (!handleId) {
     return NextResponse.json({ error: "Missing handleId." }, { status: 400 });
   }
+  const postLimit = Math.min(100, Math.max(5, Number(body?.postLimit) || 30));
 
   let admin;
   try {
@@ -51,16 +52,20 @@ export async function POST(request: Request) {
       typeof user.user_metadata?.outlier_apify_api_key === "string" ? user.user_metadata.outlier_apify_api_key : null;
     const token = getApifyToken(userApifyKey);
 
-    const rawPosts =
+    const { posts: rawPosts, avatarUrl } =
       handle.platform === "TT"
-        ? await pullTikTok(handle.handle, token)
+        ? await pullTikTok(handle.handle, token, postLimit)
         : handle.platform === "IG"
-          ? await pullInstagram(handle.handle, token)
-          : await pullYouTube(handle.handle, token);
+          ? await pullInstagram(handle.handle, token, postLimit)
+          : await pullYouTube(handle.handle, token, postLimit);
 
     const { data: existing } = await admin.from("outlier_posts").select("external_id").eq("handle_id", handleId);
     const existingIds = new Set((existing ?? []).map((r) => r.external_id));
     const newCount = rawPosts.filter((p) => !existingIds.has(p.externalId)).length;
+
+    if (avatarUrl) {
+      await admin.from("outlier_handles").update({ avatar_url: avatarUrl }).eq("id", handleId);
+    }
 
     if (rawPosts.length > 0) {
       const { error: upsertError } = await admin.from("outlier_posts").upsert(
