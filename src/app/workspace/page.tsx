@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "./page-header";
-import { PRODUCTS, USAGE, PLAN } from "./data";
+import { PRODUCTS } from "./data";
+import { CREATORS, POSTS, JOBS } from "@/app/outlier/data";
+import { getSignalSummary } from "@/app/signal/live-data";
 
 export const metadata: Metadata = {
   title: "Overview — Creos Labs",
@@ -16,8 +18,18 @@ function greeting() {
   return "Good evening";
 }
 
+function relativeTime(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 export default async function OverviewPage() {
-  const user = await getUser();
+  const [user, signalSummary] = await Promise.all([getUser(), getSignalSummary()]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -25,11 +37,35 @@ export default async function OverviewPage() {
     day: "numeric",
   });
 
+  const outlierPosts = POSTS.filter((post) => post.score >= 2);
+  const runningJobs = JOBS.filter((job) => job.state === "running");
+
+  const statsByKey: Record<string, { label: string; value: string; warn?: boolean }[]> = {
+    outlier: [
+      { label: "CREATORS", value: String(CREATORS.length) },
+      { label: "OUTLIERS", value: String(outlierPosts.length) },
+      { label: "POSTS PULLED", value: String(POSTS.length) },
+    ],
+    signal: [
+      { label: "ASSETS", value: String(signalSummary.total) },
+      { label: "FAILING", value: String(signalSummary.failing), warn: signalSummary.failing > 0 },
+      {
+        label: "LAST RUN",
+        value: signalSummary.lastAnalyzedAt ? relativeTime(signalSummary.lastAnalyzedAt) : "—",
+      },
+    ],
+  };
+
+  const statusByKey: Record<string, string> = {
+    outlier: runningJobs.length > 0 ? `${runningJobs.length} jobs running` : "Idle",
+    signal: "Idle",
+  };
+
   return (
     <div className="ws-page-in">
       <WorkspacePageHeader
         title={`${greeting()}, ${firstName}`}
-        subtitle={`${today} · 7 new outliers and 12 failing assets since you last looked`}
+        subtitle={today}
       />
 
       <div className="grid grid-cols-1 gap-[14px] px-6 pt-[22px] sm:grid-cols-2">
@@ -60,7 +96,7 @@ export default async function OverviewPage() {
             <div className="flex-1" />
 
             <div className="ws-stack-row">
-              {product.stats.map((stat) => (
+              {statsByKey[product.key].map((stat) => (
                 <div key={stat.label} className="flex-1" style={{ padding: "15px 16px" }}>
                   <p className="ws-eyebrow" style={{ marginBottom: 10 }}>
                     {stat.label}
@@ -92,7 +128,7 @@ export default async function OverviewPage() {
               </Link>
               <div className="flex-1" />
               <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                {product.status}
+                {statusByKey[product.key]}
               </span>
             </div>
           </div>
@@ -100,63 +136,23 @@ export default async function OverviewPage() {
       </div>
 
       <div
-        className="ws-card mx-6 mb-[30px] mt-[14px] flex flex-wrap items-center gap-[22px]"
+        className="ws-card mx-6 mb-[30px] mt-[14px] flex flex-wrap items-center gap-[16px]"
         style={{ padding: "18px 22px" }}
       >
         <div className="shrink-0">
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>
-            STUDIO PLAN
+            PLAN
           </p>
-          <p
-            className="whitespace-nowrap text-[12.5px] font-medium"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            ${PLAN.price} / month · renews {PLAN.renewsOn}
+          <p className="whitespace-nowrap text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+            No plan selected
           </p>
         </div>
 
-        <div
-          className="hidden h-[52px] w-px shrink-0 sm:block"
-          style={{ background: "var(--ws-hairline)" }}
-        />
+        <div className="hidden h-[52px] w-px shrink-0 sm:block" style={{ background: "var(--ws-hairline)" }} />
 
-        {USAGE.map((item) => {
-          const pct = Math.min(100, (item.used / item.limit) * 100);
-          const nearLimit = pct >= 90;
-          return (
-            <div key={item.key} className="flex min-w-[140px] flex-1 flex-col gap-[7px]">
-              <p
-                className="overflow-hidden text-ellipsis whitespace-nowrap text-[11.5px]"
-                style={{ color: "var(--ws-ink-60)" }}
-              >
-                {item.shortLabel}
-              </p>
-              <p
-                className="ws-tabular whitespace-nowrap text-[12.5px] font-medium"
-                style={{ color: "var(--ws-ink)" }}
-              >
-                {item.used.toLocaleString()} / {item.limit.toLocaleString()}
-              </p>
-              <div
-                className="mt-[2px] h-[3px] overflow-hidden rounded-[20px]"
-                style={{ background: "var(--ws-hairline)" }}
-              >
-                <div
-                  className="h-full rounded-[20px]"
-                  style={{
-                    width: `${pct}%`,
-                    background: nearLimit ? "var(--ws-warn)" : "var(--ws-accent)",
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        <div
-          className="hidden h-[52px] w-px shrink-0 sm:block"
-          style={{ background: "var(--ws-hairline)" }}
-        />
+        <p className="flex-1 text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
+          Usage is tracked per product above. Billing isn&apos;t set up yet.
+        </p>
 
         <Link
           href="/workspace/billing"

@@ -149,6 +149,30 @@ export const getFormatScores = cache(async (): Promise<{ score: number; format: 
   return (data ?? []).map((row) => ({ score: row.score ?? 0, format: row.format }));
 });
 
+// The Workspace Overview card needs only these three counts, not the full
+// library — a lighter query than getLibrary() for the same reason as
+// getFormatScores() above.
+export const getSignalSummary = cache(
+  async (): Promise<{ total: number; failing: number; lastAnalyzedAt: string | null }> => {
+    if (!isSupabaseConfigured()) return { total: 0, failing: 0, lastAnalyzedAt: null };
+
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("signal_assets")
+      .select("failed_checks, created_at")
+      .eq("status", "done")
+      .order("created_at", { ascending: false })
+      .returns<{ failed_checks: number | null; created_at: string }[]>();
+
+    const rows = data ?? [];
+    return {
+      total: rows.length,
+      failing: rows.filter((r) => (r.failed_checks ?? 0) > 0).length,
+      lastAnalyzedAt: rows[0]?.created_at ?? null,
+    };
+  }
+);
+
 type AssetDetail = {
   asset: Asset;
   criteria: Criterion[];

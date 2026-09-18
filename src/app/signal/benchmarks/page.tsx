@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { VIDEO_ASSETS, STATIC_ASSETS, MEDIAN_BY_FORMAT, getPercentile } from "../data";
+import type { Asset } from "../data";
+import { getLibrary, medianOf, percentileWithin } from "../live-data";
 import { ScoreBadge } from "../components";
+import { EmptyState } from "@/components/ws-empty-state";
 
 export const metadata: Metadata = {
   title: "Benchmarks — Signal",
   robots: { index: false, follow: false },
 };
 
-function FormatColumn({ title, assets, median }: { title: string; assets: typeof VIDEO_ASSETS; median: number }) {
+function FormatColumn({ title, assets, median }: { title: string; assets: Asset[]; median: number }) {
   const sorted = [...assets].sort((a, b) => b.score - a.score);
   const max = Math.max(...sorted.map((a) => a.score), 1);
 
@@ -22,37 +24,45 @@ function FormatColumn({ title, assets, median }: { title: string; assets: typeof
         </span>
       </div>
 
-      <div className="mt-[14px] flex flex-col gap-[10px]">
-        {sorted.map((asset) => (
-          <Link
-            key={asset.id}
-            href={asset.criteria.length > 0 ? `/signal/report/${asset.id}` : "#"}
-            className="flex items-center gap-[10px]"
-          >
-            <span className="w-[130px] shrink-0 truncate text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
-              {asset.filename}
-            </span>
-            <div className="h-[6px] flex-1 overflow-hidden rounded-[3px]" style={{ background: "var(--ws-hairline)" }}>
-              <div
-                className="h-full rounded-[3px]"
-                style={{
-                  width: `${(asset.score / max) * 100}%`,
-                  background: asset.score >= median ? "var(--ws-accent)" : "var(--ws-ink-45)",
-                }}
-              />
-            </div>
-            <span className="ws-tabular w-[28px] shrink-0 text-right text-[11.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-              {asset.score}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {sorted.length === 0 ? (
+        <EmptyState title="Nothing analyzed in this format yet" />
+      ) : (
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          {sorted.map((asset) => (
+            <Link key={asset.id} href={`/signal/report/${asset.id}`} className="flex items-center gap-[10px]">
+              <span className="w-[130px] shrink-0 truncate text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
+                {asset.filename}
+              </span>
+              <div className="h-[6px] flex-1 overflow-hidden rounded-[3px]" style={{ background: "var(--ws-hairline)" }}>
+                <div
+                  className="h-full rounded-[3px]"
+                  style={{
+                    width: `${(asset.score / max) * 100}%`,
+                    background: asset.score >= median ? "var(--ws-accent)" : "var(--ws-ink-45)",
+                  }}
+                />
+              </div>
+              <span className="ws-tabular w-[28px] shrink-0 text-right text-[11.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                {asset.score}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-export default function BenchmarksPage() {
-  const eleven = STATIC_ASSETS[0];
+export default async function BenchmarksPage() {
+  const live = await getLibrary();
+  const assets = live.assets;
+  const staticAssets = assets.filter((a) => a.format === "static");
+  const videoAssets = assets.filter((a) => a.format === "video");
+  const medians = {
+    static: medianOf(staticAssets.map((a) => a.score)),
+    video: medianOf(videoAssets.map((a) => a.score)),
+  };
+  const example = staticAssets[0];
 
   return (
     <div className="ws-page-in" style={{ padding: "26px 22px" }}>
@@ -64,8 +74,8 @@ export default function BenchmarksPage() {
       </p>
 
       <div className="mt-[18px] grid grid-cols-1 gap-[14px] lg:grid-cols-2">
-        <FormatColumn title="STATIC · SORTED BY SCORE" assets={STATIC_ASSETS} median={MEDIAN_BY_FORMAT.static} />
-        <FormatColumn title="VIDEO · SORTED BY SCORE" assets={VIDEO_ASSETS} median={MEDIAN_BY_FORMAT.video} />
+        <FormatColumn title="STATIC · SORTED BY SCORE" assets={staticAssets} median={medians.static} />
+        <FormatColumn title="VIDEO · SORTED BY SCORE" assets={videoAssets} median={medians.video} />
       </div>
 
       <div
@@ -80,11 +90,16 @@ export default function BenchmarksPage() {
         </p>
       </div>
 
-      {eleven && (
+      {example && (
         <div className="mt-[14px] flex items-center gap-[12px]" style={{ padding: "4px 2px" }}>
-          <ScoreBadge score={eleven.score} format={eleven.format} />
+          <ScoreBadge score={example.score} format={example.format} />
           <p className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            Example: {eleven.filename} ranks {getPercentile(eleven)}th percentile among statics only.
+            Example: {example.filename} ranks{" "}
+            {(() => {
+              const p = percentileWithin(example.score, example.format, assets);
+              return p === null ? "first" : `${p}th percentile`;
+            })()}{" "}
+            among statics only.
           </p>
         </div>
       )}

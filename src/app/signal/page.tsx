@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Asset } from "./data";
-import { ASSETS, MEDIAN_BY_FORMAT, getPercentile as getFixturePercentile, ACCOUNT_PATTERN } from "./data";
 import { getLibrary, medianOf, percentileWithin } from "./live-data";
 import { ScoreBadge, IssuePill, Thumb } from "./components";
 import { AppearanceCard } from "./appearance-card";
+import { EmptyState } from "@/components/ws-empty-state";
 
 export const metadata: Metadata = {
   title: "Library — Signal",
@@ -22,11 +22,9 @@ function ordinalSuffix(n: number) {
 
 function AssetCard({
   asset,
-  hasReport,
   percentile,
 }: {
   asset: Asset;
-  hasReport: boolean;
   percentile: number | null;
 }) {
   const card = (
@@ -74,12 +72,10 @@ function AssetCard({
     </>
   );
 
-  return hasReport ? (
+  return (
     <Link href={`/signal/report/${asset.id}`} className="block">
       {card}
     </Link>
-  ) : (
-    <div>{card}</div>
   );
 }
 
@@ -87,13 +83,11 @@ function AssetSection({
   title,
   assets,
   median,
-  isLive,
   getPercentile,
 }: {
   title: string;
   assets: Asset[];
   median: number;
-  isLive: boolean;
   getPercentile: (asset: Asset) => number | null;
 }) {
   if (assets.length === 0) return null;
@@ -110,12 +104,7 @@ function AssetSection({
         style={{ gridTemplateColumns: "repeat(auto-fill, 110px)" }}
       >
         {assets.map((asset) => (
-          <AssetCard
-            key={asset.id}
-            asset={asset}
-            hasReport={isLive || asset.criteria.length > 0}
-            percentile={getPercentile(asset)}
-          />
+          <AssetCard key={asset.id} asset={asset} percentile={getPercentile(asset)} />
         ))}
       </div>
     </div>
@@ -124,18 +113,15 @@ function AssetSection({
 
 export default async function LibraryPage() {
   const live = await getLibrary();
-  const assets = live.isLive ? live.assets : ASSETS;
+  const assets = live.assets;
   const isLive = live.isLive;
 
-  const medians = isLive
-    ? {
-        static: medianOf(assets.filter((a) => a.format === "static").map((a) => a.score)),
-        video: medianOf(assets.filter((a) => a.format === "video").map((a) => a.score)),
-      }
-    : MEDIAN_BY_FORMAT;
+  const medians = {
+    static: medianOf(assets.filter((a) => a.format === "static").map((a) => a.score)),
+    video: medianOf(assets.filter((a) => a.format === "video").map((a) => a.score)),
+  };
 
-  const getPercentile = (asset: Asset) =>
-    isLive ? percentileWithin(asset.score, asset.format, assets) : getFixturePercentile(asset);
+  const getPercentile = (asset: Asset) => percentileWithin(asset.score, asset.format, assets);
 
   const videoAssets = assets.filter((a) => a.format === "video");
   const staticAssets = assets.filter((a) => a.format === "static");
@@ -150,7 +136,9 @@ export default async function LibraryPage() {
               Library
             </h1>
             <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-              {assets.length} assets · statics median {medians.static} · videos median {medians.video}
+              {assets.length === 0
+                ? "No assets analyzed yet"
+                : `${assets.length} assets · statics median ${medians.static} · videos median ${medians.video}`}
             </p>
           </div>
           <div className="flex items-center gap-[9px]">
@@ -170,20 +158,27 @@ export default async function LibraryPage() {
           </div>
         </div>
 
-        <AssetSection
-          title="VIDEOS"
-          assets={videoAssets}
-          median={medians.video}
-          isLive={isLive}
-          getPercentile={getPercentile}
-        />
-        <AssetSection
-          title="STATICS"
-          assets={staticAssets}
-          median={medians.static}
-          isLive={isLive}
-          getPercentile={getPercentile}
-        />
+        {assets.length === 0 ? (
+          <EmptyState
+            size="large"
+            title="No assets analyzed yet"
+            description={
+              isLive
+                ? "Upload a video or static ad to get its first best-practice score."
+                : "Signal isn't connected to a database yet — analysis results will show up here once it is."
+            }
+            action={
+              <Link href="/signal/analyze" className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold" style={{ padding: "10px 14px" }}>
+                Analyze an asset
+              </Link>
+            }
+          />
+        ) : (
+          <>
+            <AssetSection title="VIDEOS" assets={videoAssets} median={medians.video} getPercentile={getPercentile} />
+            <AssetSection title="STATICS" assets={staticAssets} median={medians.static} getPercentile={getPercentile} />
+          </>
+        )}
       </div>
 
       {/* Right column */}
@@ -218,22 +213,6 @@ export default async function LibraryPage() {
         </div>
 
         <AppearanceCard />
-
-        <div className="rounded-[10px]" style={{ padding: "18px 18px 20px", background: "var(--ws-warn-tint)" }}>
-          <p className="ws-eyebrow" style={{ color: "var(--ws-warn-text)" }}>
-            ACROSS THE ACCOUNT
-          </p>
-          <p className="mt-[10px] text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-warn-tint-ink)" }}>
-            {ACCOUNT_PATTERN.finding}
-          </p>
-          <Link
-            href="/signal/benchmarks"
-            className="mt-[10px] inline-block text-[11.5px] font-medium"
-            style={{ color: "var(--ws-warn-text)" }}
-          >
-            See the pattern →
-          </Link>
-        </div>
       </div>
     </div>
   );

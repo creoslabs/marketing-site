@@ -36,6 +36,7 @@ export default async function OutlierHomePage() {
   const bestToday = hasPosts
     ? POSTS.reduce((best, post) => (post.score > best.score ? post : best), POSTS[0])
     : null;
+  const outlierPosts = POSTS.filter((post) => post.score >= 2);
 
   if (CREATORS.length === 0) {
     return (
@@ -66,7 +67,7 @@ export default async function OutlierHomePage() {
             {greeting()}, {firstName}
           </h1>
           <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {hasPosts ? `${today} · 7 new outliers since you last looked` : `${today} · nothing pulled yet`}
+            {hasPosts ? `${today} · ${outlierPosts.length} outliers across ${POSTS.length} posts` : `${today} · nothing pulled yet`}
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
@@ -89,9 +90,11 @@ export default async function OutlierHomePage() {
 
       <div className="ws-stack-row mt-[18px]">
         <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>NEW OUTLIERS</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>7</p>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>since yesterday</p>
+          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>OUTLIERS</p>
+          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
+            {outlierPosts.length}
+          </p>
+          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>score ≥ 2×</p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE TODAY</p>
@@ -105,7 +108,7 @@ export default async function OutlierHomePage() {
         <div className="flex-1" style={{ padding: "16px 18px" }}>
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>POSTS PULLED</p>
           <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {hasPosts ? 486 : 0}
+            {POSTS.length}
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
             across {CREATORS.length} creators
@@ -225,45 +228,6 @@ export default async function OutlierHomePage() {
               <EmptyState title="Nothing running right now" />
             )}
           </div>
-
-          {hasPosts && (
-            <div
-              className="rounded-[10px]"
-              style={{
-                padding: "18px 20px 20px",
-                background: "var(--ws-accent-tint)",
-                border: "1px solid var(--ws-accent-tint-border)",
-              }}
-            >
-              <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
-                PATTERN WORTH TAKING
-              </p>
-              <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
-                Negative-command openers are averaging 4.6× across your watchlist this month — 7 posts
-                across 4 creators.
-              </p>
-              <div className="mt-[14px] flex gap-[8px]">
-                <button
-                  type="button"
-                  className="ws-btn-primary rounded-[8px] text-[12px] font-semibold"
-                  style={{ padding: "9px 12px" }}
-                >
-                  Repurpose this
-                </button>
-                <Link
-                  href="/outlier/trends"
-                  className="rounded-[8px] text-[12px] font-medium"
-                  style={{
-                    padding: "9px 12px",
-                    border: "1px solid var(--ws-accent-tint-border)",
-                    color: "var(--ws-accent-tint-ink)",
-                  }}
-                >
-                  See in Trends
-                </Link>
-              </div>
-            </div>
-          )}
 
           {thinCreators.length > 0 && (
             <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
