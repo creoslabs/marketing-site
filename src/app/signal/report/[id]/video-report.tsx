@@ -35,6 +35,7 @@ export function VideoReport({
   median,
   percentile,
   frames,
+  frameDebug,
   durationSeconds,
 }: {
   asset: Asset;
@@ -44,6 +45,8 @@ export function VideoReport({
   median: number;
   percentile: number | null;
   frames?: { t: number; url: string }[];
+  // TEMP-DEBUG: remove once the frame-preview issue is diagnosed.
+  frameDebug?: { dbRowCount: number; signedOk: number; firstError: string | null; samplePath: string | null };
   durationSeconds?: number;
 }) {
   const duration = Math.max(1, Math.round(durationSeconds ?? 18));
@@ -109,6 +112,18 @@ export function VideoReport({
                   alt={`Frame at ${formatTime(currentFrame.t)}`}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
+              )}
+              {!currentFrame && frameDebug && (
+                // TEMP-DEBUG: remove once the frame-preview issue is diagnosed.
+                <div
+                  className="absolute inset-x-[8px] top-[8px] rounded-[6px]"
+                  style={{ zIndex: 5, padding: "8px 10px", background: "rgba(0,0,0,.75)", color: "#fff", fontSize: 10, lineHeight: 1.5 }}
+                >
+                  <div>frame rows in DB: {frameDebug.dbRowCount}</div>
+                  <div>signed URLs resolved: {frameDebug.signedOk}</div>
+                  {frameDebug.samplePath && <div className="break-all">sample path: {frameDebug.samplePath}</div>}
+                  {frameDebug.firstError && <div className="break-all">sign error: {frameDebug.firstError}</div>}
+                </div>
               )}
               {/* Safe-zone bands */}
               <div

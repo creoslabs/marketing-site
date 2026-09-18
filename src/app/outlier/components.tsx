@@ -29,20 +29,47 @@ export function Avatar({ initials, avatarUrl, size = 26 }: { initials: string; a
   );
 }
 
+const PLATFORM_ICON: Record<Platform, { bg: string; icon: React.ReactNode }> = {
+  TT: {
+    bg: "#000000",
+    icon: (
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M16.6 5.82c-.9-.85-1.47-2-1.6-3.32h-3.14v13.44c0 1.5-1.22 2.72-2.72 2.72a2.72 2.72 0 0 1 0-5.44c.26 0 .5.03.74.1V10.2a5.9 5.9 0 0 0-.74-.05 5.86 5.86 0 1 0 5.86 5.86V9.28a8.2 8.2 0 0 0 4.8 1.54V7.68a4.98 4.98 0 0 1-3.2-1.86Z"
+          fill="#fff"
+        />
+      </svg>
+    ),
+  },
+  IG: {
+    bg: "linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7)",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="18" height="18" rx="5" stroke="#fff" strokeWidth="2" />
+        <circle cx="12" cy="12" r="4" stroke="#fff" strokeWidth="2" />
+        <circle cx="17.2" cy="6.8" r="1.2" fill="#fff" />
+      </svg>
+    ),
+  },
+  YT: {
+    bg: "#FF0000",
+    icon: (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9.5 8.5v7l6-3.5-6-3.5Z" fill="#fff" />
+      </svg>
+    ),
+  },
+};
+
 export function PlatformBadge({ platform }: { platform: Platform }) {
+  const { bg, icon } = PLATFORM_ICON[platform];
   return (
     <span
-      className="rounded-[5px] font-semibold uppercase"
-      style={{
-        fontSize: 9,
-        letterSpacing: "0.08em",
-        padding: "3px 6px",
-        background: "color-mix(in srgb, var(--ws-surface) 93%, transparent)",
-        color: "var(--ws-ink)",
-        border: "1px solid var(--ws-hairline)",
-      }}
+      className="inline-flex shrink-0 items-center justify-center rounded-[6px]"
+      style={{ width: 20, height: 20, background: bg }}
+      aria-label={platform === "TT" ? "TikTok" : platform === "IG" ? "Instagram" : "YouTube"}
     >
-      {platform}
+      {icon}
     </span>
   );
 }

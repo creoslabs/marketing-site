@@ -33,6 +33,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
         median={median}
         percentile={percentile}
         frames={live.frames}
+        frameDebug={live.frameDebug}
         durationSeconds={live.durationSeconds}
       />
     );

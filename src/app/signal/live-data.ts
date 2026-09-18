@@ -181,6 +181,8 @@ type AssetDetail = {
   topFix: { title: string; clears: number; body: string };
   assetUrl: string | null;
   frames?: { t: number; url: string }[];
+  // TEMP-DEBUG: remove once the frame-preview issue is diagnosed.
+  frameDebug?: { dbRowCount: number; signedOk: number; firstError: string | null; samplePath: string | null };
   durationSeconds: number | undefined;
 };
 
@@ -212,16 +214,30 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
   ]);
 
   let frames: { t: number; url: string }[] | undefined;
-  if (isVideo && frameRows && frameRows.length > 0) {
-    // One createSignedUrl call per frame, not the batched createSignedUrls —
-    // see getLibrary() above for why the batched endpoint's path-matching
-    // can't be trusted.
-    const signedFrameUrls = await Promise.all(
-      frameRows.map((f) => supabase.storage.from("signal-assets").createSignedUrl(f.storage_path, 60 * 60))
-    );
-    frames = frameRows
-      .map((f, i) => ({ t: f.t, url: signedFrameUrls[i]?.data?.signedUrl ?? "" }))
-      .filter((f) => f.url);
+  // TEMP-DEBUG: surfaced in the report UI until the frame-preview issue is
+  // found — remove frameDebug (here and on AssetDetail/in video-report.tsx)
+  // once resolved.
+  let frameDebug: { dbRowCount: number; signedOk: number; firstError: string | null; samplePath: string | null } | undefined;
+  if (isVideo) {
+    const rows = frameRows ?? [];
+    if (rows.length > 0) {
+      // One createSignedUrl call per frame, not the batched createSignedUrls —
+      // see getLibrary() above for why the batched endpoint's path-matching
+      // can't be trusted.
+      const signedFrameUrls = await Promise.all(
+        rows.map((f) => supabase.storage.from("signal-assets").createSignedUrl(f.storage_path, 60 * 60))
+      );
+      frames = rows.map((f, i) => ({ t: f.t, url: signedFrameUrls[i]?.data?.signedUrl ?? "" })).filter((f) => f.url);
+      const firstErrored = signedFrameUrls.find((r) => r.error);
+      frameDebug = {
+        dbRowCount: rows.length,
+        signedOk: frames.length,
+        firstError: firstErrored?.error?.message ?? null,
+        samplePath: rows[0]?.storage_path ?? null,
+      };
+    } else {
+      frameDebug = { dbRowCount: 0, signedOk: 0, firstError: null, samplePath: null };
+    }
   }
 
   const asset: Asset = {
@@ -275,6 +291,7 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     topFix,
     assetUrl: signedUrlData?.signedUrl ?? null,
     frames,
+    frameDebug,
     durationSeconds: assetRow.duration_seconds ?? undefined,
   };
 });

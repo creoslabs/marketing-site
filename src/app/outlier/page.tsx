@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { RECENT_REPURPOSES } from "./data";
 import { getCreators, getPosts, getJobs } from "./live-data";
-import { Avatar, EmptyState, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
+import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
 import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
 import { formatCompact } from "./format";
 
@@ -108,8 +108,8 @@ export default async function OutlierHomePage() {
 
       <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_352px]">
         {/* Left column */}
-        <div className="ws-card" style={{ padding: "18px 0 6px" }}>
-          <div className="flex items-center px-[20px]">
+        <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
+          <div className="flex items-center">
             <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
               Today&apos;s top outliers
             </h2>
@@ -122,18 +122,13 @@ export default async function OutlierHomePage() {
           </div>
 
           {hasPosts ? (
-            <div className="ws-stack mt-[14px]" style={{ border: "none", borderRadius: 0 }}>
+            <div className="mt-[14px] grid grid-cols-2 gap-[14px] sm:grid-cols-3 lg:grid-cols-4">
               {topOutliers.map((post) => {
                 const creator = creatorById.get(post.creatorId);
                 const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle ?? "";
                 return (
-                  <Link
-                    key={post.id}
-                    href={`/outlier/video/${post.id}`}
-                    className="ws-row-hover flex items-center gap-[14px]"
-                    style={{ padding: "12px 20px" }}
-                  >
-                    <Thumb aspectRatio="44/60" radius={8} style={{ width: 44 }}>
+                  <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
+                    <Thumb aspectRatio="9/13" radius={10}>
                       {post.thumbnailUrl && (
                         // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
                         <img
@@ -142,24 +137,35 @@ export default async function OutlierHomePage() {
                           className="absolute inset-0 h-full w-full object-cover"
                         />
                       )}
-                    </Thumb>
-                    <ScoreChip score={post.score} />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="truncate text-[13.5px] font-medium"
-                        style={{ color: "var(--ws-ink)" }}
-                      >
-                        {post.caption}
-                      </p>
-                      <div className="mt-[4px] flex items-center gap-[7px]">
-                        {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={20} />}
-                        <span className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                          {handle} · {formatCompact(post.views)} views · {post.postedAt}
-                        </span>
-                        {post.thin && <ThinHistoryPill />}
+                      <div className="absolute left-[7px] top-[7px]" style={{ zIndex: 2 }}>
+                        <PlatformBadge platform={post.platform} />
                       </div>
+                      {post.thin && (
+                        <div className="absolute right-[7px] top-[7px]" style={{ zIndex: 2 }}>
+                          <ThinHistoryPill />
+                        </div>
+                      )}
+                      <div
+                        className="absolute inset-x-0 bottom-0"
+                        style={{
+                          height: 44,
+                          background:
+                            "linear-gradient(to top, color-mix(in srgb, var(--ws-ground) 70%, transparent), transparent)",
+                        }}
+                      />
+                      <div className="absolute bottom-[7px] left-[7px]" style={{ zIndex: 2 }}>
+                        <ScoreChip score={post.score} />
+                      </div>
+                    </Thumb>
+                    <div className="mt-[7px] flex items-center gap-[6px]">
+                      {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={18} />}
+                      <span className="truncate text-[11px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                        {handle}
+                      </span>
                     </div>
-                    <span style={{ color: "var(--ws-ink-45)" }}>→</span>
+                    <p className="mt-[2px] truncate text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                      {formatCompact(post.views)} views · {post.postedAt}
+                    </p>
                   </Link>
                 );
               })}

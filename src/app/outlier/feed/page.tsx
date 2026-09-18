@@ -3,17 +3,36 @@ import Link from "next/link";
 import { getCreators, getPosts } from "../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
+import { SortDropdown, PlatformFilter } from "./feed-controls";
 import { formatCompact } from "../format";
+import type { Platform } from "../data";
 
 export const metadata: Metadata = {
   title: "Feed — Outlier",
   robots: { index: false, follow: false },
 };
 
-export default async function FeedPage() {
-  const [creators, posts] = await Promise.all([getCreators(), getPosts()]);
+const ALL_PLATFORMS: Platform[] = ["TT", "IG", "YT"];
+
+export default async function FeedPage(props: PageProps<"/outlier/feed">) {
+  const searchParams = await props.searchParams;
+  const sort = typeof searchParams.sort === "string" ? searchParams.sort : "score";
+  const platformsParam = typeof searchParams.platforms === "string" ? searchParams.platforms : null;
+  const selectedPlatforms = platformsParam
+    ? (platformsParam.split(",").filter((p): p is Platform => ALL_PLATFORMS.includes(p as Platform)) as Platform[])
+    : ALL_PLATFORMS;
+
+  const [creators, allPosts] = await Promise.all([getCreators(), getPosts()]);
   const creatorById = new Map(creators.map((c) => [c.id, c]));
-  const above2x = posts.filter((post) => post.score >= 2).length;
+  const above2x = allPosts.filter((post) => post.score >= 2).length;
+
+  const posts = allPosts
+    .filter((post) => selectedPlatforms.includes(post.platform))
+    .sort((a, b) => {
+      if (sort === "views") return b.views - a.views;
+      if (sort === "recent") return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+      return b.score - a.score;
+    });
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -27,27 +46,15 @@ export default async function FeedPage() {
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
-          <button
-            type="button"
-            className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-            style={{ padding: "9px 12px" }}
-          >
-            Score ▾
-          </button>
-          <button
-            type="button"
-            className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-            style={{ padding: "9px 12px" }}
-          >
-            Filters · 2
-          </button>
+          <SortDropdown current={sort} />
+          <PlatformFilter selected={selectedPlatforms} />
           <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
             + Add creator
           </AddCreatorButton>
         </div>
       </div>
 
-      {posts.length === 0 ? (
+      {allPosts.length === 0 ? (
         <div className="mt-[18px]">
           <EmptyState
             size="large"
@@ -67,6 +74,10 @@ export default async function FeedPage() {
               )
             }
           />
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="mt-[18px]">
+          <EmptyState size="large" title="No posts match these filters" description="Try enabling more platforms." />
         </div>
       ) : (
       <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
