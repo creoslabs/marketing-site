@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { POSTS, getCreator } from "../data";
-import { Avatar, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
+import { POSTS, CREATORS, getCreator } from "../data";
+import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {
@@ -48,6 +48,28 @@ export default function FeedPage() {
         </div>
       </div>
 
+      {POSTS.length === 0 ? (
+        <div className="mt-[18px]">
+          <EmptyState
+            size="large"
+            title={CREATORS.length === 0 ? "Nothing to show yet" : "No posts pulled yet"}
+            description={
+              CREATORS.length === 0
+                ? "Add a creator to your watchlist to start seeing their posts ranked here."
+                : "Your watchlist is set up — pull now to start scoring posts against each creator's own median."
+            }
+            action={
+              <button
+                type="button"
+                className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
+                style={{ padding: "10px 14px" }}
+              >
+                {CREATORS.length === 0 ? "+ Add creator" : "Pull now"}
+              </button>
+            }
+          />
+        </div>
+      ) : (
       <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
         {POSTS.map((post) => {
           const creator = getCreator(post.creatorId);
@@ -96,6 +118,7 @@ export default function FeedPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

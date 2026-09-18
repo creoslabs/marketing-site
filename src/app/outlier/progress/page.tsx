@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { JOBS, FINISHED_RECENTLY, SETTINGS, getCreator } from "../data";
-import { Avatar, ProgressBar } from "../components";
+import { Avatar, EmptyState, ProgressBar } from "../components";
 
 export const metadata: Metadata = {
   title: "Progress — Outlier",
@@ -13,6 +13,18 @@ export default function ProgressPage() {
   const running = JOBS.filter((job) => job.state === "running");
   const queued = JOBS.filter((job) => job.state === "queued");
   const failed = JOBS.filter((job) => job.state === "failed");
+
+  if (JOBS.length === 0) {
+    return (
+      <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
+        <EmptyState
+          size="large"
+          title="Nothing to show yet"
+          description="Once you pull a creator's posts, downloads, transcription, and scoring jobs will show up here."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -69,6 +81,11 @@ export default function ProgressPage() {
 
       <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_352px]">
         <div className="flex flex-col gap-[14px]">
+          {running.length === 0 && (
+            <div className="ws-card">
+              <EmptyState title="Nothing running right now" />
+            </div>
+          )}
           <div className="flex flex-col gap-[10px]">
             {running.map((job) => {
               const creator = getCreator(job.creatorId);
@@ -105,6 +122,7 @@ export default function ProgressPage() {
             })}
           </div>
 
+          {queued.length > 0 && (
           <div className="ws-card" style={{ padding: "16px 0 6px" }}>
             <p className="ws-eyebrow px-[16px]">{queued.length} waiting · drag to reorder</p>
             <div className="ws-stack mt-[12px]" style={{ border: "none", borderRadius: 0 }}>
@@ -132,9 +150,11 @@ export default function ProgressPage() {
               })}
             </div>
           </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-[14px]">
+          {failed.length > 0 && (
           <div
             className="rounded-[10px]"
             style={{ padding: "16px 18px 18px", background: "var(--ws-warn-tint)" }}
@@ -168,9 +188,15 @@ export default function ProgressPage() {
               })}
             </div>
           </div>
+          )}
 
           <div className="ws-card" style={{ padding: "16px 18px 18px" }}>
             <p className="ws-eyebrow">FINISHED RECENTLY</p>
+            {FINISHED_RECENTLY.length === 0 ? (
+              <div className="mt-[8px]">
+                <EmptyState title="Nothing finished yet" />
+              </div>
+            ) : (
             <div className="mt-[12px] flex flex-col gap-[10px]">
               {FINISHED_RECENTLY.map((item) => {
                 const creator = getCreator(item.creatorId);
@@ -194,6 +220,7 @@ export default function ProgressPage() {
                 );
               })}
             </div>
+            )}
           </div>
 
           <div className="ws-card" style={{ padding: "16px 18px 18px" }}>

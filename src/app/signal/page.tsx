@@ -114,7 +114,10 @@ function AssetSection({
           {assets.length} · median {median}
         </span>
       </div>
-      <div className="mt-[12px] grid grid-cols-2 items-start gap-[16px] sm:grid-cols-4">
+      <div
+        className="mt-[12px] grid items-start gap-[14px]"
+        style={{ gridTemplateColumns: "repeat(auto-fill, 110px)" }}
+      >
         {assets.map((asset) => (
           <AssetCard
             key={asset.id}

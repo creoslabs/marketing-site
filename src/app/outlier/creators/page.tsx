@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CREATORS } from "../data";
-import { Avatar, Sparkline, ThinHistoryPill } from "../components";
+import { Avatar, EmptyState, Sparkline, ThinHistoryPill } from "../components";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {
@@ -55,6 +55,15 @@ export default function CreatorsPage() {
         </div>
       </div>
 
+      {CREATORS.length === 0 ? (
+        <div className="ws-card mt-[18px]">
+          <EmptyState
+            size="large"
+            title="You're not tracking anyone yet"
+            description="Add a creator by handle and Outlier starts scoring their posts against their own median."
+          />
+        </div>
+      ) : (
       <div className="mt-[18px] ws-stack">
         <div
           className="grid items-center"
@@ -143,6 +152,7 @@ export default function CreatorsPage() {
           );
         })}
       </div>
+      )}
 
       <button
         type="button"

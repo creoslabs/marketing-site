@@ -8,7 +8,7 @@ import {
   RECENT_REPURPOSES,
   getCreator,
 } from "./data";
-import { Avatar, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
+import { Avatar, EmptyState, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
 import { formatCompact } from "./format";
 
 export const metadata: Metadata = {
@@ -32,7 +32,31 @@ export default async function OutlierHomePage() {
   const thinCreators = CREATORS.filter((creator) =>
     creator.handles.some((h) => h.thin)
   );
-  const bestToday = POSTS.reduce((best, post) => (post.score > best.score ? post : best), POSTS[0]);
+  const hasPosts = POSTS.length > 0;
+  const bestToday = hasPosts
+    ? POSTS.reduce((best, post) => (post.score > best.score ? post : best), POSTS[0])
+    : null;
+
+  if (CREATORS.length === 0) {
+    return (
+      <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
+        <EmptyState
+          size="large"
+          title="Add your first creator to get started"
+          description="Track a creator's posts and Outlier scores each one against their own median — surfacing the hooks worth repurposing."
+          action={
+            <button
+              type="button"
+              className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
+              style={{ padding: "11px 16px" }}
+            >
+              + Add creator
+            </button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -42,7 +66,7 @@ export default async function OutlierHomePage() {
             {greeting()}, {firstName}
           </h1>
           <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {today} · 7 new outliers since you last looked
+            {hasPosts ? `${today} · 7 new outliers since you last looked` : `${today} · nothing pulled yet`}
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
@@ -72,15 +96,17 @@ export default async function OutlierHomePage() {
         <div className="flex-1" style={{ padding: "16px 18px" }}>
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE TODAY</p>
           <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {bestToday.score.toFixed(1)}×
+            {bestToday ? `${bestToday.score.toFixed(1)}×` : "—"}
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            @{getCreator(bestToday.creatorId).handles[0].handle.replace("@", "")}
+            {bestToday ? `@${getCreator(bestToday.creatorId).handles[0].handle.replace("@", "")}` : "no posts yet"}
           </p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>POSTS PULLED</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>486</p>
+          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
+            {hasPosts ? 486 : 0}
+          </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
             across {CREATORS.length} creators
           </p>
@@ -102,44 +128,62 @@ export default async function OutlierHomePage() {
               Today&apos;s top outliers
             </h2>
             <div className="flex-1" />
-            <Link href="/outlier/feed" className="ws-link-accent text-[12px] font-medium">
-              All {POSTS.length} in Feed →
-            </Link>
+            {hasPosts && (
+              <Link href="/outlier/feed" className="ws-link-accent text-[12px] font-medium">
+                All {POSTS.length} in Feed →
+              </Link>
+            )}
           </div>
 
-          <div className="ws-stack mt-[14px]" style={{ border: "none", borderRadius: 0 }}>
-            {topOutliers.map((post) => {
-              const creator = getCreator(post.creatorId);
-              const handle = creator.handles[0].handle;
-              return (
-                <Link
-                  key={post.id}
-                  href={`/outlier/video/${post.id}`}
-                  className="ws-row-hover flex items-center gap-[14px]"
-                  style={{ padding: "12px 20px" }}
-                >
-                  <Thumb aspectRatio="44/60" radius={8} style={{ width: 44 }} />
-                  <ScoreChip score={post.score} />
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-[13.5px] font-medium"
-                      style={{ color: "var(--ws-ink)" }}
-                    >
-                      {post.caption}
-                    </p>
-                    <div className="mt-[4px] flex items-center gap-[7px]">
-                      <Avatar initials={creator.initials} size={20} />
-                      <span className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        {handle} · {formatCompact(post.views)} views · {post.postedAt}
-                      </span>
-                      {post.thin && <ThinHistoryPill />}
+          {hasPosts ? (
+            <div className="ws-stack mt-[14px]" style={{ border: "none", borderRadius: 0 }}>
+              {topOutliers.map((post) => {
+                const creator = getCreator(post.creatorId);
+                const handle = creator.handles[0].handle;
+                return (
+                  <Link
+                    key={post.id}
+                    href={`/outlier/video/${post.id}`}
+                    className="ws-row-hover flex items-center gap-[14px]"
+                    style={{ padding: "12px 20px" }}
+                  >
+                    <Thumb aspectRatio="44/60" radius={8} style={{ width: 44 }} />
+                    <ScoreChip score={post.score} />
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate text-[13.5px] font-medium"
+                        style={{ color: "var(--ws-ink)" }}
+                      >
+                        {post.caption}
+                      </p>
+                      <div className="mt-[4px] flex items-center gap-[7px]">
+                        <Avatar initials={creator.initials} size={20} />
+                        <span className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                          {handle} · {formatCompact(post.views)} views · {post.postedAt}
+                        </span>
+                        {post.thin && <ThinHistoryPill />}
+                      </div>
                     </div>
-                  </div>
-                  <span style={{ color: "var(--ws-ink-45)" }}>→</span>
-                </Link>
-              );
-            })}
-          </div>
+                    <span style={{ color: "var(--ws-ink-45)" }}>→</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              title="No posts pulled yet"
+              description="Pull your watchlist to start scoring posts against each creator's own median."
+              action={
+                <button
+                  type="button"
+                  className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
+                  style={{ padding: "9px 14px" }}
+                >
+                  Pull now
+                </button>
+              }
+            />
+          )}
         </div>
 
         {/* Right column */}
@@ -152,68 +196,74 @@ export default async function OutlierHomePage() {
                 Progress →
               </Link>
             </div>
-            <div className="mt-[14px] flex flex-col gap-[14px]">
-              {runningJobs.map((job) => {
-                const creator = getCreator(job.creatorId);
-                return (
-                  <div key={job.id}>
-                    <div className="flex items-center">
-                      <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                        {creator.handles[0].handle} · {job.scope}
-                      </span>
-                      <div className="flex-1" />
-                      <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                        {job.pct}%
-                      </span>
+            {runningJobs.length > 0 ? (
+              <div className="mt-[14px] flex flex-col gap-[14px]">
+                {runningJobs.map((job) => {
+                  const creator = getCreator(job.creatorId);
+                  return (
+                    <div key={job.id}>
+                      <div className="flex items-center">
+                        <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                          {creator.handles[0].handle} · {job.scope}
+                        </span>
+                        <div className="flex-1" />
+                        <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                          {job.pct}%
+                        </span>
+                      </div>
+                      <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                        {job.stage}
+                      </p>
+                      <div className="mt-[8px]">
+                        <ProgressBar pct={job.pct} />
+                      </div>
                     </div>
-                    <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                      {job.stage}
-                    </p>
-                    <div className="mt-[8px]">
-                      <ProgressBar pct={job.pct} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState title="Nothing running right now" />
+            )}
           </div>
 
-          <div
-            className="rounded-[10px]"
-            style={{
-              padding: "18px 20px 20px",
-              background: "var(--ws-accent-tint)",
-              border: "1px solid var(--ws-accent-tint-border)",
-            }}
-          >
-            <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
-              PATTERN WORTH TAKING
-            </p>
-            <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
-              Negative-command openers are averaging 4.6× across your watchlist this month — 7 posts
-              across 4 creators.
-            </p>
-            <div className="mt-[14px] flex gap-[8px]">
-              <button
-                type="button"
-                className="ws-btn-primary rounded-[8px] text-[12px] font-semibold"
-                style={{ padding: "9px 12px" }}
-              >
-                Repurpose this
-              </button>
-              <Link
-                href="/outlier/trends"
-                className="rounded-[8px] text-[12px] font-medium"
-                style={{
-                  padding: "9px 12px",
-                  border: "1px solid var(--ws-accent-tint-border)",
-                  color: "var(--ws-accent-tint-ink)",
-                }}
-              >
-                See in Trends
-              </Link>
+          {hasPosts && (
+            <div
+              className="rounded-[10px]"
+              style={{
+                padding: "18px 20px 20px",
+                background: "var(--ws-accent-tint)",
+                border: "1px solid var(--ws-accent-tint-border)",
+              }}
+            >
+              <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
+                PATTERN WORTH TAKING
+              </p>
+              <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
+                Negative-command openers are averaging 4.6× across your watchlist this month — 7 posts
+                across 4 creators.
+              </p>
+              <div className="mt-[14px] flex gap-[8px]">
+                <button
+                  type="button"
+                  className="ws-btn-primary rounded-[8px] text-[12px] font-semibold"
+                  style={{ padding: "9px 12px" }}
+                >
+                  Repurpose this
+                </button>
+                <Link
+                  href="/outlier/trends"
+                  className="rounded-[8px] text-[12px] font-medium"
+                  style={{
+                    padding: "9px 12px",
+                    border: "1px solid var(--ws-accent-tint-border)",
+                    color: "var(--ws-accent-tint-ink)",
+                  }}
+                >
+                  See in Trends
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           {thinCreators.length > 0 && (
             <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
@@ -246,24 +296,26 @@ export default async function OutlierHomePage() {
             </div>
           )}
 
-          <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-            <p className="ws-eyebrow">YOUR RECENT REPURPOSES</p>
-            <div className="mt-[14px] flex flex-col gap-[12px]">
-              {RECENT_REPURPOSES.map((item) => {
-                const creator = getCreator(item.creatorId);
-                return (
-                  <div key={item.title}>
-                    <p className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                      {item.title}
-                    </p>
-                    <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                      from {creator.handles[0].handle} · {item.score.toFixed(1)}× · {item.relativeTime}
-                    </p>
-                  </div>
-                );
-              })}
+          {RECENT_REPURPOSES.length > 0 && (
+            <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
+              <p className="ws-eyebrow">YOUR RECENT REPURPOSES</p>
+              <div className="mt-[14px] flex flex-col gap-[12px]">
+                {RECENT_REPURPOSES.map((item) => {
+                  const creator = getCreator(item.creatorId);
+                  return (
+                    <div key={item.title}>
+                      <p className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                        {item.title}
+                      </p>
+                      <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                        from {creator.handles[0].handle} · {item.score.toFixed(1)}× · {item.relativeTime}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

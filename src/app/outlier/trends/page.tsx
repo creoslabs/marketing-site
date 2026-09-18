@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { TOPICS, HOOK_STYLES, getCreator } from "../data";
-import { Avatar, Sparkline } from "../components";
+import { Avatar, EmptyState, Sparkline } from "../components";
 
 export const metadata: Metadata = {
   title: "Trends — Outlier",
@@ -8,7 +8,19 @@ export const metadata: Metadata = {
 };
 
 export default function TrendsPage() {
-  const maxHookScore = Math.max(...HOOK_STYLES.map((h) => h.avgMultiplier));
+  const maxHookScore = HOOK_STYLES.length > 0 ? Math.max(...HOOK_STYLES.map((h) => h.avgMultiplier)) : 1;
+
+  if (TOPICS.length === 0 && HOOK_STYLES.length === 0) {
+    return (
+      <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
+        <EmptyState
+          size="large"
+          title="Not enough data yet"
+          description="Trends need a few pulled creators with several posts each before patterns are worth surfacing."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -22,6 +34,11 @@ export default function TrendsPage() {
       <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-2">
         <div>
           <p className="ws-eyebrow">TOPICS BEATING THEIR OWN MEDIAN</p>
+          {TOPICS.length === 0 ? (
+            <div className="ws-card mt-[12px]">
+              <EmptyState title="No topics yet" description="Needs at least a few creators beating their own median on the same theme." />
+            </div>
+          ) : (
           <div className="mt-[12px] flex flex-col gap-[12px]">
             {TOPICS.map((topic) => (
               <div key={topic.id} className="ws-card" style={{ padding: "16px 18px" }}>
@@ -48,10 +65,16 @@ export default function TrendsPage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         <div>
           <p className="ws-eyebrow">HOOK STYLES CONVERTING REGARDLESS OF TOPIC</p>
+          {HOOK_STYLES.length === 0 ? (
+            <div className="ws-card mt-[12px]">
+              <EmptyState title="No hook styles yet" description="Needs a few posts sharing a similar opener before a pattern is worth naming." />
+            </div>
+          ) : (
           <div className="mt-[12px] flex flex-col gap-[10px]">
             {HOOK_STYLES.map((hook) => (
               <div key={hook.name} className="ws-card" style={{ padding: "14px 16px" }}>
@@ -75,7 +98,9 @@ export default function TrendsPage() {
               </div>
             ))}
           </div>
+          )}
 
+          {HOOK_STYLES.length > 0 && (
           <div
             className="mt-[14px] rounded-[10px]"
             style={{ padding: "16px 18px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
@@ -88,6 +113,7 @@ export default function TrendsPage() {
               consider testing one against your next three posts.
             </p>
           </div>
+          )}
         </div>
       </div>
     </div>
