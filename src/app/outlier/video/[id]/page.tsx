@@ -16,14 +16,17 @@ export async function generateMetadata(props: PageProps<"/outlier/video/[id]">):
   };
 }
 
-const STAT_FIELDS = [
+const HEADLINE_STAT_FIELDS = [
   { key: "views", label: "VIEWS", tooltip: "Plays as reported by the API at the last pull." },
+  { key: "engagement", label: "ENGAGEMENT", tooltip: "(likes + comments + shares + saves) ÷ views, as returned by the API." },
+] as const;
+
+const STAT_FIELDS = [
   {
     key: "median",
     label: "MEDIAN",
     tooltip: "Derived, not from the API: median views across this creator's pulled posts — the baseline the score divides by.",
   },
-  { key: "engagement", label: "ENGAGEMENT", tooltip: "(likes + comments + shares + saves) ÷ views, as returned by the API." },
   { key: "likes", label: "LIKES", tooltip: "Raw like count. Not used in the outlier score." },
   { key: "comments", label: "COMMENTS", tooltip: "Comment count at pull time." },
   { key: "shares", label: "SHARES", tooltip: "Sends to other people. Clearest sign a hook travels beyond the creator's own audience." },
@@ -123,23 +126,63 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
           </Thumb>
 
           <div className="mt-[10px] flex gap-[8px]">
-            <FavouriteButton />
+            <FavouriteButton postId={post.id} initialFavourited={post.favourite} />
             <OpenOnPlatformButton label={getPlatformLabel(post.platform)} url={row.url} />
           </div>
 
           <div className="mt-[10px] grid grid-cols-2 gap-[10px]">
-            {STAT_FIELDS.map((field, i) => {
+            {HEADLINE_STAT_FIELDS.map((field, i) => {
               const isLeftColumn = i % 2 === 0;
+              const isEngagement = field.key === "engagement";
+              return (
+                <div
+                  key={field.key}
+                  className="ws-info-hover"
+                  style={{
+                    padding: "14px 15px 15px",
+                    borderRadius: 10,
+                    background: isEngagement ? "var(--ws-accent-tint)" : "var(--ws-accent)",
+                    border: isEngagement ? "1px solid var(--ws-accent-tint-border)" : "none",
+                  }}
+                >
+                  <p
+                    className="ws-eyebrow"
+                    style={{ paddingRight: 18, color: isEngagement ? "var(--ws-accent-tint-ink)" : "var(--ws-accent-ink)", opacity: isEngagement ? 0.75 : 0.85 }}
+                  >
+                    {field.label}
+                  </p>
+                  <p
+                    className="ws-tabular mt-[6px] font-semibold"
+                    style={{
+                      fontSize: 26,
+                      letterSpacing: "-0.04em",
+                      color: isEngagement ? "var(--ws-accent-tint-ink)" : "var(--ws-accent-ink)",
+                    }}
+                  >
+                    {statValues[field.key]}
+                  </p>
+                  <span className="ws-info-dot" style={{ color: isEngagement ? "var(--ws-accent-tint-ink)" : "var(--ws-accent-ink)" }}>
+                    ⓘ
+                  </span>
+                  <div className={`ws-info-tip ${isLeftColumn ? "left" : "right"}`}>{field.tooltip}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-[10px] grid grid-cols-3 gap-[10px]">
+            {STAT_FIELDS.map((field, i) => {
+              const isLeftColumn = i % 3 === 0;
               return (
                 <div
                   key={field.key}
                   className="ws-info-hover ws-card"
-                  style={{ padding: "13px 14px 14px" }}
+                  style={{ padding: "11px 12px 12px" }}
                 >
-                  <p className="ws-eyebrow" style={{ paddingRight: 18 }}>{field.label}</p>
+                  <p className="ws-eyebrow" style={{ paddingRight: 18, fontSize: 9.5 }}>{field.label}</p>
                   <p
-                    className="ws-tabular mt-[6px] font-medium"
-                    style={{ fontSize: 20, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}
+                    className="ws-tabular mt-[5px] font-medium"
+                    style={{ fontSize: 15, letterSpacing: "-0.03em", color: "var(--ws-ink)" }}
                   >
                     {statValues[field.key]}
                   </p>

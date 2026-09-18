@@ -3,9 +3,8 @@ import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { RECENT_REPURPOSES } from "./data";
 import { getCreators, getPosts, getJobs } from "./live-data";
-import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
+import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
 import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
-import { formatCompact } from "./format";
 
 export const metadata: Metadata = {
   title: "Outlier — Creos Labs",
@@ -26,7 +25,10 @@ export default async function OutlierHomePage() {
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const allHandles = creators.flatMap((c) => c.handles);
-  const topOutliers = posts.slice(0, 5);
+  // Matches the grid's max column count (lg:grid-cols-4) so this always
+  // fills a clean row instead of leaving one card stranded alone on a
+  // second, mostly-empty row.
+  const topOutliers = posts.slice(0, 4);
   const runningJobs = jobs.filter((job) => job.state === "running");
   const thinCreators = creators.filter((creator) => creator.handles.some((h) => h.thin));
   const hasPosts = posts.length > 0;
@@ -140,11 +142,6 @@ export default async function OutlierHomePage() {
                       <div className="absolute left-[7px] top-[7px]" style={{ zIndex: 2 }}>
                         <PlatformBadge platform={post.platform} />
                       </div>
-                      {post.thin && (
-                        <div className="absolute right-[7px] top-[7px]" style={{ zIndex: 2 }}>
-                          <ThinHistoryPill />
-                        </div>
-                      )}
                       <div
                         className="absolute inset-x-0 bottom-0"
                         style={{
@@ -163,8 +160,11 @@ export default async function OutlierHomePage() {
                         {handle}
                       </span>
                     </div>
-                    <p className="mt-[2px] truncate text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                      {formatCompact(post.views)} views · {post.postedAt}
+                    <div className="mt-[4px]">
+                      <StatRow views={post.views} engagement={post.engagement} size="sm" />
+                    </div>
+                    <p className="mt-[2px] truncate text-[10px]" style={{ color: "var(--ws-ink-45)" }}>
+                      {post.postedAt}
                     </p>
                   </Link>
                 );

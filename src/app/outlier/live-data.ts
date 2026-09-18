@@ -79,6 +79,7 @@ type PostRow = {
   transcript: TranscriptLine[] | null;
   beats: Beat[] | null;
   hook_tags: string[] | null;
+  favourited: boolean;
 };
 
 function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<string, PostRow[]>): Creator {
@@ -141,7 +142,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     engagement,
     followers: row.followers ?? 0,
     thin,
-    favourite: false,
+    favourite: row.favourited,
   };
 }
 
@@ -222,6 +223,12 @@ export const getPosts = cache(async (): Promise<Post[]> => {
   }
 
   return posts.sort((a, b) => b.score - a.score);
+});
+
+// Favourited posts across the whole watchlist, for the Favourites page.
+export const getFavouritePosts = cache(async (): Promise<Post[]> => {
+  const posts = await getPosts();
+  return posts.filter((post) => post.favourite);
 });
 
 export const getCreatorDetail = cache(async (id: string): Promise<{ creator: Creator; posts: Post[] } | null> => {

@@ -12,7 +12,7 @@ const DESTINATIONS: Destination[] = [
   { label: "Billing", href: "/workspace/billing", group: "Workspace" },
   { label: "Home", href: "/outlier", group: "Outlier" },
   { label: "Feed", href: "/outlier/feed", group: "Outlier" },
-  { label: "Trends", href: "/outlier/trends", group: "Outlier" },
+  { label: "Favourites", href: "/outlier/favourites", group: "Outlier" },
   { label: "Creators", href: "/outlier/creators", group: "Outlier" },
   { label: "Progress", href: "/outlier/progress", group: "Outlier" },
   { label: "Library", href: "/signal", group: "Signal" },

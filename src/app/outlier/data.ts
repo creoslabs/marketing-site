@@ -1,8 +1,7 @@
 // Outlier's data shapes. Creators/posts/jobs come from live-data.ts (a real
-// Apify-backed pipeline) — this file now holds only shared types plus the
-// handful of things that still have no backend: Trends' pattern-detection
-// (TOPICS/HOOK_STYLES) and repurpose history (RECENT_REPURPOSES). Those stay
-// permanently empty, with their own empty states, until those features exist.
+// Apify-backed pipeline) — this file now holds only shared types plus
+// repurpose history (RECENT_REPURPOSES), which stays permanently empty, with
+// its own empty state, until that feature exists.
 
 export type Platform = "IG" | "TT" | "YT";
 
@@ -67,15 +66,6 @@ export type Job = {
   waitReason?: string;
 };
 
-// Still fixture-shaped — Trends' cross-creator pattern detection isn't
-// built yet (it would need real posts, plus a clustering/NLP pass over
-// captions and transcripts, not just a data source).
-export const CREATORS: Creator[] = [];
-
-export const TOPICS: { id: string; name: string; avgMultiplier: number; creators: string[]; spark: number[] }[] = [];
-
-export const HOOK_STYLES: { name: string; example: string; avgMultiplier: number }[] = [];
-
 // No repurpose action is recorded anywhere yet — RepurposeButton is a stub.
 export const RECENT_REPURPOSES: { title: string; creatorId: string; score: number; relativeTime: string }[] = [];
 
@@ -83,8 +73,4 @@ export function getPlatformLabel(platform: Platform) {
   if (platform === "IG") return "Instagram";
   if (platform === "TT") return "TikTok";
   return "YouTube";
-}
-
-export function getCreator(id: string) {
-  return CREATORS.find((creator) => creator.id === id);
 }

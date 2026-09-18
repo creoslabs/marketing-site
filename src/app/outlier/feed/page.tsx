@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCreators, getPosts } from "../live-data";
-import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
+import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb } from "../components";
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
 import { SortDropdown, PlatformFilter } from "./feed-controls";
-import { formatCompact } from "../format";
 import type { Platform } from "../data";
 
 export const metadata: Metadata = {
@@ -98,11 +97,6 @@ export default async function FeedPage(props: PageProps<"/outlier/feed">) {
                 <div className="absolute left-[8px] top-[8px]" style={{ zIndex: 2 }}>
                   <PlatformBadge platform={post.platform} />
                 </div>
-                {post.thin && (
-                  <div className="absolute right-[8px] top-[8px]" style={{ zIndex: 2 }}>
-                    <ThinHistoryPill />
-                  </div>
-                )}
                 <div
                   className="absolute inset-x-0 bottom-0"
                   style={{
@@ -122,10 +116,13 @@ export default async function FeedPage(props: PageProps<"/outlier/feed">) {
                   <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                     {handle}
                   </p>
-                  <p className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                    {formatCompact(post.views)} views · {post.postedAt}
+                  <p className="truncate text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                    {post.postedAt}
                   </p>
                 </div>
+              </div>
+              <div className="mt-[7px]">
+                <StatRow views={post.views} engagement={post.engagement} />
               </div>
               <p
                 className="mt-[6px] text-[11.5px] leading-[1.4]"

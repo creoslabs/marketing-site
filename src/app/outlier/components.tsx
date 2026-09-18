@@ -1,5 +1,5 @@
 import type { Platform } from "./data";
-import { formatScore } from "./format";
+import { formatCompact, formatScore } from "./format";
 
 export function Avatar({ initials, avatarUrl, size = 26 }: { initials: string; avatarUrl?: string | null; size?: number }) {
   if (avatarUrl) {
@@ -109,6 +109,30 @@ export function ScoreChip({ score, size = "sm" }: { score: number; size?: "sm" |
     >
       {formatScore(score)}
     </span>
+  );
+}
+
+// Views and engagement rate are the two numbers that actually explain why a
+// post is or isn't an outlier — shown together, bolder than surrounding
+// metadata, so they read at a glance instead of blending into gray captions.
+export function StatRow({ views, engagement, size = "md" }: { views: number; engagement: number; size?: "md" | "sm" }) {
+  const valueSize = size === "md" ? 13 : 11;
+  const labelSize = size === "md" ? 10.5 : 9.5;
+  return (
+    <div className="flex items-center" style={{ gap: size === "md" ? 10 : 7 }}>
+      <span className="ws-tabular font-semibold" style={{ fontSize: valueSize, color: "var(--ws-ink)" }}>
+        {formatCompact(views)}
+        <span className="ml-[3px] font-medium" style={{ fontSize: labelSize, color: "var(--ws-ink-45)" }}>
+          views
+        </span>
+      </span>
+      <span className="ws-tabular font-semibold" style={{ fontSize: valueSize, color: "var(--ws-accent-text)" }}>
+        {engagement.toFixed(1)}%
+        <span className="ml-[3px] font-medium" style={{ fontSize: labelSize, color: "var(--ws-ink-45)" }}>
+          eng
+        </span>
+      </span>
+    </div>
   );
 }
 

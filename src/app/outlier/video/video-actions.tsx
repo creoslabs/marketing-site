@@ -4,12 +4,39 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 
-export function FavouriteButton() {
-  const [saved, setSaved] = useState(false);
+export function FavouriteButton({ postId, initialFavourited }: { postId: string; initialFavourited: boolean }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [saved, setSaved] = useState(initialFavourited);
+  const [pending, setPending] = useState(false);
+
+  async function handleClick() {
+    const next = !saved;
+    setSaved(next);
+    setPending(true);
+    const res = await fetch(`/api/outlier/posts/${postId}/favourite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favourited: next }),
+    });
+    setPending(false);
+    if (!res.ok) {
+      setSaved(!next);
+      toast("Couldn't update favourite.", "error");
+      return;
+    }
+    router.refresh();
+    if (next) {
+      toast("Added to Favourites.", "success");
+      router.push("/outlier/favourites");
+    }
+  }
+
   return (
     <button
       type="button"
-      onClick={() => setSaved((v) => !v)}
+      onClick={handleClick}
+      disabled={pending}
       className="flex-1 rounded-[8px] text-[12.5px] font-medium"
       style={
         saved
@@ -18,12 +45,14 @@ export function FavouriteButton() {
               background: "var(--ws-accent-tint)",
               border: "1px solid var(--ws-accent-tint-border)",
               color: "var(--ws-accent-tint-ink)",
+              opacity: pending ? 0.7 : 1,
             }
           : {
               padding: "9px 10px",
               background: "transparent",
               border: "1px solid var(--ws-hairline)",
               color: "var(--ws-ink-60)",
+              opacity: pending ? 0.7 : 1,
             }
       }
     >

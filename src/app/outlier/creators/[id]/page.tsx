@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
-import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../../components";
+import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../../components";
 import { AddPlatformButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
 
@@ -158,7 +158,10 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
                     <ScoreChip score={post.score} />
                   </div>
                 </Thumb>
-                <p className="mt-[6px] truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                <div className="mt-[6px]">
+                  <StatRow views={post.views} engagement={post.engagement} size="sm" />
+                </div>
+                <p className="mt-[2px] truncate text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
                   {post.postedAt}
                 </p>
               </Link>

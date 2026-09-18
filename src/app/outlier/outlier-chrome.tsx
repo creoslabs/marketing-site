@@ -19,7 +19,7 @@ export function OutlierChrome({
   const TABS: WsTab[] = [
     { href: "/outlier", label: "Home", exact: true },
     { href: "/outlier/feed", label: "Feed" },
-    { href: "/outlier/trends", label: "Trends" },
+    { href: "/outlier/favourites", label: "Favourites" },
     { href: "/outlier/creators", label: "Creators" },
     {
       href: "/outlier/progress",

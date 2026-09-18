@@ -94,14 +94,15 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
     staticRows.map((row, i) => [row.storage_path, signedStaticUrls[i]?.data?.signedUrl ?? null])
   );
 
-  // Pick the middle sampled frame per video as its representative thumbnail.
+  // Use the earliest sampled frame (t=0) per video as its thumbnail — the
+  // query below is ordered by t ascending, so frames[0] is that frame.
   const framesByAsset = new Map<string, { t: number; storage_path: string }[]>();
   for (const frame of frameRows ?? []) {
     framesByAsset.set(frame.asset_id, [...(framesByAsset.get(frame.asset_id) ?? []), frame]);
   }
   const previewFrames = [...framesByAsset.entries()].map(([assetId, frames]) => ({
     assetId,
-    path: frames[Math.floor(frames.length / 2)].storage_path,
+    path: frames[0].storage_path,
   }));
   // One createSignedUrl call per frame rather than a single batched
   // createSignedUrls — the batched endpoint's returned path strings aren't
