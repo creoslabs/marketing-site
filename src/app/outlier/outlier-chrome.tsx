@@ -5,12 +5,16 @@ import { useWsTheme } from "@/components/ws-theme";
 import { useCommandPalette } from "@/components/ws-command-palette";
 import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav, type WsTab } from "@/components/ws-tab-nav";
-import { JOBS } from "./data";
 
-export function OutlierChrome() {
+export function OutlierChrome({
+  runningCount,
+  lastPulledLabel,
+}: {
+  runningCount: number;
+  lastPulledLabel: string | null;
+}) {
   useWsTheme();
   const openPalette = useCommandPalette();
-  const runningCount = JOBS.filter((job) => job.state === "running").length;
 
   const TABS: WsTab[] = [
     { href: "/outlier", label: "Home", exact: true },
@@ -61,9 +65,11 @@ export function OutlierChrome() {
 
       <div className="flex-1" />
 
-      <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-        pulled 12m ago
-      </span>
+      {lastPulledLabel && (
+        <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+          pulled {lastPulledLabel}
+        </span>
+      )}
 
       <NotificationBell />
 

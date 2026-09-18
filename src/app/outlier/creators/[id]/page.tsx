@@ -1,30 +1,38 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCreator, getCreatorPosts, getCreatorHistory } from "../../data";
+import { getCreatorDetail } from "../../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../../components";
+import { PullCreatorButton, RemoveCreatorButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
   const { id } = await props.params;
-  const creator = getCreator(id);
+  const detail = await getCreatorDetail(id);
   return {
-    title: creator ? `${creator.displayName} — Outlier` : "Creator — Outlier",
+    title: detail ? `${detail.creator.displayName} — Outlier` : "Creator — Outlier",
     robots: { index: false, follow: false },
   };
 }
 
 export default async function CreatorDetailPage(props: PageProps<"/outlier/creators/[id]">) {
   const { id } = await props.params;
-  const creator = getCreator(id);
-  if (!creator) notFound();
+  const detail = await getCreatorDetail(id);
+  if (!detail) notFound();
 
-  const posts = getCreatorPosts(id);
-  const history = getCreatorHistory(creator);
-  const maxViews = Math.max(...history.map((h) => h.views));
+  const { creator, posts } = detail;
+  const handle = creator.handles[0];
+  const totalPosts = handle.postCount;
+  const isThin = handle.thin;
+
+  // Views-per-post, most recent first, for the bar chart below.
+  const history = posts.slice(0, 12).map((post, index) => ({
+    index,
+    views: post.views,
+    isOutlier: post.score >= 2,
+  }));
+  const maxViews = history.length > 0 ? Math.max(...history.map((h) => h.views), 1) : 1;
   const medianPct = (creator.median / maxViews) * 100;
-  const totalPosts = creator.handles.reduce((sum, h) => sum + h.postCount, 0);
-  const isThin = creator.handles.some((h) => h.thin);
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -45,6 +53,9 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
             {creator.handles.map((h) => `${h.platform} ${h.handle}`).join(" · ")}
           </p>
         </div>
+        <div className="flex-1" />
+        <PullCreatorButton creatorId={creator.id} handle={handle.handle} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
+        <RemoveCreatorButton creatorId={creator.id} handle={handle.handle} />
       </div>
 
       <div className="ws-stack-row mt-[18px]">
@@ -84,7 +95,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
       ) : (
         <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
           <div className="flex items-center">
-            <p className="ws-eyebrow">VIEWS PER POST</p>
+            <p className="ws-eyebrow">VIEWS PER POST · MOST RECENT</p>
             <div className="flex-1" />
             <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
               median {formatCompact(creator.median)}

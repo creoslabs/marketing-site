@@ -39,6 +39,12 @@ export default async function AccountPage() {
   const hasAnthropicKey = Boolean(
     typeof user?.user_metadata?.signal_anthropic_api_key === "string" && user.user_metadata.signal_anthropic_api_key
   );
+  const hasApifyKey = Boolean(
+    typeof user?.user_metadata?.outlier_apify_api_key === "string" && user.user_metadata.outlier_apify_api_key
+  );
+  const hasGroqKey = Boolean(
+    typeof user?.user_metadata?.outlier_groq_api_key === "string" && user.user_metadata.outlier_groq_api_key
+  );
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -88,12 +94,31 @@ export default async function AccountPage() {
             <div style={{ padding: "0 22px", marginBottom: 15 }}>
               <p className="ws-eyebrow">TESTING · API KEYS</p>
               <p className="mt-[8px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-ink-45)" }}>
-                Only used by your own account, never shared. Setting this here skips configuring a server
-                env var while testing — remove it once Signal has its own key configured.
+                Only used by your own account, never shared. Setting these here skips configuring server
+                env vars while testing — remove them once the server has its own keys configured. Anthropic
+                powers Signal&apos;s scoring and Outlier&apos;s structure analysis; Apify powers Outlier&apos;s
+                creator pulls; Groq transcribes video audio for Outlier.
               </p>
             </div>
             <div className="ws-stack" style={{ border: "none", borderRadius: 0 }}>
-              <EditableApiKeyRow label="Anthropic API key" initialIsSet={hasAnthropicKey} />
+              <EditableApiKeyRow
+                label="Anthropic API key"
+                metaKey="signal_anthropic_api_key"
+                initialIsSet={hasAnthropicKey}
+                placeholder="sk-ant-…"
+              />
+              <EditableApiKeyRow
+                label="Apify API token"
+                metaKey="outlier_apify_api_key"
+                initialIsSet={hasApifyKey}
+                placeholder="apify_api_…"
+              />
+              <EditableApiKeyRow
+                label="Groq API key"
+                metaKey="outlier_groq_api_key"
+                initialIsSet={hasGroqKey}
+                placeholder="gsk_…"
+              />
             </div>
           </div>
         </div>

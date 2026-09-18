@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { POSTS, CREATORS, getCreator } from "../data";
+import { getCreators, getPosts } from "../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, Thumb, ThinHistoryPill } from "../components";
+import { AddCreatorButton, PullAllButton } from "../creator-actions";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {
@@ -9,8 +10,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function FeedPage() {
-  const above2x = POSTS.filter((post) => post.score >= 2).length;
+export default async function FeedPage() {
+  const [creators, posts] = await Promise.all([getCreators(), getPosts()]);
+  const creatorById = new Map(creators.map((c) => [c.id, c]));
+  const above2x = posts.filter((post) => post.score >= 2).length;
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -20,7 +23,7 @@ export default function FeedPage() {
             Top outliers
           </h1>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {above2x} posts above 2× · last 30 days
+            {above2x} posts above 2×
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
@@ -38,41 +41,37 @@ export default function FeedPage() {
           >
             Filters · 2
           </button>
-          <button
-            type="button"
-            className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-            style={{ padding: "9px 12px" }}
-          >
+          <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
             + Add creator
-          </button>
+          </AddCreatorButton>
         </div>
       </div>
 
-      {POSTS.length === 0 ? (
+      {posts.length === 0 ? (
         <div className="mt-[18px]">
           <EmptyState
             size="large"
-            title={CREATORS.length === 0 ? "Nothing to show yet" : "No posts pulled yet"}
+            title={creators.length === 0 ? "Nothing to show yet" : "No posts pulled yet"}
             description={
-              CREATORS.length === 0
+              creators.length === 0
                 ? "Add a creator to your watchlist to start seeing their posts ranked here."
                 : "Your watchlist is set up — pull now to start scoring posts against each creator's own median."
             }
             action={
-              <button
-                type="button"
-                className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-                style={{ padding: "10px 14px" }}
-              >
-                {CREATORS.length === 0 ? "+ Add creator" : "Pull now"}
-              </button>
+              creators.length === 0 ? (
+                <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "10px 14px" }}>
+                  + Add creator
+                </AddCreatorButton>
+              ) : (
+                <PullAllButton creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))} />
+              )
             }
           />
         </div>
       ) : (
       <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
-        {POSTS.map((post) => {
-          const creator = getCreator(post.creatorId);
+        {posts.map((post) => {
+          const creator = creatorById.get(post.creatorId);
           return (
             <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
               <Thumb aspectRatio="9/13" radius={11}>
@@ -98,10 +97,10 @@ export default function FeedPage() {
               </Thumb>
 
               <div className="mt-[8px] flex items-center gap-[7px]">
-                <Avatar initials={creator.initials} size={26} />
+                {creator && <Avatar initials={creator.initials} size={26} />}
                 <div className="min-w-0">
                   <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {creator.handles[0].handle}
+                    {creator?.handles[0].handle}
                   </p>
                   <p className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                     {formatCompact(post.views)} views · {post.postedAt}

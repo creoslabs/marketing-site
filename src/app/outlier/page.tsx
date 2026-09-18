@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
-import {
-  CREATORS,
-  POSTS,
-  JOBS,
-  RECENT_REPURPOSES,
-  getCreator,
-} from "./data";
+import { RECENT_REPURPOSES } from "./data";
+import { getCreators, getPosts, getJobs } from "./live-data";
 import { Avatar, EmptyState, ProgressBar, ScoreChip, Thumb, ThinHistoryPill } from "./components";
+import { AddCreatorButton, PullAllButton, PullCreatorButton } from "./creator-actions";
 import { formatCompact } from "./format";
 
 export const metadata: Metadata = {
@@ -24,21 +20,19 @@ function greeting() {
 }
 
 export default async function OutlierHomePage() {
-  const user = await getUser();
+  const [user, creators, posts, { jobs }] = await Promise.all([getUser(), getCreators(), getPosts(), getJobs()]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-  const topOutliers = POSTS.slice(0, 5);
-  const runningJobs = JOBS.filter((job) => job.state === "running");
-  const thinCreators = CREATORS.filter((creator) =>
-    creator.handles.some((h) => h.thin)
-  );
-  const hasPosts = POSTS.length > 0;
-  const bestToday = hasPosts
-    ? POSTS.reduce((best, post) => (post.score > best.score ? post : best), POSTS[0])
-    : null;
-  const outlierPosts = POSTS.filter((post) => post.score >= 2);
 
-  if (CREATORS.length === 0) {
+  const creatorById = new Map(creators.map((c) => [c.id, c]));
+  const topOutliers = posts.slice(0, 5);
+  const runningJobs = jobs.filter((job) => job.state === "running");
+  const thinCreators = creators.filter((creator) => creator.handles.some((h) => h.thin));
+  const hasPosts = posts.length > 0;
+  const bestToday = hasPosts ? posts.reduce((best, post) => (post.score > best.score ? post : best), posts[0]) : null;
+  const outlierPosts = posts.filter((post) => post.score >= 2);
+
+  if (creators.length === 0) {
     return (
       <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
         <EmptyState
@@ -46,13 +40,9 @@ export default async function OutlierHomePage() {
           title="Add your first creator to get started"
           description="Track a creator's posts and Outlier scores each one against their own median — surfacing the hooks worth repurposing."
           action={
-            <button
-              type="button"
-              className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-              style={{ padding: "11px 16px" }}
-            >
+            <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "11px 16px" }}>
               + Add creator
-            </button>
+            </AddCreatorButton>
           }
         />
       </div>
@@ -67,24 +57,14 @@ export default async function OutlierHomePage() {
             {greeting()}, {firstName}
           </h1>
           <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {hasPosts ? `${today} · ${outlierPosts.length} outliers across ${POSTS.length} posts` : `${today} · nothing pulled yet`}
+            {hasPosts ? `${today} · ${outlierPosts.length} outliers across ${posts.length} posts` : `${today} · nothing pulled yet`}
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
-          <button
-            type="button"
-            className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-            style={{ padding: "10px 14px" }}
-          >
+          <AddCreatorButton className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium" style={{ padding: "10px 14px" }}>
             Add creator
-          </button>
-          <button
-            type="button"
-            className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-            style={{ padding: "10px 14px" }}
-          >
-            Pull now
-          </button>
+          </AddCreatorButton>
+          <PullAllButton creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))} />
         </div>
       </div>
 
@@ -97,21 +77,21 @@ export default async function OutlierHomePage() {
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>score ≥ 2×</p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE TODAY</p>
+          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE</p>
           <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
             {bestToday ? `${bestToday.score.toFixed(1)}×` : "—"}
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {bestToday ? `@${getCreator(bestToday.creatorId).handles[0].handle.replace("@", "")}` : "no posts yet"}
+            {bestToday ? `@${creatorById.get(bestToday.creatorId)?.handles[0].handle}` : "no posts yet"}
           </p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
           <p className="ws-eyebrow" style={{ marginBottom: 10 }}>POSTS PULLED</p>
           <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {POSTS.length}
+            {posts.length}
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            across {CREATORS.length} creators
+            across {creators.length} creators
           </p>
         </div>
         <div className="flex-1" style={{ padding: "16px 18px" }}>
@@ -133,7 +113,7 @@ export default async function OutlierHomePage() {
             <div className="flex-1" />
             {hasPosts && (
               <Link href="/outlier/feed" className="ws-link-accent text-[12px] font-medium">
-                All {POSTS.length} in Feed →
+                All {posts.length} in Feed →
               </Link>
             )}
           </div>
@@ -141,8 +121,8 @@ export default async function OutlierHomePage() {
           {hasPosts ? (
             <div className="ws-stack mt-[14px]" style={{ border: "none", borderRadius: 0 }}>
               {topOutliers.map((post) => {
-                const creator = getCreator(post.creatorId);
-                const handle = creator.handles[0].handle;
+                const creator = creatorById.get(post.creatorId);
+                const handle = creator?.handles[0].handle ?? "";
                 return (
                   <Link
                     key={post.id}
@@ -160,7 +140,7 @@ export default async function OutlierHomePage() {
                         {post.caption}
                       </p>
                       <div className="mt-[4px] flex items-center gap-[7px]">
-                        <Avatar initials={creator.initials} size={20} />
+                        {creator && <Avatar initials={creator.initials} size={20} />}
                         <span className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                           {handle} · {formatCompact(post.views)} views · {post.postedAt}
                         </span>
@@ -177,13 +157,11 @@ export default async function OutlierHomePage() {
               title="No posts pulled yet"
               description="Pull your watchlist to start scoring posts against each creator's own median."
               action={
-                <button
-                  type="button"
+                <PullAllButton
+                  creators={creators.map((c) => ({ id: c.id, handle: c.handles[0].handle }))}
                   className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
                   style={{ padding: "9px 14px" }}
-                >
-                  Pull now
-                </button>
+                />
               }
             />
           )}
@@ -202,17 +180,14 @@ export default async function OutlierHomePage() {
             {runningJobs.length > 0 ? (
               <div className="mt-[14px] flex flex-col gap-[14px]">
                 {runningJobs.map((job) => {
-                  const creator = getCreator(job.creatorId);
+                  const creator = creatorById.get(job.creatorId);
                   return (
                     <div key={job.id}>
                       <div className="flex items-center">
                         <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {creator.handles[0].handle} · {job.scope}
+                          {creator?.handles[0].handle} · {job.scope}
                         </span>
                         <div className="flex-1" />
-                        <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {job.pct}%
-                        </span>
                       </div>
                       <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                         {job.stage}
@@ -246,13 +221,14 @@ export default async function OutlierHomePage() {
                           {thinHandle.postCount} posts — median not reliable yet
                         </p>
                       </div>
-                      <button
-                        type="button"
+                      <PullCreatorButton
+                        creatorId={creator.id}
+                        handle={thinHandle.handle}
                         className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
                         style={{ padding: "7px 10px" }}
                       >
                         Pull more
-                      </button>
+                      </PullCreatorButton>
                     </div>
                   );
                 })}
@@ -265,14 +241,14 @@ export default async function OutlierHomePage() {
               <p className="ws-eyebrow">YOUR RECENT REPURPOSES</p>
               <div className="mt-[14px] flex flex-col gap-[12px]">
                 {RECENT_REPURPOSES.map((item) => {
-                  const creator = getCreator(item.creatorId);
+                  const creator = creatorById.get(item.creatorId);
                   return (
                     <div key={item.title}>
                       <p className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                         {item.title}
                       </p>
                       <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        from {creator.handles[0].handle} · {item.score.toFixed(1)}× · {item.relativeTime}
+                        from {creator?.handles[0].handle} · {item.score.toFixed(1)}× · {item.relativeTime}
                       </p>
                     </div>
                   );

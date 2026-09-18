@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 
 export function FavouriteButton() {
@@ -31,22 +32,30 @@ export function FavouriteButton() {
   );
 }
 
-export function OpenOnPlatformButton({ label }: { label: string }) {
+export function OpenOnPlatformButton({ label, url }: { label: string; url: string }) {
   const toast = useToast();
+  if (!url) {
+    return (
+      <button
+        type="button"
+        onClick={() => toast("No link for this post yet.")}
+        className="flex-1 rounded-[8px] text-[12.5px] font-medium"
+        style={{ padding: "9px 10px", background: "transparent", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
+      >
+        {label} ↗
+      </button>
+    );
+  }
   return (
-    <button
-      type="button"
-      onClick={() => toast("Opening the original post isn't available yet.")}
-      className="flex-1 rounded-[8px] text-[12.5px] font-medium"
-      style={{
-        padding: "9px 10px",
-        background: "transparent",
-        border: "1px solid var(--ws-hairline)",
-        color: "var(--ws-ink-60)",
-      }}
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex flex-1 items-center justify-center rounded-[8px] text-[12.5px] font-medium"
+      style={{ padding: "9px 10px", background: "transparent", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
     >
       {label} ↗
-    </button>
+    </a>
   );
 }
 
@@ -60,6 +69,41 @@ export function RepurposeButton() {
       style={{ padding: "10px 14px" }}
     >
       Repurpose →
+    </button>
+  );
+}
+
+export function AnalyzePostButton({ postId, status }: { postId: string; status: "none" | "analyzing" | "done" | "failed" }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [pending, setPending] = useState(false);
+
+  async function handleAnalyze() {
+    setPending(true);
+    const res = await fetch(`/api/outlier/posts/${postId}/analyze`, { method: "POST" });
+    const data = await res.json().catch(() => null);
+    setPending(false);
+    if (res.ok) {
+      toast("Transcript and structure are ready.", "success");
+      router.refresh();
+    } else {
+      toast(data?.error ?? "Couldn't analyze this post.", "error");
+      router.refresh();
+    }
+  }
+
+  if (status === "done") return null;
+
+  const busy = pending || status === "analyzing";
+  return (
+    <button
+      type="button"
+      onClick={handleAnalyze}
+      disabled={busy}
+      className="ws-btn-primary w-full rounded-[8px] text-[12.5px] font-semibold"
+      style={{ padding: "10px 14px", opacity: busy ? 0.6 : 1 }}
+    >
+      {busy ? "Transcribing & analyzing…" : status === "failed" ? "Retry analysis" : "Transcribe & analyze"}
     </button>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "./page-header";
 import { PRODUCTS } from "./data";
-import { CREATORS, POSTS, JOBS } from "@/app/outlier/data";
+import { getCreators, getPosts, getJobs } from "@/app/outlier/live-data";
 import { getSignalSummary } from "@/app/signal/live-data";
 import { relativeTime } from "@/lib/relative-time";
 
@@ -20,7 +20,13 @@ function greeting() {
 }
 
 export default async function OverviewPage() {
-  const [user, signalSummary] = await Promise.all([getUser(), getSignalSummary()]);
+  const [user, signalSummary, creators, posts, { jobs }] = await Promise.all([
+    getUser(),
+    getSignalSummary(),
+    getCreators(),
+    getPosts(),
+    getJobs(),
+  ]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -28,14 +34,14 @@ export default async function OverviewPage() {
     day: "numeric",
   });
 
-  const outlierPosts = POSTS.filter((post) => post.score >= 2);
-  const runningJobs = JOBS.filter((job) => job.state === "running");
+  const outlierPosts = posts.filter((post) => post.score >= 2);
+  const runningJobs = jobs.filter((job) => job.state === "running");
 
   const statsByKey: Record<string, { label: string; value: string; warn?: boolean }[]> = {
     outlier: [
-      { label: "CREATORS", value: String(CREATORS.length) },
+      { label: "CREATORS", value: String(creators.length) },
       { label: "OUTLIERS", value: String(outlierPosts.length) },
-      { label: "POSTS PULLED", value: String(POSTS.length) },
+      { label: "POSTS PULLED", value: String(posts.length) },
     ],
     signal: [
       { label: "ASSETS", value: String(signalSummary.total) },

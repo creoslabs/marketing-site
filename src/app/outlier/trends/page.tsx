@@ -55,7 +55,7 @@ export default function TrendsPage() {
                   <div className="flex -space-x-2">
                     {topic.creators.map((cid) => {
                       const creator = getCreator(cid);
-                      return <Avatar key={cid} initials={creator.initials} size={22} />;
+                      return creator ? <Avatar key={cid} initials={creator.initials} size={22} /> : null;
                     })}
                   </div>
                   <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>

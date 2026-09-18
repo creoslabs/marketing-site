@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspacePageHeader } from "../page-header";
-import { CREATORS, POSTS } from "@/app/outlier/data";
+import { getCreators, getPosts } from "@/app/outlier/live-data";
 import { getSignalSummary } from "@/app/signal/live-data";
 import { EmptyState } from "@/components/ws-empty-state";
 import { ChoosePlanButton, AddPaymentButton } from "../billing-actions";
@@ -12,13 +12,18 @@ export const metadata: Metadata = {
 };
 
 export default async function BillingPage() {
-  const [user, signalSummary] = await Promise.all([getUser(), getSignalSummary()]);
+  const [user, signalSummary, creators, posts] = await Promise.all([
+    getUser(),
+    getSignalSummary(),
+    getCreators(),
+    getPosts(),
+  ]);
   const email = user?.email ?? "";
   const billedTo = getDisplayName(user);
 
   const usage = [
-    { key: "creators", label: "Creators tracked", value: CREATORS.length },
-    { key: "posts", label: "Posts pulled", value: POSTS.length },
+    { key: "creators", label: "Creators tracked", value: creators.length },
+    { key: "posts", label: "Posts pulled", value: posts.length },
     { key: "assets", label: "Assets analyzed", value: signalSummary.total },
     { key: "failing", label: "Assets failing a check", value: signalSummary.failing },
   ];

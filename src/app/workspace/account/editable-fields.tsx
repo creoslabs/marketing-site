@@ -236,7 +236,17 @@ export function EditableEmailRow({ initialValue }: { initialValue: string }) {
   );
 }
 
-export function EditableApiKeyRow({ label, initialIsSet }: { label: string; initialIsSet: boolean }) {
+export function EditableApiKeyRow({
+  label,
+  metaKey,
+  initialIsSet,
+  placeholder = "sk-…",
+}: {
+  label: string;
+  metaKey: string;
+  initialIsSet: boolean;
+  placeholder?: string;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [isSet, setIsSet] = useState(initialIsSet);
@@ -254,7 +264,7 @@ export function EditableApiKeyRow({ label, initialIsSet }: { label: string; init
       return;
     }
     const { error: updateError } = await result.client.auth.updateUser({
-      data: { signal_anthropic_api_key: value },
+      data: { [metaKey]: value },
     });
     setSaving(false);
     if (updateError) {
@@ -287,7 +297,7 @@ export function EditableApiKeyRow({ label, initialIsSet }: { label: string; init
             type="password"
             autoComplete="off"
             spellCheck={false}
-            placeholder="sk-ant-…"
+            placeholder={placeholder}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             style={{ ...inputStyle, flex: 1, maxWidth: 320 }}

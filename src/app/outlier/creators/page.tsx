@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CREATORS } from "../data";
+import { getCreators } from "../live-data";
 import { Avatar, EmptyState, Sparkline, ThinHistoryPill } from "../components";
+import { AddCreatorButton, RemoveCreatorButton } from "../creator-actions";
 import { formatCompact } from "../format";
 
 export const metadata: Metadata = {
@@ -9,11 +10,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const COLUMNS = "1fr 96px 82px 74px 74px 92px 76px";
+const COLUMNS = "1fr 96px 82px 74px 74px 92px 84px 64px";
 
-export default function CreatorsPage() {
-  const handleCount = CREATORS.reduce((sum, creator) => sum + creator.handles.length, 0);
-  const thinCount = CREATORS.filter((creator) => creator.handles.some((h) => h.thin)).length;
+export default async function CreatorsPage() {
+  const creators = await getCreators();
+  const handleCount = creators.reduce((sum, creator) => sum + creator.handles.length, 0);
+  const thinCount = creators.filter((creator) => creator.handles.some((h) => h.thin)).length;
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -23,7 +25,7 @@ export default function CreatorsPage() {
             Creators
           </h1>
           <p className="mt-1 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {CREATORS.length} tracked · {handleCount} handles · {thinCount} with thin history
+            {creators.length} tracked · {handleCount} handles · {thinCount} with thin history
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
@@ -45,17 +47,13 @@ export default function CreatorsPage() {
           >
             Best 30d ▾
           </button>
-          <button
-            type="button"
-            className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-            style={{ padding: "9px 12px" }}
-          >
+          <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
             + Add creator
-          </button>
+          </AddCreatorButton>
         </div>
       </div>
 
-      {CREATORS.length === 0 ? (
+      {creators.length === 0 ? (
         <div className="ws-card mt-[18px]">
           <EmptyState
             size="large"
@@ -81,9 +79,10 @@ export default function CreatorsPage() {
           <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>CADENCE</span>
           <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>TREND</span>
           <span></span>
+          <span></span>
         </div>
 
-        {CREATORS.map((creator) => {
+        {creators.map((creator) => {
           const isThin = creator.handles.some((h) => h.thin);
           return (
             <div
@@ -148,24 +147,13 @@ export default function CreatorsPage() {
               >
                 Open
               </Link>
+
+              <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0].handle} />
             </div>
           );
         })}
       </div>
       )}
-
-      <button
-        type="button"
-        className="mt-[14px] flex w-full items-center justify-center text-[12.5px] font-medium"
-        style={{
-          padding: "16px",
-          borderRadius: 12,
-          border: "1.5px dashed var(--ws-hairline-strong)",
-          color: "var(--ws-ink-45)",
-        }}
-      >
-        + Add creator or paste a handle
-      </button>
     </div>
   );
 }

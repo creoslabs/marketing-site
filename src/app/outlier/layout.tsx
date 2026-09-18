@@ -2,12 +2,16 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/data";
 import { OutlierChrome } from "./outlier-chrome";
 import { WsUIProvider } from "@/components/ws-ui-provider";
+import { getJobs } from "./live-data";
 
 export default async function OutlierLayout({ children }: { children: React.ReactNode }) {
-  const user = await getUser();
+  const [user, { jobs, finished }] = await Promise.all([getUser(), getJobs()]);
   if (!user) {
     redirect("/login");
   }
+
+  const runningCount = jobs.filter((j) => j.state === "running").length;
+  const lastPulledLabel = finished[0]?.relativeTime ?? null;
 
   return (
     <div className="ws" data-theme="dark" suppressHydrationWarning>
@@ -18,7 +22,7 @@ export default async function OutlierLayout({ children }: { children: React.Reac
         }}
       />
       <WsUIProvider>
-        <OutlierChrome />
+        <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} />
         {children}
       </WsUIProvider>
     </div>

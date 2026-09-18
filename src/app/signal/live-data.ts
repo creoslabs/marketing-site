@@ -110,9 +110,11 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
           60 * 60
         )
       : { data: [] as { path: string; signedUrl: string }[] };
-  const previewUrlByAssetId = new Map(
-    previewFrames.map((p, i) => [p.assetId, signedFrameUrls?.[i]?.signedUrl ?? null])
-  );
+  // Matched by path, not array position — createSignedUrls' result order
+  // isn't a documented guarantee, and matching by index silently attached
+  // the wrong (or no) frame to an asset whenever it didn't hold.
+  const urlByFramePath = new Map((signedFrameUrls ?? []).map((s) => [s.path, s.signedUrl]));
+  const previewUrlByAssetId = new Map(previewFrames.map((p) => [p.assetId, urlByFramePath.get(p.path) ?? null]));
 
   const assets: Asset[] = doneRows.map((row) => ({
     id: row.id,
@@ -216,7 +218,9 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
       frameRows.map((f) => f.storage_path),
       60 * 60
     );
-    frames = frameRows.map((f, i) => ({ t: f.t, url: signedFrameUrls?.[i]?.signedUrl ?? "" })).filter((f) => f.url);
+    // Matched by path, not array position — see getLibrary() above for why.
+    const urlByPath = new Map((signedFrameUrls ?? []).map((s) => [s.path, s.signedUrl]));
+    frames = frameRows.map((f) => ({ t: f.t, url: urlByPath.get(f.storage_path) ?? "" })).filter((f) => f.url);
   }
 
   const asset: Asset = {
