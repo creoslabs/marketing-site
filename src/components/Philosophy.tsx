@@ -8,10 +8,25 @@ const PILLARS = [
   { name: "Accessible", body: "Useful whether you're one person or an entire team." },
 ];
 
+const MARQUEE_TEXT = "RESEARCH  →  ANALYSE  →  DECIDE  →  BUILD  —  ";
+
 export default function Philosophy() {
   return (
-    <section className="relative border-t border-white/10 py-28">
-      <div className="mx-auto max-w-5xl px-6">
+    <section className="relative overflow-hidden border-t border-white/10 py-28">
+      {/* A deliberate break from the page's otherwise uniform content width —
+          huge, low-opacity, slow-moving type behind the heading, purely
+          decorative. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-[6%] select-none whitespace-nowrap text-[6rem] font-bold uppercase leading-none tracking-tight text-white/[0.05] sm:text-[9rem]"
+      >
+        <div className="marquee-track inline-flex">
+          <span className="pr-8">{MARQUEE_TEXT.repeat(3)}</span>
+          <span className="pr-8">{MARQUEE_TEXT.repeat(3)}</span>
+        </div>
+      </div>
+
+      <div className="relative mx-auto max-w-5xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
             Built for people building brands
@@ -30,7 +45,7 @@ export default function Philosophy() {
           {STEPS.map((step, i) => (
             <div
               key={step}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center"
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors duration-300 hover:border-white/25"
             >
               <span className="text-xs font-semibold text-accent-blue">{String(i + 1).padStart(2, "0")}</span>
               <p className="mt-3 text-[15px] font-medium leading-snug">{step}</p>
@@ -51,7 +66,10 @@ export default function Philosophy() {
 
         <Reveal delay={200} className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {PILLARS.map((p) => (
-            <div key={p.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+            <div
+              key={p.name}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-white/25"
+            >
               <p className="text-[15px] font-semibold">{p.name}</p>
               <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
             </div>

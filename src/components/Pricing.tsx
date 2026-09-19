@@ -16,7 +16,10 @@ export default function Pricing() {
           <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">One subscription. Every tool.</p>
         </Reveal>
 
-        <Reveal delay={100} className="mt-12 rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
+        <Reveal
+          delay={100}
+          className="mt-12 rounded-3xl border border-white/10 bg-white/[0.03] p-8 transition-[box-shadow,border-color] duration-500 hover:border-white/20 hover:shadow-[0_0_90px_-25px_rgba(41,151,255,0.4)] sm:p-10"
+        >
           <div className="flex flex-col items-center text-center">
             <span className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-muted">
               Founding Access
@@ -43,7 +46,7 @@ export default function Pricing() {
 
         <Reveal
           delay={150}
-          className="mt-6 flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center sm:flex-row sm:justify-between sm:text-left"
+          className="mt-6 flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-center transition-colors duration-300 hover:border-white/20 sm:flex-row sm:justify-between sm:text-left"
         >
           <div>
             <p className="text-[14.5px] font-medium">Using Creos for multiple brands?</p>
@@ -56,7 +59,7 @@ export default function Pricing() {
             href="mailto:hello@creos-labs.com?subject=Creos%20for%20teams%20%26%20agencies"
             className="shrink-0 text-[13.5px] font-semibold text-accent-blue transition hover:text-accent-blue/80"
           >
-            Talk to us →
+            Talk to us <span className="cta-arrow">→</span>
           </a>
         </Reveal>
       </div>

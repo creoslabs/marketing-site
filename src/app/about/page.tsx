@@ -4,6 +4,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { LiquidButton } from "@/components/ui/button";
+import { LiveDot } from "@/components/LiveDot";
 
 export const metadata: Metadata = {
   title: "About — Creos Labs",
@@ -82,7 +83,10 @@ export default function AboutPage() {
             </Reveal>
             <Reveal delay={100} className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
               {PRINCIPLES.map((p) => (
-                <div key={p.name} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                <div
+                  key={p.name}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-white/25"
+                >
                   <p className="text-[15px] font-semibold">{p.name}</p>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
                 </div>
@@ -104,10 +108,14 @@ export default function AboutPage() {
               {STATUS.map((item) => (
                 <div
                   key={item.name}
-                  className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition-colors duration-300 hover:border-white/20 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue" />
+                    {item.state === "Live" ? (
+                      <LiveDot />
+                    ) : (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/30" />
+                    )}
                     <span className="text-[14.5px] font-semibold">{item.name}</span>
                     <span className="text-xs font-medium text-accent-blue">{item.state}</span>
                   </div>
@@ -126,13 +134,15 @@ export default function AboutPage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-                <Link href="/#pricing">Get Creos →</Link>
+                <Link href="/#pricing">
+                  Get Creos <span className="cta-arrow">→</span>
+                </Link>
               </LiquidButton>
               <a
                 href="mailto:hello@creos-labs.com"
-                className="text-[13.5px] font-medium text-muted transition hover:text-foreground"
+                className="link-underline text-[13.5px] font-medium text-muted transition hover:text-foreground"
               >
-                Or just say hello →
+                Or just say hello <span className="cta-arrow">→</span>
               </a>
             </div>
           </Reveal>

@@ -87,6 +87,158 @@ body {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Marketing-site microinteractions — small, tasteful, transform/opacity   */
+/* only so they stay cheap, and all disabled under reduced-motion.         */
+/* ---------------------------------------------------------------------- */
+
+/* A trailing "→" wrapped in this class nudges forward when its enclosing
+   link/button is hovered — works with LiquidButton's asChild Slot since the
+   hover still targets the real <a>/<button> underneath. */
+.cta-arrow {
+  display: inline-block;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+a:hover .cta-arrow,
+button:hover .cta-arrow {
+  transform: translateX(4px);
+}
+
+/* Animated underline for inline text links — an underline that grows in
+   from the left on hover instead of a static border. */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.link-underline:hover::after {
+  right: 0;
+}
+
+/* Live/status dot: a solid core plus a soft expanding ring, cheaper and
+   less busy than a flat opacity pulse. */
+.live-dot {
+  position: relative;
+  display: inline-flex;
+  height: 6px;
+  width: 6px;
+}
+
+.live-dot::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.5;
+  animation: live-dot-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+@keyframes live-dot-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Slow-drifting background orbs for the hero field — independent paths so
+   they don't read as one thing pulsing in sync. */
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(4%, 6%) scale(1.08);
+  }
+}
+
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-5%, 4%) scale(1.05);
+  }
+}
+
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -5%) scale(1.1);
+  }
+}
+
+.hero-orb-a {
+  animation: drift-a 22s ease-in-out infinite;
+}
+
+.hero-orb-b {
+  animation: drift-b 28s ease-in-out infinite;
+}
+
+.hero-orb-c {
+  animation: drift-c 34s ease-in-out infinite;
+}
+
+/* Oversized horizontal marquee used once, deliberately, to break the
+   page's otherwise uniform content-width grid. */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee-scroll 38s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-arrow,
+  .link-underline::after {
+    transition: none;
+  }
+  .live-dot::before,
+  .hero-orb-a,
+  .hero-orb-b,
+  .hero-orb-c,
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
 /* "Signal" workspace design system — scoped under .ws, isolated from the */
 /* marketing site's tokens above. Dark is canonical/default; .ws[data-   */
 /* theme="light"] overrides. See design_handoff_creos_workspace/README.  */

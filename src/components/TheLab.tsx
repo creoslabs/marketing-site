@@ -1,4 +1,5 @@
 import { Reveal } from "@/components/Reveal";
+import { LiveDot } from "@/components/LiveDot";
 
 const TOOLS = [
   { name: "Outlier", status: "Live" },
@@ -18,11 +19,11 @@ export default function TheLab() {
           {TOOLS.map((tool) => (
             <span
               key={tool.name}
-              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[14px] font-medium"
+              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[14px] font-medium transition-colors duration-300 hover:border-white/30"
             >
               {tool.name}
               <span className="flex items-center gap-1.5 text-[12px] font-medium text-accent-blue">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent-blue" />
+                <LiveDot />
                 {tool.status}
               </span>
             </span>

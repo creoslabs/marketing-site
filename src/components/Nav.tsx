@@ -11,6 +11,7 @@ const PRODUCTS = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,8 +22,21 @@ export default function Nav() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 24);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-black/70 backdrop-blur-xl">
+    <header
+      className={`fixed top-0 z-50 w-full border-b transition-colors duration-300 ${
+        scrolled ? "border-white/10 bg-black/70 backdrop-blur-xl" : "border-transparent bg-transparent"
+      }`}
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <div className="flex items-center gap-8">
           <Link href="/#top" className="text-[15px] font-semibold tracking-tight">
@@ -55,20 +69,23 @@ export default function Nav() {
                 </div>
               )}
             </div>
-            <Link href="/#pricing" className="transition hover:text-foreground">
+            <Link href="/#pricing" className="link-underline transition hover:text-foreground">
               Pricing
             </Link>
-            <Link href="/about" className="transition hover:text-foreground">
+            <Link href="/about" className="link-underline transition hover:text-foreground">
               About
             </Link>
-            <Link href="/insights" className="transition hover:text-foreground">
+            <Link href="/insights" className="link-underline transition hover:text-foreground">
               Insights
             </Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/login" className="hidden text-[13.5px] text-muted transition hover:text-foreground sm:block">
+          <Link
+            href="/login"
+            className="link-underline hidden text-[13.5px] text-muted transition hover:text-foreground sm:block"
+          >
             Sign in
           </Link>
           <LiquidButton asChild variant="secondary" size="sm" className="rounded-full text-[13px]">

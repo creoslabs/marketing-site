@@ -1,9 +1,11 @@
 import { LiquidButton } from "@/components/ui/button";
+import { HeroField } from "@/components/HeroField";
 
 export default function Hero() {
   return (
     <section id="top" className="relative overflow-hidden pt-56 pb-32">
       <div className="pointer-events-none absolute -top-64 left-1/2 h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-white/10 blur-[140px]" />
+      <HeroField />
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
         <h1
@@ -27,10 +29,14 @@ export default function Hero() {
           style={{ animationDelay: "200ms" }}
         >
           <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-            <a href="#products">Explore the tools →</a>
+            <a href="#products">
+              Explore the tools <span className="cta-arrow">→</span>
+            </a>
           </LiquidButton>
           <LiquidButton asChild variant="secondary" size="xl" className="w-full rounded-full sm:w-auto">
-            <a href="#pricing">Get Creos →</a>
+            <a href="#pricing">
+              Get Creos <span className="cta-arrow">→</span>
+            </a>
           </LiquidButton>
         </div>
       </div>

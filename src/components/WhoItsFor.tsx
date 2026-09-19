@@ -25,7 +25,7 @@ export default function WhoItsFor() {
           {USE_CASES.map((useCase) => (
             <span
               key={useCase}
-              className="rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[13.5px] text-foreground/90"
+              className="rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[13.5px] text-foreground/90 transition-colors duration-300 hover:border-white/30"
             >
               {useCase}
             </span>

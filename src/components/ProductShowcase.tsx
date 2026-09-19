@@ -4,6 +4,16 @@ import { useEffect, useRef, useState, type PointerEventHandler } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { LiveDot } from "@/components/LiveDot";
+
+// Matches each highlight's dotClassName to a glow colour for the active
+// step's number badge — a small, contained lookup rather than threading a
+// new field through every highlight in product-data.ts.
+const GLOW_SHADOW: Record<string, string> = {
+  "bg-accent-blue": "shadow-[0_0_18px_rgba(41,151,255,0.55)]",
+  "bg-accent-violet": "shadow-[0_0_18px_rgba(139,92,246,0.55)]",
+  "bg-accent-coral": "shadow-[0_0_18px_rgba(251,146,60,0.55)]",
+};
 
 export type ProductHighlight = {
   label: string;
@@ -177,7 +187,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
 
         <div className="mt-3 flex">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-muted">
-            <span className="h-1.5 w-1.5 rounded-full bg-accent-blue" />
+            <LiveDot />
             Live — early access
           </span>
         </div>
@@ -194,7 +204,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
           href={product.href}
           className="mt-5 inline-flex items-center text-sm font-semibold text-foreground transition hover:text-accent-blue"
         >
-          {product.ctaLabel}
+          {product.ctaLabel.replace(/\s*→\s*$/, "")} <span className="cta-arrow ml-1">→</span>
         </Link>
 
         <div className="relative mt-6 lg:mt-10">
@@ -228,7 +238,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                   className={cn(
                     "relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-all duration-300 group-active/step:scale-90",
                     i === active
-                      ? cn(item.dotClassName, "border-transparent text-black scale-110")
+                      ? cn(item.dotClassName, GLOW_SHADOW[item.dotClassName], "border-transparent text-black scale-110")
                       : "border-white/15 bg-background text-muted group-hover/step:scale-105 group-hover/step:border-white/30"
                   )}
                 >

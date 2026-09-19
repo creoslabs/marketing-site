@@ -62,7 +62,13 @@ export function GetCreosForm() {
           className="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3.5 text-[15px] text-foreground outline-none placeholder:text-muted focus-visible:border-accent-blue disabled:opacity-60 sm:w-64"
         />
         <LiquidButton type="submit" size="xl" disabled={status === "loading"} className="w-full rounded-full sm:w-auto">
-          {status === "loading" ? "Joining…" : "Get Creos →"}
+          {status === "loading" ? (
+            "Joining…"
+          ) : (
+            <>
+              Get Creos <span className="cta-arrow">→</span>
+            </>
+          )}
         </LiquidButton>
       </form>
       {status === "error" && <p className="mt-3 text-center text-sm text-destructive">{message}</p>}

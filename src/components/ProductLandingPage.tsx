@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { ProductShowcase, type ProductData } from "@/components/ProductShowcase";
 import { LiquidButton } from "@/components/ui/button";
+import { LiveDot } from "@/components/LiveDot";
 
 export type HowItWorksStep = { title: string; body: string };
 export type Faq = { q: string; a: string };
@@ -30,14 +31,16 @@ export function ProductLandingPage({
           <div className="relative mx-auto max-w-3xl px-6 text-center">
             <Reveal>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-muted">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent-blue" />
+                <LiveDot />
                 Live — early access
               </span>
               <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">{product.tagline}</h1>
               <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted">{heroDescription}</p>
               <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-                  <Link href="/#pricing">Get Creos →</Link>
+                  <Link href="/#pricing">
+                    Get Creos <span className="cta-arrow">→</span>
+                  </Link>
                 </LiquidButton>
                 <LiquidButton asChild variant="secondary" size="xl" className="w-full rounded-full sm:w-auto">
                   <a href="#how-it-works">See how it works</a>
@@ -62,7 +65,11 @@ export function ProductLandingPage({
             </Reveal>
             <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-3">
               {howItWorks.map((step, i) => (
-                <Reveal key={step.title} delay={i * 100} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                <Reveal
+                  key={step.title}
+                  delay={i * 100}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-white/25"
+                >
                   <span className="text-xs font-semibold text-accent-blue">{String(i + 1).padStart(2, "0")}</span>
                   <p className="mt-3 text-[15px] font-semibold">{step.title}</p>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{step.body}</p>
@@ -81,7 +88,7 @@ export function ProductLandingPage({
               {useCases.map((useCase) => (
                 <span
                   key={useCase}
-                  className="rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[13.5px] text-foreground/90"
+                  className="rounded-full border border-white/15 bg-white/[0.03] px-5 py-2.5 text-[13.5px] text-foreground/90 transition-colors duration-300 hover:border-white/30"
                 >
                   {useCase}
                 </span>
@@ -114,7 +121,9 @@ export function ProductLandingPage({
             <p className="mt-4 text-muted">One Creos subscription. Every tool, including {product.name}.</p>
             <div className="mt-8 flex justify-center">
               <LiquidButton asChild size="xl" className="rounded-full">
-                <Link href="/#pricing">Get Creos →</Link>
+                <Link href="/#pricing">
+                  Get Creos <span className="cta-arrow">→</span>
+                </Link>
               </LiquidButton>
             </div>
           </Reveal>
