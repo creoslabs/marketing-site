@@ -154,23 +154,21 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
 const loadAll = cache(async () => {
   const supabase = await createClient();
 
-  const { data: creatorRows } = await supabase
-    .from("outlier_creators")
-    .select("id, display_name")
-    .order("created_at", { ascending: false })
-    .returns<CreatorRow[]>();
+  // outlier_handles carries its own user_id (RLS: auth.uid() = user_id),
+  // so it doesn't need creatorRows' ids to be scoped safely — fetching it
+  // alongside creators instead of after them turns a 3-step waterfall
+  // (creators -> handles -> posts) into 2 steps, cutting a full
+  // Supabase round trip off of every Outlier page load.
+  const [{ data: creatorRows }, { data: handleRows }] = await Promise.all([
+    supabase.from("outlier_creators").select("id, display_name").order("created_at", { ascending: false }).returns<CreatorRow[]>(),
+    supabase
+      .from("outlier_handles")
+      .select("id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url")
+      .returns<HandleRow[]>(),
+  ]);
   if (!creatorRows || creatorRows.length === 0) {
     return { supabase, creators: [] as Creator[], handlesByCreator: new Map<string, HandleRow[]>(), postsByHandle: new Map<string, PostRow[]>() };
   }
-
-  const { data: handleRows } = await supabase
-    .from("outlier_handles")
-    .select("id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url")
-    .in(
-      "creator_id",
-      creatorRows.map((c) => c.id)
-    )
-    .returns<HandleRow[]>();
   const handles = handleRows ?? [];
 
   const { data: postRows } = await supabase

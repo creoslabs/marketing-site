@@ -19,10 +19,11 @@ export function FavouriteButton({ postId, initialFavourited }: { postId: string;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ favourited: next }),
     });
+    const data = await res.json().catch(() => null);
     setPending(false);
     if (!res.ok) {
       setSaved(!next);
-      toast("Couldn't update favourite.", "error");
+      toast(data?.error ?? "Couldn't update favourite.", "error");
       return;
     }
     if (next) {

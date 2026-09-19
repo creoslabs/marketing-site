@@ -91,13 +91,16 @@ export function ProductShowcase({ product }: { product: ProductData }) {
     });
   };
 
-  const scale = frameSize.height > 0 ? frameSize.height / current.zoomHeight : 1;
-  const translateX =
-    frameSize.width / (2 * scale) - product.filmstripWidth / 2;
+  // Fit by WIDTH, not height — these are wide desktop screenshots, and
+  // fitting by a fixed frame height (then centering horizontally) cropped
+  // most of the side columns off. Fitting by width shows the full desktop
+  // layout every time; the frame's height instead follows each highlight's
+  // own zoomHeight so nothing gets cropped vertically either.
+  const scale = frameSize.width > 0 ? frameSize.width / product.filmstripWidth : 1;
   const translateY = -current.zoomOffsetY;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+    <div className="grid gap-10 lg:grid-cols-[7fr_5fr] lg:gap-16">
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
         <div className="lg:sticky lg:top-28">
           <div className="relative" style={{ perspective: "1200px" }}>
@@ -126,12 +129,16 @@ export function ProductShowcase({ product }: { product: ProductData }) {
 
               <div
                 ref={frameRef}
-                className="relative h-[280px] w-full overflow-hidden sm:h-[360px] lg:h-[440px]"
+                className="relative w-full overflow-hidden"
+                style={{
+                  aspectRatio: `${product.filmstripWidth} / ${current.zoomHeight}`,
+                  transition: "aspect-ratio 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+                }}
               >
                 <div
                   className="absolute top-0 left-0"
                   style={{
-                    transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)`,
+                    transform: `scale(${scale}) translate(0px, ${translateY}px)`,
                     transformOrigin: "0 0",
                     transition: "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}

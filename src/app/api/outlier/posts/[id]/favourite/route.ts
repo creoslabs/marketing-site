@@ -31,7 +31,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/outlier/pos
 
   const { error } = await admin.from("outlier_posts").update({ favourited }).eq("id", id);
   if (error) {
-    return NextResponse.json({ error: "Could not update favourite." }, { status: 500 });
+    return NextResponse.json({ error: `Could not update favourite: ${error.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, favourited });
