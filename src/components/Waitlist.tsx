@@ -42,11 +42,11 @@ export default function Waitlist() {
     <section id="waitlist" className="relative border-t border-white/10 py-28">
       <Reveal className="mx-auto max-w-xl px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Get in while it&apos;s early.
+          Better tools for building brands.
         </h2>
         <p className="mt-4 text-muted">
-          Outlier and Signal are live and already scoring real content for
-          early users. Join the waitlist and we&apos;ll get you set up.
+          Get Creos — A$15/month for Outlier, Signal, and everything we ship
+          next during early access.
         </p>
 
         {status === "success" ? (
@@ -73,7 +73,7 @@ export default function Waitlist() {
               disabled={status === "loading"}
               className="w-full rounded-full sm:w-auto"
             >
-              {status === "loading" ? "Joining…" : "Join the waitlist"}
+              {status === "loading" ? "Joining…" : "Get Creos — A$15/month"}
             </LiquidButton>
           </form>
         )}

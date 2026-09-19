@@ -17,16 +17,20 @@ export default function Hero() {
           className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted sm:text-xl"
           style={{ animationDelay: "100ms" }}
         >
-          Creos Labs sits at the intersection of creativity and business,
-          building technology for how marketing actually works.
+          Practical tools for people building brands. Research what&apos;s
+          working, analyse what you&apos;ve made, and make better marketing
+          decisions — without adding more complexity to your workflow.
         </p>
 
         <div
-          className="animate-fade-up mt-10 flex justify-center"
+          className="animate-fade-up mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
           style={{ animationDelay: "200ms" }}
         >
           <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-            <a href="#waitlist">Get early access</a>
+            <a href="#products">Explore the tools →</a>
+          </LiquidButton>
+          <LiquidButton asChild variant="secondary" size="xl" className="w-full rounded-full sm:w-auto">
+            <a href="#pricing">Get Creos →</a>
           </LiquidButton>
         </div>
       </div>

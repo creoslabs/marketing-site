@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEventHandler } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export type ProductHighlight = {
@@ -18,6 +19,8 @@ export type ProductData = {
   name: string;
   tagline: string;
   description: string;
+  href: string;
+  ctaLabel: string;
   imageSide: "left" | "right";
   filmstripSrc: string;
   filmstripWidth: number;
@@ -186,6 +189,13 @@ export function ProductShowcase({ product }: { product: ProductData }) {
         <p className="mt-4 max-w-xl leading-relaxed text-muted">
           {product.description}
         </p>
+
+        <Link
+          href={product.href}
+          className="mt-5 inline-flex items-center text-sm font-semibold text-foreground transition hover:text-accent-blue"
+        >
+          {product.ctaLabel}
+        </Link>
 
         <div className="relative mt-6 lg:mt-10">
           <div className="absolute top-0 bottom-0 left-5 w-px bg-white/10" />
