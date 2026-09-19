@@ -1,86 +1,25 @@
-"use client";
-
-import { useState, type FormEvent } from "react";
 import { LiquidButton } from "@/components/ui/button";
 import { Reveal } from "@/components/Reveal";
 
-type Status = "idle" | "loading" | "success" | "error";
-
+// The actual signup form lives once, in the pricing card — this is a
+// closing nudge back to it, not a second near-identical form.
 export default function Waitlist() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<Status>("idle");
-  const [message, setMessage] = useState("");
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setStatus("loading");
-    setMessage("");
-
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus("error");
-        setMessage(data.error ?? "Something went wrong. Try again.");
-        return;
-      }
-
-      setStatus("success");
-      setEmail("");
-    } catch {
-      setStatus("error");
-      setMessage("Something went wrong. Try again.");
-    }
-  }
-
   return (
-    <section id="waitlist" className="relative border-t border-white/10 py-28">
+    <section className="relative border-t border-white/10 py-28">
       <Reveal className="mx-auto max-w-xl px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Better tools for building brands.
         </h2>
         <p className="mt-4 text-muted">
-          Get Creos — A$15/month for Outlier, Signal, and everything we ship
-          next during early access.
+          A$15/month for Outlier + Signal, with new Creos tools added
+          throughout early access.
         </p>
 
-        {status === "success" ? (
-          <p className="mt-8 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-foreground">
-            You&apos;re on the list — we&apos;ll be in touch.
-          </p>
-        ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
-          >
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@email.com"
-              disabled={status === "loading"}
-              className="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3.5 text-[15px] text-foreground outline-none placeholder:text-muted focus-visible:border-accent-blue disabled:opacity-60 sm:w-72"
-            />
-            <LiquidButton
-              type="submit"
-              size="xl"
-              disabled={status === "loading"}
-              className="w-full rounded-full sm:w-auto"
-            >
-              {status === "loading" ? "Joining…" : "Get Creos — A$15/month"}
-            </LiquidButton>
-          </form>
-        )}
-
-        {status === "error" && (
-          <p className="mt-3 text-sm text-destructive">{message}</p>
-        )}
+        <div className="mt-8 flex justify-center">
+          <LiquidButton asChild size="xl" className="rounded-full">
+            <a href="#pricing">Get Creos — A$15/month</a>
+          </LiquidButton>
+        </div>
       </Reveal>
     </section>
   );

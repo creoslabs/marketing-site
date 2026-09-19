@@ -14,13 +14,10 @@ export default function WhoItsFor() {
       <div className="mx-auto max-w-4xl px-6">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
-            Who it&apos;s for
+            Built for real workflows
           </h2>
           <p className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Built to scale with you.
-          </p>
-          <p className="mx-auto mt-6 max-w-xl leading-relaxed text-muted">
-            From one-person brands to marketing teams managing multiple brands.
+            However you build your brand.
           </p>
         </Reveal>
 

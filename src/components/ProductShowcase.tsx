@@ -103,7 +103,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
   const translateY = -current.zoomOffsetY;
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[7fr_5fr] lg:gap-16">
+    <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
         <div className="lg:sticky lg:top-28">
           <div className="relative" style={{ perspective: "1200px" }}>
@@ -216,7 +216,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                 stepRefs.current[i] = el;
               }}
               data-index={i}
-              className="flex lg:min-h-[60vh] lg:items-center"
+              className="flex lg:min-h-[37vh] lg:items-center"
             >
               <button
                 type="button"
@@ -247,7 +247,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                   <span
                     className={cn(
                       "mt-2 block max-w-sm leading-relaxed text-muted transition-opacity duration-300",
-                      i === active ? "opacity-100" : "opacity-50"
+                      i === active ? "opacity-100" : "opacity-75"
                     )}
                   >
                     {item.description}

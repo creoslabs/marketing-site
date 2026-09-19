@@ -1,5 +1,5 @@
 import { Reveal } from "@/components/Reveal";
-import { LiquidButton } from "@/components/ui/button";
+import { GetCreosForm } from "@/components/GetCreosForm";
 
 const INCLUDED = [
   "Access to Outlier + Signal.",
@@ -34,9 +34,9 @@ export default function Pricing() {
               ))}
             </ul>
 
-            <LiquidButton asChild size="xl" className="mt-8 w-full rounded-full sm:w-auto">
-              <a href="#waitlist">Get Creos →</a>
-            </LiquidButton>
+            <div className="mt-8 w-full">
+              <GetCreosForm />
+            </div>
             <p className="mt-4 text-xs text-muted">No lock-in. Cancel anytime.</p>
           </div>
         </Reveal>
