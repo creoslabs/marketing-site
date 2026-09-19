@@ -52,7 +52,7 @@ export function ProductLandingPage({
 
         <section className="relative py-16">
           <div className="mx-auto max-w-[1400px] px-6">
-            <Reveal>
+            <Reveal scale>
               <ProductShowcase product={product} />
             </Reveal>
           </div>

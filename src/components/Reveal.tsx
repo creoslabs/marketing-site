@@ -8,10 +8,13 @@ export function Reveal({
   children,
   className,
   delay = 0,
+  scale = false,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  /** Also scale in from 0.96 → 1, for product UI / imagery rather than text. */
+  scale?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -40,8 +43,8 @@ export function Reveal({
       className={cn(
         "motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out",
         visible
-          ? "opacity-100 motion-safe:translate-y-0"
-          : "motion-safe:translate-y-6 motion-safe:opacity-0",
+          ? cn("opacity-100 motion-safe:translate-y-0", scale && "motion-safe:scale-100")
+          : cn("motion-safe:translate-y-6 motion-safe:opacity-0", scale && "motion-safe:scale-[0.96]"),
         className
       )}
       style={{ transitionDelay: `${delay}ms` }}

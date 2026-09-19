@@ -2,6 +2,8 @@ import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import WhatWereBuilding from "@/components/WhatWereBuilding";
 import Philosophy from "@/components/Philosophy";
+import BigMoments from "@/components/BigMoments";
+import BloatStory from "@/components/BloatStory";
 import WhoItsFor from "@/components/WhoItsFor";
 import Pricing from "@/components/Pricing";
 import TheLab from "@/components/TheLab";
@@ -16,6 +18,8 @@ export default function Home() {
         <Hero />
         <WhatWereBuilding />
         <Philosophy />
+        <BigMoments />
+        <BloatStory />
         <WhoItsFor />
         <Pricing />
         <TheLab />

@@ -1,13 +1,5 @@
 import { Reveal } from "@/components/Reveal";
 
-const STEPS = ["Research what's working.", "Understand what you're making.", "Make better decisions."];
-
-const PILLARS = [
-  { name: "Focused", body: "One clear job per tool." },
-  { name: "Practical", body: "Built around real marketing workflows." },
-  { name: "Accessible", body: "Useful whether you're one person or an entire team." },
-];
-
 const MARQUEE_TEXT = "RESEARCH  →  ANALYSE  →  DECIDE  →  BUILD  —  ";
 
 export default function Philosophy() {
@@ -26,8 +18,8 @@ export default function Philosophy() {
         </div>
       </div>
 
-      <div className="relative mx-auto max-w-5xl px-6">
-        <Reveal className="mx-auto max-w-2xl text-center">
+      <div className="relative mx-auto max-w-2xl px-6">
+        <Reveal className="text-center">
           <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-blue">
             Built for people building brands
           </h2>
@@ -39,41 +31,6 @@ export default function Philosophy() {
             Creos Labs builds focused tools for the parts of marketing that
             shouldn&apos;t be difficult.
           </p>
-        </Reveal>
-
-        <Reveal delay={100} className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <div
-              key={step}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors duration-300 hover:border-white/25"
-            >
-              <span className="text-xs font-semibold text-accent-blue">{String(i + 1).padStart(2, "0")}</span>
-              <p className="mt-3 text-[15px] font-medium leading-snug">{step}</p>
-            </div>
-          ))}
-        </Reveal>
-
-        <Reveal delay={150} className="mx-auto mt-28 max-w-2xl text-center">
-          <p className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Marketing software has become bloated.
-          </p>
-          <p className="mx-auto mt-6 max-w-xl leading-relaxed text-muted">
-            Creos Labs takes a different approach — focused tools designed to
-            do one job exceptionally well, without dashboards you don&apos;t
-            need, features you&apos;ll never use, or enterprise complexity.
-          </p>
-        </Reveal>
-
-        <Reveal delay={200} className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {PILLARS.map((p) => (
-            <div
-              key={p.name}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors duration-300 hover:border-white/25"
-            >
-              <p className="text-[15px] font-semibold">{p.name}</p>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
-            </div>
-          ))}
         </Reveal>
       </div>
     </section>

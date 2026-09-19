@@ -1,10 +1,11 @@
 import { Reveal } from "@/components/Reveal";
 import { GetCreosForm } from "@/components/GetCreosForm";
+import { LiveDot } from "@/components/LiveDot";
 
-const INCLUDED = [
-  "Access to Outlier + Signal.",
-  "New Creos tools added during early access.",
-  "Founding price stays yours while subscribed.",
+const INCLUDED_TOOLS = [
+  { name: "OUTLIER", body: "Content intelligence", state: "included" as const },
+  { name: "SIGNAL", body: "Creative analysis", state: "included" as const },
+  { name: "???", body: "In the lab", state: "coming" as const },
 ];
 
 export default function Pricing() {
@@ -28,16 +29,37 @@ export default function Pricing() {
               A$15<span className="text-xl font-medium text-muted">/month</span>
             </p>
 
-            <ul className="mt-8 flex flex-col gap-3 text-left">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-start gap-3 text-[14.5px] text-foreground/90">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue" />
-                  {item}
-                </li>
+            <div className="mt-8 flex w-full flex-col gap-2.5">
+              {INCLUDED_TOOLS.map((tool) => (
+                <div
+                  key={tool.name}
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition-colors duration-300 hover:border-white/20"
+                >
+                  <div>
+                    <p
+                      className={`text-[13px] font-semibold tracking-wide ${
+                        tool.state === "coming" ? "text-muted" : "text-foreground"
+                      }`}
+                    >
+                      {tool.name}
+                    </p>
+                    <p className="mt-0.5 text-[12.5px] text-muted">{tool.body}</p>
+                  </div>
+                  {tool.state === "included" ? (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-accent-blue">
+                      <LiveDot />
+                      Included
+                    </span>
+                  ) : (
+                    <span className="text-lg font-medium text-muted">+</span>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
 
-            <div className="mt-8 w-full">
+            <p className="mt-5 text-xs text-muted">Founding price stays yours while subscribed.</p>
+
+            <div className="mt-6 w-full">
               <GetCreosForm />
             </div>
             <p className="mt-4 text-xs text-muted">No lock-in. Cancel anytime.</p>

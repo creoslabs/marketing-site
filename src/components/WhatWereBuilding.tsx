@@ -26,7 +26,7 @@ export default function WhatWereBuilding() {
 
         <div className="mt-20 flex flex-col gap-28">
           {PRODUCTS.map((product, i) => (
-            <Reveal key={product.name} delay={i * 100}>
+            <Reveal key={product.name} delay={i * 100} scale>
               <ProductShowcase product={product} />
             </Reveal>
           ))}

@@ -23,6 +23,11 @@ export type ProductHighlight = {
   screenshotAlt: string;
   zoomOffsetY: number;
   zoomHeight: number;
+  // Percent-based box (relative to this highlight's own cropped segment,
+  // not the full filmstrip) drawn as a glowing spotlight ring over the UI
+  // region this step is actually about — this is what turns "screenshot
+  // with a caption" into "the site showing you the feature".
+  spotlightRect?: { top: number; left: number; width: number; height: number };
 };
 
 export type ProductData = {
@@ -112,6 +117,16 @@ export function ProductShowcase({ product }: { product: ProductData }) {
   const scale = frameSize.width > 0 ? frameSize.width / product.filmstripWidth : 1;
   const translateY = -current.zoomOffsetY;
 
+  const spotlight = current.spotlightRect;
+  const spotlightPx = spotlight
+    ? {
+        top: current.zoomOffsetY + (spotlight.top / 100) * current.zoomHeight,
+        left: (spotlight.left / 100) * product.filmstripWidth,
+        width: (spotlight.width / 100) * product.filmstripWidth,
+        height: (spotlight.height / 100) * current.zoomHeight,
+      }
+    : null;
+
   return (
     <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16">
       <div className={product.imageSide === "right" ? "lg:order-2" : "lg:order-1"}>
@@ -119,7 +134,7 @@ export function ProductShowcase({ product }: { product: ProductData }) {
           <div className="relative" style={{ perspective: "1200px" }}>
             <div
               className={cn(
-                "pointer-events-none absolute -inset-6 rounded-[2rem] blur-3xl transition-colors duration-500",
+                "pointer-events-none absolute -inset-10 rounded-[2rem] blur-3xl transition-colors duration-500",
                 current.glowClassName
               )}
             />
@@ -164,6 +179,21 @@ export function ProductShowcase({ product }: { product: ProductData }) {
                     className="max-w-none"
                     priority
                   />
+
+                  {spotlightPx && (
+                    <div
+                      key={active}
+                      aria-hidden
+                      className="spotlight-ring pointer-events-none absolute rounded-lg"
+                      style={{
+                        top: spotlightPx.top,
+                        left: spotlightPx.left,
+                        width: spotlightPx.width,
+                        height: spotlightPx.height,
+                        boxShadow: "0 0 0 2px rgba(41,151,255,0.9), 0 0 30px 4px rgba(41,151,255,0.5)",
+                      }}
+                    />
+                  )}
                 </div>
               </div>
 

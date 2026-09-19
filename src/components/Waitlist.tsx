@@ -1,23 +1,27 @@
 import { LiquidButton } from "@/components/ui/button";
 import { Reveal } from "@/components/Reveal";
+import { HeroField } from "@/components/HeroField";
 
-// The actual signup form lives once, in the pricing card — this is a
-// closing nudge back to it, not a second near-identical form.
+// The actual signup form lives once, in the pricing card — this is the
+// brand payoff, not a second near-identical form. Reuses the hero's signal
+// field so the page opens and closes on the same visual idea.
 export default function Waitlist() {
   return (
-    <section className="relative border-t border-white/10 py-28">
-      <Reveal className="mx-auto max-w-xl px-6 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Better tools for building brands.
+    <section className="relative overflow-hidden border-t border-white/10 py-36">
+      <HeroField />
+      <Reveal className="relative mx-auto max-w-xl px-6 text-center">
+        <h2 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          Build the brand.
+          <br />
+          We&apos;ll build the tools.
         </h2>
-        <p className="mt-4 text-muted">
-          A$15/month for Outlier + Signal, with new Creos tools added
-          throughout early access.
-        </p>
+        <p className="mt-5 text-muted">Outlier, Signal, and everything we&apos;re experimenting with next.</p>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-9 flex justify-center">
           <LiquidButton asChild size="xl" className="rounded-full">
-            <a href="#pricing">Get Creos — A$15/month</a>
+            <a href="#pricing">
+              Get Creos — A$15/month <span className="cta-arrow">→</span>
+            </a>
           </LiquidButton>
         </div>
       </Reveal>

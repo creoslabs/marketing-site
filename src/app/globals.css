@@ -209,6 +209,83 @@ button:hover .cta-arrow {
   animation: drift-c 34s ease-in-out infinite;
 }
 
+/* Drifting signal readouts in the hero — a slow, gentle wander plus a soft
+   opacity breathe so they read as "alive data", not a static watermark. */
+@keyframes signal-drift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translate(2.5%, -4%);
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.1;
+  }
+}
+
+.signal-float {
+  animation-name: signal-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* The Lab's locked "experiment" card — blurred by default, a quick glitch
+   jitter plays as it sharpens slightly on hover. On-brand for "labs /
+   experimentation" without pretending to reveal real content. */
+.lab-card-locked .lab-glitch-text {
+  filter: blur(5px);
+  transition: filter 0.4s ease;
+}
+
+.lab-card-locked:hover .lab-glitch-text {
+  filter: blur(2px);
+  animation: lab-glitch 0.5s steps(2, end) 1;
+}
+
+@keyframes lab-glitch {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    clip-path: inset(0 0 0 0);
+  }
+  20% {
+    transform: translate(-2px, 1px);
+    clip-path: inset(10% 0 60% 0);
+  }
+  40% {
+    transform: translate(2px, -1px);
+    clip-path: inset(60% 0 5% 0);
+  }
+  60% {
+    transform: translate(-1px, 2px);
+    clip-path: inset(30% 0 40% 0);
+  }
+  80% {
+    transform: translate(1px, -2px);
+    clip-path: inset(5% 0 70% 0);
+  }
+}
+
+/* Spotlight ring drawn over the specific UI region a product-showcase step
+   is about — fades and settles in rather than snapping on. */
+@keyframes spotlight-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.spotlight-ring {
+  animation: spotlight-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Oversized horizontal marquee used once, deliberately, to break the
    page's otherwise uniform content-width grid. */
 @keyframes marquee-scroll {
@@ -233,7 +310,10 @@ button:hover .cta-arrow {
   .hero-orb-a,
   .hero-orb-b,
   .hero-orb-c,
-  .marquee-track {
+  .marquee-track,
+  .spotlight-ring,
+  .signal-float,
+  .lab-card-locked:hover .lab-glitch-text {
     animation: none !important;
   }
 }
