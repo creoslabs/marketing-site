@@ -11,12 +11,15 @@ const PRODUCTS = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) setMobileOpen(false);
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -33,8 +36,9 @@ export default function Nav() {
 
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 z-50 w-full border-b transition-colors duration-300 ${
-        scrolled ? "border-white/10 bg-black/70 backdrop-blur-xl" : "border-transparent bg-transparent"
+        scrolled || mobileOpen ? "border-white/10 bg-black/70 backdrop-blur-xl" : "border-transparent bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
@@ -91,8 +95,49 @@ export default function Nav() {
           <LiquidButton asChild variant="secondary" size="sm" className="rounded-full text-[13px]">
             <Link href="/#pricing">Get Creos</Link>
           </LiquidButton>
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            className="flex h-8 w-8 shrink-0 flex-col items-center justify-center gap-[5px] sm:hidden"
+          >
+            <span className={`h-px w-4 bg-foreground transition-transform ${mobileOpen ? "translate-y-[3px] rotate-45" : ""}`} />
+            <span className={`h-px w-4 bg-foreground transition-opacity ${mobileOpen ? "opacity-0" : ""}`} />
+            <span className={`h-px w-4 bg-foreground transition-transform ${mobileOpen ? "-translate-y-[3px] -rotate-45" : ""}`} />
+          </button>
         </div>
       </div>
+
+      {mobileOpen && (
+        <nav className="flex flex-col gap-0.5 border-t border-white/10 px-6 py-3 text-[14px] sm:hidden">
+          <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Products</p>
+          {PRODUCTS.map((p) => (
+            <Link
+              key={p.name}
+              href={p.href}
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5"
+            >
+              {p.name}
+            </Link>
+          ))}
+          <div className="my-2 h-px bg-white/10" />
+          <Link href="/#pricing" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+            Pricing
+          </Link>
+          <Link href="/about" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+            About
+          </Link>
+          <Link href="/insights" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+            Insights
+          </Link>
+          <div className="my-2 h-px bg-white/10" />
+          <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+            Sign in
+          </Link>
+        </nav>
+      )}
     </header>
   );
 }

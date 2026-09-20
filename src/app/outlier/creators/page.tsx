@@ -62,7 +62,8 @@ export default async function CreatorsPage() {
           />
         </div>
       ) : (
-      <div className="mt-[18px] ws-stack">
+      <div className="mt-[18px] overflow-x-auto">
+      <div className="ws-stack" style={{ width: "max-content", minWidth: "100%" }}>
         <div
           className="grid items-center"
           style={{
@@ -152,6 +153,7 @@ export default async function CreatorsPage() {
             </div>
           );
         })}
+      </div>
       </div>
       )}
     </div>

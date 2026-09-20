@@ -51,7 +51,7 @@ export function WorkspaceChrome({
   return (
     <>
       <header
-        className="flex items-center gap-[22px] px-6"
+        className="flex items-center gap-[10px] px-4 sm:gap-[22px] sm:px-6"
         style={{ height: 57, borderBottom: "1px solid var(--ws-hairline)" }}
       >
         <Link
@@ -64,10 +64,10 @@ export function WorkspaceChrome({
 
         <div className="flex-1" />
 
-        <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+        <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
           Docs
         </span>
-        <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+        <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
           Support
         </span>
 
@@ -78,7 +78,7 @@ export function WorkspaceChrome({
         <button
           type="button"
           onClick={openPalette}
-          className="flex items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95"
+          className="hidden items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95 sm:flex"
           style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
         >
           ⌘K
@@ -86,7 +86,7 @@ export function WorkspaceChrome({
 
         <div
           ref={menuRef}
-          className="relative flex items-center pl-[18px]"
+          className="relative flex items-center pl-[10px] sm:pl-[18px]"
           style={{ borderLeft: "1px solid var(--ws-hairline)" }}
         >
           <button
@@ -100,7 +100,7 @@ export function WorkspaceChrome({
             >
               {initials}
             </span>
-            <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+            <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink)" }}>
               {name}
             </span>
             <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
@@ -160,7 +160,7 @@ export function WorkspaceChrome({
         </div>
       </header>
 
-      <nav className="px-6" style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}>
+      <nav className="overflow-x-auto px-4 sm:px-6" style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}>
         <WsTabNav tabs={TABS} variant="underline" />
       </nav>
     </>

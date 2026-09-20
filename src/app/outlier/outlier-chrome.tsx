@@ -43,44 +43,50 @@ export function OutlierChrome({
   ];
 
   return (
-    <header
-      className="flex items-center gap-[22px] px-6"
-      style={{ height: 56, borderBottom: "1px solid var(--ws-hairline)" }}
-    >
-      <div className="flex items-center gap-[8px]">
-        <Link href="/workspace" className="text-[13px]" style={{ color: "var(--ws-ink-45)" }}>
-          Creos Labs
-        </Link>
-        <span style={{ color: "var(--ws-ink-45)" }}>/</span>
-        <Link
-          href="/outlier"
-          className="text-[17px] font-bold tracking-[-0.02em]"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          Outlier
-        </Link>
-      </div>
-
-      <WsTabNav tabs={TABS} variant="underline" />
-
-      <div className="flex-1" />
-
-      {lastPulledLabel && (
-        <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-          pulled {lastPulledLabel}
-        </span>
-      )}
-
-      <NotificationBell />
-
-      <button
-        type="button"
-        onClick={openPalette}
-        className="flex items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95"
-        style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
+    <>
+      <header
+        className="flex items-center gap-[10px] px-4 sm:gap-[22px] sm:px-6"
+        style={{ height: 56, borderBottom: "1px solid var(--ws-hairline)" }}
       >
-        ⌘K
-      </button>
-    </header>
+        <div className="flex items-center gap-[8px]">
+          <Link href="/workspace" className="hidden text-[13px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
+            Creos Labs
+          </Link>
+          <span className="hidden sm:inline" style={{ color: "var(--ws-ink-45)" }}>
+            /
+          </span>
+          <Link
+            href="/outlier"
+            className="text-[17px] font-bold tracking-[-0.02em]"
+            style={{ color: "var(--ws-ink)" }}
+          >
+            Outlier
+          </Link>
+        </div>
+
+        <div className="flex-1" />
+
+        {lastPulledLabel && (
+          <span className="hidden text-[11.5px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
+            pulled {lastPulledLabel}
+          </span>
+        )}
+
+        <NotificationBell />
+
+        <button
+          type="button"
+          onClick={openPalette}
+          className="hidden items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95 sm:flex"
+          style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
+        >
+          ⌘K
+        </button>
+      </header>
+
+      <nav className="overflow-x-auto px-4 sm:px-6" style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}>
+        <WsTabNav tabs={TABS} variant="underline" />
+      </nav>
+    </>
   );
 }
