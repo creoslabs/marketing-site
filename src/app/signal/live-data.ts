@@ -124,6 +124,7 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
     score: row.score ?? 0,
     failedChecks: row.failed_checks ?? 0,
     postedAt: formatDate(row.created_at),
+    createdAtIso: row.created_at,
     duration: row.duration_seconds ? formatDuration(row.duration_seconds) : undefined,
     criteria: [],
     assetUrl:
@@ -233,6 +234,7 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     score: assetRow.score ?? 0,
     failedChecks: assetRow.failed_checks ?? 0,
     postedAt: formatDate(assetRow.created_at),
+    createdAtIso: assetRow.created_at,
     duration: assetRow.duration_seconds ? formatDuration(assetRow.duration_seconds) : undefined,
     criteria: [],
   };

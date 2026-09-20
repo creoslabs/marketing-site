@@ -38,6 +38,9 @@ export type Post = {
   median: number;
   score: number;
   postedAt: string;
+  // Raw ISO timestamp of when we pulled this post (not when it was posted
+  // on the platform) — for "new since" / recency-based insights.
+  createdAtIso: string;
   duration: string;
   likes: number;
   comments: number;

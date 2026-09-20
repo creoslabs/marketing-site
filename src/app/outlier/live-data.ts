@@ -80,6 +80,7 @@ type PostRow = {
   beats: Beat[] | null;
   hook_tags: string[] | null;
   favourited: boolean;
+  created_at: string;
 };
 
 function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<string, PostRow[]>): Creator {
@@ -134,6 +135,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     median: creatorMedian,
     score: creatorMedian > 0 ? row.views / creatorMedian : 0,
     postedAt: formatDate(row.posted_at),
+    createdAtIso: row.created_at,
     duration: row.duration_seconds != null ? formatDuration(row.duration_seconds) : "",
     likes,
     comments,
@@ -287,7 +289,10 @@ type JobRow = {
 };
 
 export const getJobs = cache(
-  async (): Promise<{ jobs: Job[]; finished: { creatorId: string; label: string; relativeTime: string }[] }> => {
+  async (): Promise<{
+    jobs: Job[];
+    finished: { creatorId: string; handle: string; newPostsCount: number; label: string; relativeTime: string; finishedAtIso: string }[];
+  }> => {
     if (!isSupabaseConfigured()) return { jobs: [], finished: [] };
 
     const supabase = await createClient();
@@ -335,8 +340,11 @@ export const getJobs = cache(
         const h = handleById.get(r.handle_id);
         return {
           creatorId: h?.creator_id ?? "",
+          handle: h?.handle ?? "?",
+          newPostsCount: r.new_posts_count ?? 0,
           label: `Pulled ${r.new_posts_count ?? 0} new post${r.new_posts_count === 1 ? "" : "s"} for @${h?.handle ?? "?"}`,
           relativeTime: relativeTime(r.finished_at ?? r.created_at),
+          finishedAtIso: r.finished_at ?? r.created_at,
         };
       });
 

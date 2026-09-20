@@ -8,6 +8,7 @@ import { useWsTheme } from "@/components/ws-theme";
 import { useCommandPalette } from "@/components/ws-command-palette";
 import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav } from "@/components/ws-tab-nav";
+import { NewMenu } from "./new-menu";
 
 const TABS = [
   { href: "/workspace", label: "Overview", exact: true },
@@ -71,6 +72,8 @@ export function WorkspaceChrome({
         </span>
 
         <NotificationBell />
+
+        <NewMenu />
 
         <button
           type="button"

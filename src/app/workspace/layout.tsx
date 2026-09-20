@@ -26,7 +26,7 @@ export default async function WorkspaceLayout({
     redirect("/login");
   }
 
-  const email = user.email ?? "";
+  const email = user?.email ?? "";
   const name = getDisplayName(user);
   const initials = deriveInitials(name);
 

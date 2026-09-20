@@ -39,6 +39,9 @@ export type Asset = {
   score: number;
   failedChecks: number;
   postedAt: string;
+  // Raw ISO timestamp of when analysis completed — for recency-based
+  // insights and activity feeds (postedAt above is a display string only).
+  createdAtIso: string;
   duration?: string;
   issuePill?: string;
   criteria: Criterion[];
