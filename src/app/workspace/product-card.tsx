@@ -92,6 +92,12 @@ export function OutlierSpikeChart({ values, peakLabel }: { values: number[]; pea
 
   const max = Math.max(...values, 1);
   const peakIndex = values.indexOf(max);
+  // A real outlier can be an order of magnitude past every other post's
+  // score — a linear scale then flattens everything else to the same
+  // floor height, which reads as "broken" rather than "one huge spike".
+  // A square-root scale keeps the spike dominant while still spreading
+  // out the ordinary range underneath it.
+  const scaleHeight = (v: number) => Math.max(8, (Math.sqrt(Math.max(v, 0)) / Math.sqrt(max)) * 100);
 
   return (
     <div className="flex flex-1 flex-col justify-end">
@@ -101,7 +107,7 @@ export function OutlierSpikeChart({ values, peakLabel }: { values: number[]; pea
             key={i}
             className="flex-1 rounded-[2px]"
             style={{
-              height: `${Math.max(10, (v / max) * 100)}%`,
+              height: `${scaleHeight(v)}%`,
               background: i === peakIndex ? "var(--ws-accent)" : "var(--ws-hairline-strong)",
             }}
           />
