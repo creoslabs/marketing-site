@@ -19,7 +19,10 @@ function medianOf(nums: number[]) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const date = new Date(iso);
+  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  if (date.getFullYear() !== new Date().getFullYear()) options.year = "numeric";
+  return date.toLocaleDateString("en-US", options);
 }
 
 function formatDuration(seconds: number) {
@@ -135,6 +138,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     median: creatorMedian,
     score: creatorMedian > 0 ? row.views / creatorMedian : 0,
     postedAt: formatDate(row.posted_at),
+    postedAtIso: row.posted_at,
     createdAtIso: row.created_at,
     duration: row.duration_seconds != null ? formatDuration(row.duration_seconds) : "",
     likes,
@@ -245,7 +249,7 @@ export const getCreatorDetail = cache(async (id: string): Promise<{ creator: Cre
   const posts = handles
     .flatMap((h) => postsByHandle.get(h.id) ?? [])
     .map((row) => buildPost(row, id, creator.median, overallThin))
-    .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
+    .sort((a, b) => new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime());
 
   return { creator, posts };
 });

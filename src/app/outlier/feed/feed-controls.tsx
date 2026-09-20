@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Platform } from "../data";
 
-export type SortValue = "score" | "views" | "recent";
+export type SortValue = "score" | "views" | "newest" | "oldest";
 
 const SORT_OPTIONS: { value: SortValue; label: string }[] = [
   { value: "score", label: "Score" },
   { value: "views", label: "Views" },
-  { value: "recent", label: "Most recent" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
 ];
 
 const PLATFORM_OPTIONS: { value: Platform; label: string }[] = [

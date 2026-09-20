@@ -38,6 +38,10 @@ export type Post = {
   median: number;
   score: number;
   postedAt: string;
+  // Raw ISO timestamp of when this was posted on the platform — sorting
+  // by newest/oldest uses this instead of re-parsing the formatted
+  // `postedAt` display string, which drops the year.
+  postedAtIso: string;
   // Raw ISO timestamp of when we pulled this post (not when it was posted
   // on the platform) — for "new since" / recency-based insights.
   createdAtIso: string;

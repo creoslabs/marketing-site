@@ -22,7 +22,8 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
         .filter((post) => selectedPlatforms.includes(post.platform))
         .sort((a, b) => {
           if (sort === "views") return b.views - a.views;
-          if (sort === "recent") return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+          if (sort === "newest") return new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime();
+          if (sort === "oldest") return new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime();
           return b.score - a.score;
         }),
     [allPosts, selectedPlatforms, sort]
@@ -111,7 +112,7 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
                     <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                       {handle}
                     </p>
-                    <p className="truncate text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                    <p className="truncate text-[11px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
                       {post.postedAt}
                     </p>
                   </div>
