@@ -73,7 +73,7 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
           {post.postedAt} · {post.duration} · {formatCompact(post.views)} views
         </span>
         <div className="flex-1" />
-        <RepurposeButton />
+        <RepurposeButton postId={post.id} ready={row.analysis_status === "done"} />
       </div>
 
       <div className="grid grid-cols-1 gap-[18px] p-6 lg:grid-cols-[306px_1fr_330px]">

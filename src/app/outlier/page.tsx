@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
-import { RECENT_REPURPOSES } from "./data";
-import { getCreators, getPosts, getJobs } from "./live-data";
+import { getCreators, getPosts, getJobs, getRecentRepurposes } from "./live-data";
+import { relativeTime } from "@/lib/relative-time";
 import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
 import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
 
@@ -19,7 +19,13 @@ function greeting() {
 }
 
 export default async function OutlierHomePage() {
-  const [user, creators, posts, { jobs }] = await Promise.all([getUser(), getCreators(), getPosts(), getJobs()]);
+  const [user, creators, posts, { jobs }, recentRepurposes] = await Promise.all([
+    getUser(),
+    getCreators(),
+    getPosts(),
+    getJobs(),
+    getRecentRepurposes(),
+  ]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
@@ -252,21 +258,22 @@ export default async function OutlierHomePage() {
             </div>
           )}
 
-          {RECENT_REPURPOSES.length > 0 && (
+          {recentRepurposes.length > 0 && (
             <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
               <p className="ws-eyebrow">YOUR RECENT REPURPOSES</p>
               <div className="mt-[14px] flex flex-col gap-[12px]">
-                {RECENT_REPURPOSES.map((item) => {
+                {recentRepurposes.map((item) => {
                   const creator = creatorById.get(item.creatorId);
                   return (
-                    <div key={item.title}>
+                    <Link key={item.id} href={`/outlier/repurpose/${item.id}`} className="ws-row-hover -mx-[6px] block rounded-[8px] px-[6px] py-[4px]">
                       <p className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
                         {item.title}
                       </p>
                       <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        from {creator?.handles[0].handle} · {item.score.toFixed(1)}× · {item.relativeTime}
+                        from {creator?.handles[0].handle ?? "a tracked creator"} · {item.sourceScore.toFixed(1)}× ·{" "}
+                        {relativeTime(item.createdAtIso)}
                       </p>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>

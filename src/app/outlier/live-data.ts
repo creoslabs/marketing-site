@@ -1,7 +1,18 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { relativeTime } from "@/lib/relative-time";
-import type { Creator, Post, Job, Platform, TranscriptLine, Beat } from "./data";
+import type {
+  Creator,
+  Post,
+  Job,
+  Platform,
+  TranscriptLine,
+  Beat,
+  CreatorPatterns,
+  TagCount,
+  RepurposeSummary,
+  RepurposeDetail,
+} from "./data";
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,6 +49,40 @@ function computeCadence(postedAtIso: string[]): string {
   if (spanDays < 1) return `${postedAtIso.length}/day`;
   const perWeek = postedAtIso.length / (spanDays / 7);
   return `${perWeek.toFixed(1)}/week`;
+}
+
+// Rolls up hook style and beat structure across a creator's already-
+// analyzed posts. Tags are free-text per analysis (Claude names them fresh
+// each time rather than picking from a fixed taxonomy), so this groups by
+// trimmed/lowercased text — an honest count of literal reuse, not a
+// semantic clustering of near-synonyms.
+function computePatterns(rows: PostRow[]): CreatorPatterns {
+  const analyzed = rows.filter((r) => r.analysis_status === "done");
+
+  function rank(counts: Map<string, TagCount>): TagCount[] {
+    return [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+  }
+
+  const hookTagCounts = new Map<string, TagCount>();
+  const beatNameCounts = new Map<string, TagCount>();
+  for (const row of analyzed) {
+    for (const rawTag of row.hook_tags ?? []) {
+      const key = rawTag.trim().toLowerCase();
+      if (!key) continue;
+      const existing = hookTagCounts.get(key);
+      if (existing) existing.count += 1;
+      else hookTagCounts.set(key, { label: rawTag.trim(), count: 1 });
+    }
+    for (const beat of row.beats ?? []) {
+      const key = beat.name.trim().toLowerCase();
+      if (!key) continue;
+      const existing = beatNameCounts.get(key);
+      if (existing) existing.count += 1;
+      else beatNameCounts.set(key, { label: beat.name.trim(), count: 1 });
+    }
+  }
+
+  return { analyzedCount: analyzed.length, hookTags: rank(hookTagCounts), beatNames: rank(beatNameCounts) };
 }
 
 function computeMedianTrend(viewsMostRecentFirst: number[]): number | null {
@@ -238,21 +283,24 @@ export const getFavouritePosts = cache(async (): Promise<Post[]> => {
   return posts.filter((post) => post.favourite);
 });
 
-export const getCreatorDetail = cache(async (id: string): Promise<{ creator: Creator; posts: Post[] } | null> => {
-  if (!isSupabaseConfigured()) return null;
-  const { creators, handlesByCreator, postsByHandle } = await loadAll();
-  const creator = creators.find((c) => c.id === id);
-  if (!creator) return null;
+export const getCreatorDetail = cache(
+  async (id: string): Promise<{ creator: Creator; posts: Post[]; patterns: CreatorPatterns } | null> => {
+    if (!isSupabaseConfigured()) return null;
+    const { creators, handlesByCreator, postsByHandle } = await loadAll();
+    const creator = creators.find((c) => c.id === id);
+    if (!creator) return null;
 
-  const handles = handlesByCreator.get(id) ?? [];
-  const overallThin = creator.handles.every((h) => h.thin);
-  const posts = handles
-    .flatMap((h) => postsByHandle.get(h.id) ?? [])
-    .map((row) => buildPost(row, id, creator.median, overallThin))
-    .sort((a, b) => new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime());
+    const handles = handlesByCreator.get(id) ?? [];
+    const overallThin = creator.handles.every((h) => h.thin);
+    const rows = handles.flatMap((h) => postsByHandle.get(h.id) ?? []);
+    const posts = rows
+      .map((row) => buildPost(row, id, creator.median, overallThin))
+      .sort((a, b) => new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime());
+    const patterns = computePatterns(rows);
 
-  return { creator, posts };
-});
+    return { creator, posts, patterns };
+  }
+);
 
 export const getPostDetail = cache(
   async (id: string): Promise<{ post: Post; creator: Creator; rank: number; outOf: number; row: PostRow } | null> => {
@@ -355,3 +403,52 @@ export const getJobs = cache(
     return { jobs, finished };
   }
 );
+
+type RepurposeRow = {
+  id: string;
+  post_id: string;
+  creator_id: string;
+  topic: string;
+  source_score: number;
+  title: string;
+  hook: string;
+  beats: { name: string; script: string }[];
+  created_at: string;
+};
+
+function toRepurposeSummary(row: RepurposeRow): RepurposeSummary {
+  return {
+    id: row.id,
+    postId: row.post_id,
+    creatorId: row.creator_id,
+    title: row.title,
+    sourceScore: row.source_score,
+    createdAtIso: row.created_at,
+  };
+}
+
+// Most recent repurposed scripts across the whole watchlist, for the Home
+// page's "Your recent repurposes" panel.
+export const getRecentRepurposes = cache(async (): Promise<RepurposeSummary[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("outlier_repurposes")
+    .select("id, post_id, creator_id, topic, source_score, title, hook, beats, created_at")
+    .order("created_at", { ascending: false })
+    .limit(5)
+    .returns<RepurposeRow[]>();
+  return (data ?? []).map(toRepurposeSummary);
+});
+
+export const getRepurposeDetail = cache(async (id: string): Promise<RepurposeDetail | null> => {
+  if (!isSupabaseConfigured()) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("outlier_repurposes")
+    .select("id, post_id, creator_id, topic, source_score, title, hook, beats, created_at")
+    .eq("id", id)
+    .maybeSingle<RepurposeRow>();
+  if (!data) return null;
+  return { ...toRepurposeSummary(data), topic: data.topic, hook: data.hook, beats: data.beats };
+});

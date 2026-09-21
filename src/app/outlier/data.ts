@@ -1,7 +1,6 @@
-// Outlier's data shapes. Creators/posts/jobs come from live-data.ts (a real
-// Apify-backed pipeline) — this file now holds only shared types plus
-// repurpose history (RECENT_REPURPOSES), which stays permanently empty, with
-// its own empty state, until that feature exists.
+// Outlier's data shapes. Creators/posts/jobs/repurposes come from
+// live-data.ts (a real Apify- and Claude-backed pipeline) — this file holds
+// only the shared types.
 
 export type Platform = "IG" | "TT" | "YT";
 
@@ -59,6 +58,15 @@ export type Post = {
 export type TranscriptLine = { t: string; text: string; isHook: boolean };
 export type Beat = { name: string; timecode: string; analysis: string };
 
+// Aggregated across a creator's already-analyzed posts (analysis_status
+// 'done') — never fabricated, and empty when nothing's been analyzed yet.
+export type TagCount = { label: string; count: number };
+export type CreatorPatterns = {
+  analyzedCount: number;
+  hookTags: TagCount[];
+  beatNames: TagCount[];
+};
+
 export type Job = {
   id: string;
   creatorId: string;
@@ -73,8 +81,22 @@ export type Job = {
   waitReason?: string;
 };
 
-// No repurpose action is recorded anywhere yet — RepurposeButton is a stub.
-export const RECENT_REPURPOSES: { title: string; creatorId: string; score: number; relativeTime: string }[] = [];
+export type RepurposeBeat = { name: string; script: string };
+
+export type RepurposeSummary = {
+  id: string;
+  postId: string;
+  creatorId: string;
+  title: string;
+  sourceScore: number;
+  createdAtIso: string;
+};
+
+export type RepurposeDetail = RepurposeSummary & {
+  topic: string;
+  hook: string;
+  beats: RepurposeBeat[];
+};
 
 export function getPlatformLabel(platform: Platform) {
   if (platform === "IG") return "Instagram";

@@ -95,17 +95,105 @@ export function OpenOnPlatformButton({ label, url }: { label: string; url: strin
   );
 }
 
-export function RepurposeButton() {
+export function RepurposeButton({ postId, ready }: { postId: string; ready: boolean }) {
+  const router = useRouter();
   const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  function handleOpen() {
+    if (!ready) {
+      toast("Analyze this post first — repurposing borrows its hook and beat structure.");
+      return;
+    }
+    setOpen(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!topic.trim()) return;
+    setGenerating(true);
+    const res = await fetch(`/api/outlier/posts/${postId}/repurpose`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: topic.trim() }),
+    });
+    const data = await res.json().catch(() => null);
+    setGenerating(false);
+    if (res.ok) {
+      setOpen(false);
+      router.push(`/outlier/repurpose/${data.id}`);
+    } else {
+      toast(data?.error ?? "Couldn't generate a script.", "error");
+    }
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => toast("Repurpose isn't built yet — coming next.")}
-      className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-      style={{ padding: "10px 14px" }}
-    >
-      Repurpose →
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
+        style={{ padding: "10px 14px", opacity: ready ? 1 : 0.6 }}
+      >
+        Repurpose →
+      </button>
+      {open && (
+        <div
+          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
+          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
+          onClick={() => !generating && setOpen(false)}
+        >
+          <div className="ws-card ws-modal-in" style={{ width: 400, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
+              Repurpose this post
+            </p>
+            <p className="mt-[6px] text-[12px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
+              We&rsquo;ll write an original script for your own content, modeled on this post&rsquo;s hook and beat structure —
+              not a copy of its words.
+            </p>
+            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
+              <textarea
+                autoFocus
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
+                rows={3}
+                className="text-[12.5px] outline-none"
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: 7,
+                  border: "1px solid var(--ws-hairline-strong)",
+                  background: "var(--ws-surface)",
+                  color: "var(--ws-ink)",
+                  resize: "none",
+                }}
+              />
+              <div className="mt-[4px] flex justify-end gap-[8px]">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  disabled={generating}
+                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
+                  style={{ padding: "9px 14px" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={generating || !topic.trim()}
+                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
+                  style={{ padding: "9px 14px", opacity: generating ? 0.6 : 1 }}
+                >
+                  {generating ? "Writing…" : "Generate script"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

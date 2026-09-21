@@ -20,7 +20,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   const detail = await getCreatorDetail(id);
   if (!detail) notFound();
 
-  const { creator, posts } = detail;
+  const { creator, posts, patterns } = detail;
   const totalPosts = posts.length;
   const isThin = creator.handles.some((h) => h.thin);
 
@@ -129,6 +129,67 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
           </div>
         </div>
       )}
+
+      <div className="mt-[18px]">
+        <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
+          Hook patterns
+        </h2>
+        {patterns.analyzedCount === 0 ? (
+          <div className="ws-card mt-[14px]">
+            <EmptyState
+              title="No analyzed posts yet"
+              description="Transcribe & analyze one of this creator's posts to start seeing which hooks and beats actually work for them."
+            />
+          </div>
+        ) : (
+          <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
+            <p className="ws-eyebrow">
+              FROM {patterns.analyzedCount} ANALYZED POST{patterns.analyzedCount === 1 ? "" : "S"}
+            </p>
+            <div className="mt-[16px] grid gap-[22px] sm:grid-cols-2">
+              <div>
+                <p className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+                  Hook style
+                </p>
+                <div className="mt-[10px] flex flex-col gap-[9px]">
+                  {patterns.hookTags.map((tag) => (
+                    <div key={tag.label} className="flex items-center gap-[9px]">
+                      <span className="min-w-0 flex-1 truncate text-[12px]" style={{ color: "var(--ws-ink)" }}>
+                        {tag.label}
+                      </span>
+                      <div className="h-[6px] w-[60px] shrink-0 overflow-hidden rounded-full" style={{ background: "var(--ws-surface-header)" }}>
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${(tag.count / patterns.analyzedCount) * 100}%`, background: "var(--ws-accent)" }}
+                        />
+                      </div>
+                      <span className="ws-tabular shrink-0 text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                        {tag.count}/{patterns.analyzedCount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+                  Common beats
+                </p>
+                <div className="mt-[10px] flex flex-wrap gap-[6px]">
+                  {patterns.beatNames.map((beat) => (
+                    <span
+                      key={beat.label}
+                      className="rounded-[20px] text-[11px] font-medium"
+                      style={{ padding: "5px 10px", background: "var(--ws-surface-header)", color: "var(--ws-ink-60)" }}
+                    >
+                      {beat.label} · {beat.count}/{patterns.analyzedCount}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="mt-[18px]">
         <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
