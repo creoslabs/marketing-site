@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,71 @@ type QueueItem = {
   assetId?: string;
   error?: string;
 };
+
+// The server does this work in one request with no granular progress
+// signal, so these stages are a client-side heartbeat, not a real percentage
+// — they cycle to show the pipeline is alive during the minute-plus a video
+// can take, not to claim a specific completion fraction.
+const VIDEO_STAGES = ["Extracting frames…", "Transcribing audio…", "Checking best practices…", "Scoring the hook window…"];
+const STATIC_STAGES = ["Reading the frame…", "Checking best practices…", "Scoring composition…"];
+
+function useCyclingStage(active: boolean, stages: string[], intervalMs = 2200) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setI((prev) => (prev + 1) % stages.length), intervalMs);
+    return () => clearInterval(id);
+  }, [active, stages, intervalMs]);
+  return stages[i % stages.length];
+}
+
+function Spinner({ size = 13 }: { size?: number }) {
+  return (
+    <svg className="ws-spin shrink-0" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="var(--ws-hairline)" strokeWidth="3" />
+      <path d="M21 12a9 9 0 0 0-9-9" stroke="var(--ws-accent)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function QueueRow({ item }: { item: QueueItem }) {
+  const isVideo = item.file.type.startsWith("video/");
+  const stage = useCyclingStage(item.status === "analyzing", isVideo ? VIDEO_STAGES : STATIC_STAGES);
+
+  return (
+    <div style={{ padding: "11px 14px" }}>
+      <div className="flex items-center gap-[10px]">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+          {item.file.name}
+        </span>
+        {item.status === "done" && item.assetId ? (
+          <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
+            View report →
+          </Link>
+        ) : item.status === "error" ? (
+          <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
+            Failed
+          </span>
+        ) : item.status === "analyzing" ? (
+          <span className="inline-flex shrink-0 items-center gap-[6px] text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
+            <Spinner />
+            {stage}
+          </span>
+        ) : (
+          <span className="inline-flex shrink-0 items-center gap-[6px] text-[11.5px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
+            {item.status === "uploading" && <Spinner />}
+            {item.status}
+          </span>
+        )}
+      </div>
+      {item.status === "error" && item.error && (
+        <p className="mt-[4px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-warn-text)" }}>
+          {item.error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export async function analyzeOne(
   file: File,
@@ -55,6 +120,13 @@ export function AnalyzeDropzone() {
   const [running, setRunning] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>(["Meta"]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const activeItem = queue.find((q) => q.status === "analyzing") ?? queue.find((q) => q.status === "uploading");
+  const activeIsVideo = activeItem?.file.type.startsWith("video/") ?? true;
+  const headlineStage = useCyclingStage(
+    Boolean(activeItem && activeItem.status === "analyzing"),
+    activeIsVideo ? VIDEO_STAGES : STATIC_STAGES
+  );
 
   function togglePlatform(platform: Platform) {
     setPlatforms((prev) => {
@@ -200,26 +272,33 @@ export function AnalyzeDropzone() {
 
         {!idle && (
           <>
-            <p className="ws-eyebrow">
+            <p className="ws-eyebrow inline-flex items-center gap-[8px]">
+              {running && <Spinner size={12} />}
               {running ? "PROCESSING" : "DONE"} · {queue.filter((q) => q.status === "done" || q.status === "error").length}/
               {queue.length}
             </p>
             <p className="mt-[10px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
               {running
-                ? "Uploading and running the criteria set — video can take a minute each."
+                ? activeItem
+                  ? headlineStage
+                  : "Starting the next file…"
                 : queue.some((q) => q.status === "error")
                   ? `${queue.filter((q) => q.status === "error").length} of ${queue.length} failed — see below.`
                   : "All files processed."}
             </p>
-            <div className="mt-[16px] h-[4px] w-full overflow-hidden rounded-[3px]" style={{ background: "var(--ws-hairline)" }}>
-              <div
-                className="h-full rounded-[3px]"
-                style={{
-                  width: `${(queue.filter((q) => q.status === "done" || q.status === "error").length / queue.length) * 100}%`,
-                  background: "var(--ws-accent)",
-                  transition: "width 0.2s ease",
-                }}
-              />
+            <div
+              className={`mt-[16px] h-[4px] w-full overflow-hidden rounded-[3px] ${running ? "ws-progress-indeterminate" : ""}`}
+              style={{ background: "var(--ws-hairline)" }}
+            >
+              {!running && (
+                <div
+                  className="h-full rounded-[3px]"
+                  style={{
+                    width: `${(queue.filter((q) => q.status === "done" || q.status === "error").length / queue.length) * 100}%`,
+                    background: "var(--ws-accent)",
+                  }}
+                />
+              )}
             </div>
           </>
         )}
@@ -228,31 +307,7 @@ export function AnalyzeDropzone() {
       {queue.length > 0 && (
         <div className="ws-stack mt-[18px]">
           {queue.map((item) => (
-            <div key={item.id} style={{ padding: "11px 14px" }}>
-              <div className="flex items-center gap-[10px]">
-                <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                  {item.file.name}
-                </span>
-                {item.status === "done" && item.assetId ? (
-                  <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
-                    View report →
-                  </Link>
-                ) : item.status === "error" ? (
-                  <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
-                    Failed
-                  </span>
-                ) : (
-                  <span className="shrink-0 text-[11.5px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
-                    {item.status}
-                  </span>
-                )}
-              </div>
-              {item.status === "error" && item.error && (
-                <p className="mt-[4px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-warn-text)" }}>
-                  {item.error}
-                </p>
-              )}
-            </div>
+            <QueueRow key={item.id} item={item} />
           ))}
         </div>
       )}

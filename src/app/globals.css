@@ -670,6 +670,45 @@ button:hover .cta-arrow {
   }
 }
 
+/* A sliding segment rather than a width-based fill — for work with no real
+   percentage to report (a single upload+analysis pass), an indeterminate bar
+   reads as "actively working" where a fill stuck at 0% reads as frozen. */
+.ws .ws-progress-indeterminate {
+  position: relative;
+  overflow: hidden;
+}
+
+.ws .ws-progress-indeterminate::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--ws-accent);
+  animation: ws-progress-indeterminate 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes ws-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(285%);
+  }
+}
+
+.ws .ws-spin {
+  animation: ws-spin 0.8s linear infinite;
+}
+
+@keyframes ws-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ws .ws-tab-indicator,
   .ws .ws-dropdown-in,
@@ -680,7 +719,9 @@ button:hover .cta-arrow {
   .ws .ws-skeleton::after,
   .ws .ws-toast-in,
   .ws .ws-modal-in,
-  .ws .ws-overlay-in {
+  .ws .ws-overlay-in,
+  .ws .ws-progress-indeterminate::after,
+  .ws .ws-spin {
     animation: none !important;
     transition: none !important;
   }

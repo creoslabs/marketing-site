@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Asset, Criterion, Platform, PlatformScore, StaticFinding } from "../../data";
-import { SAFE_ZONE_CRITERION_NAME, SAFE_ZONE_THRESHOLDS } from "../../data";
+import { SAFE_ZONE_THRESHOLDS } from "../../data";
 import { ReportSubHeader, CriteriaTable } from "./video-report";
 import { ScoreBreakdown, PlatformTabs } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
@@ -39,18 +39,12 @@ export function StaticReport({
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // Every criterion but safe-zone is identical across platforms — only that
-  // one row (and therefore the score) changes when switching tabs.
+  // Only safe zone varies by platform for a static image — switching tabs
+  // swaps in that platform's full result.
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(asset.platforms[0]);
   const altPlatform = platformScores.find((p) => p.platform === selectedPlatform);
   const activeScore = selectedPlatform === asset.platforms[0] ? asset.score : altPlatform?.score ?? asset.score;
-  const displayCriteria = altPlatform
-    ? criteria.map((c) =>
-        c.name === SAFE_ZONE_CRITERION_NAME.static
-          ? { ...c, evidence: altPlatform.safeZoneEvidence, verdict: altPlatform.safeZoneVerdict }
-          : c
-      )
-    : criteria;
+  const displayCriteria = altPlatform ? altPlatform.criteria : criteria;
 
   const displayScore = useCountUp(activeScore);
   const revealed = useRevealed();

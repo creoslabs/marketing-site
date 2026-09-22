@@ -87,14 +87,12 @@ export type Asset = {
   assetUrl?: string | null;
 };
 
-// A placement beyond the primary one this asset was scored against — same
-// criteria set, just with the safe-zone criterion re-judged against that
-// platform's own UI-overlay geometry (see safeZoneCriterion in
-// lib/signal/criteria.ts).
+// A placement beyond the primary one this asset was scored against — its
+// own full criteria set, re-judged wherever a criterion depends on platform
+// (duration, hook-window timing, cut pace, safe zone — see criteria.ts).
 export type PlatformScore = {
   platform: Platform;
   score: number;
   failedChecks: number;
-  safeZoneEvidence: string;
-  safeZoneVerdict: Verdict;
+  criteria: Criterion[];
 };

@@ -264,16 +264,14 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
   };
 
   // Only the additional (non-primary) platforms are surfaced here — the
-  // primary's own row duplicates asset.score/failedChecks and the safe-zone
-  // entry already in `criteria` above.
+  // primary's own row duplicates asset.score/failedChecks/criteria above.
   const platformScores: PlatformScore[] = (platformScoreRows ?? [])
     .filter((r) => r.platform !== asset.platforms[0])
     .map((r) => ({
       platform: r.platform,
       score: r.score,
       failedChecks: r.failed_checks,
-      safeZoneEvidence: r.safe_zone_evidence,
-      safeZoneVerdict: r.safe_zone_verdict,
+      criteria: r.criteria,
     }));
 
   const criteria: Criterion[] = (criteriaRows ?? []).map((r) => ({

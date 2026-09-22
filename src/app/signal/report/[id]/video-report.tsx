@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Asset, Criterion, Platform, PlatformScore, VideoFinding } from "../../data";
-import { SAFE_ZONE_CRITERION_NAME, SAFE_ZONE_THRESHOLDS } from "../../data";
+import { SAFE_ZONE_THRESHOLDS } from "../../data";
 import { VerdictLabel, ScoreBreakdown, PlatformTabs } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import { CompareButton } from "./compare-button";
@@ -87,22 +87,16 @@ export function VideoReport({
     (f) => f.failure && f.criterion.toLowerCase().includes("safe-zone") && Math.abs(f.t - t) <= 1
   );
 
-  // Every criterion but safe-zone is identical across platforms — only that
-  // one row (and therefore the score) changes when switching tabs.
+  // 8 of the 16 criteria (duration, hook-window timing, cut pace, safe zone)
+  // vary by platform — switching tabs swaps in that platform's full result.
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(asset.platforms[0]);
   const altPlatform = platformScores.find((p) => p.platform === selectedPlatform);
   const activeScore = selectedPlatform === asset.platforms[0] ? asset.score : altPlatform?.score ?? asset.score;
+  const displayCriteria = altPlatform ? altPlatform.criteria : criteria;
   const PLAYER_HEIGHT = 444;
   const zoneThresholds = SAFE_ZONE_THRESHOLDS[selectedPlatform];
   const topBandHeight = (zoneThresholds.topPct / 100) * PLAYER_HEIGHT;
   const bottomBandHeight = (zoneThresholds.bottomPct / 100) * PLAYER_HEIGHT;
-  const displayCriteria = altPlatform
-    ? criteria.map((c) =>
-        c.name === SAFE_ZONE_CRITERION_NAME.video
-          ? { ...c, evidence: altPlatform.safeZoneEvidence, verdict: altPlatform.safeZoneVerdict }
-          : c
-      )
-    : criteria;
 
   const displayScore = useCountUp(activeScore);
   const revealed = useRevealed();

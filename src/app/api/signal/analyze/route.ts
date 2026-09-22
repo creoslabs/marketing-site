@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runVideoPipeline, runStaticPipeline } from "@/lib/signal/pipeline";
-import { SAFE_ZONE_CRITERION_NAME, type Platform, type StaticFinding, type VideoFinding } from "@/app/signal/data";
+import type { Platform, StaticFinding, VideoFinding } from "@/app/signal/data";
 import { shouldNotify } from "@/lib/notification-prefs";
 
 const VALID_PLATFORMS: Platform[] = ["TikTok", "Meta"];
@@ -118,19 +118,14 @@ export async function POST(request: Request) {
       }))
     );
 
-    const safeZoneName = SAFE_ZONE_CRITERION_NAME[format];
     await admin.from("signal_platform_scores").insert(
-      result.platformResults.map((p) => {
-        const safeZone = p.criteria.find((c) => c.name === safeZoneName);
-        return {
-          asset_id: assetId,
-          platform: p.platform,
-          score: p.score,
-          failed_checks: p.failedChecks,
-          safe_zone_evidence: safeZone?.evidence ?? "",
-          safe_zone_verdict: safeZone?.verdict ?? "partial",
-        };
-      })
+      result.platformResults.map((p) => ({
+        asset_id: assetId,
+        platform: p.platform,
+        score: p.score,
+        failed_checks: p.failedChecks,
+        criteria: p.criteria,
+      }))
     );
 
     if (format === "video") {

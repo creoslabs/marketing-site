@@ -1,6 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Criterion, StaticFinding, VideoFinding } from "@/app/signal/data";
-import { HOOK_WINDOW_SECONDS } from "./criteria";
 
 // A per-user key set on the Account tab (Testing -> API Keys) takes
 // priority over the server's own ANTHROPIC_API_KEY, so testing doesn't
@@ -17,36 +16,55 @@ function getClient(overrideApiKey?: string | null) {
 
 const MODEL = "claude-sonnet-5";
 
-// Safe-zone overlap is judged separately (see safeZoneMeasurementSchema
-// below) — its pass/partial/fail depends on which platform(s) the asset
-// targets, so Claude reports a raw measurement here instead of a verdict.
+// Safe-zone overlap, cut pacing, and every "does X happen in the hook
+// window" criterion (motion/face/text detected, message clarity, audio
+// onset) are judged separately from raw measurements (see
+// safeZoneMeasurementSchema / hookMeasurementsSchema below) — their
+// pass/partial/fail depends on which platform(s) the asset targets, which
+// TikTok and Meta define differently. Claude reports the underlying
+// measurement once; lib/signal/criteria.ts turns it into a verdict per
+// platform.
 const VIDEO_JUDGED_CRITERIA = [
-  "Cut frequency vs platform pacing",
-  "Hook window motion detected",
-  "Hook window face detected",
-  "Hook window text on screen",
   "On-screen text coverage",
   "Product first appearance",
   "Product visible duration",
-  "Message clarity in hook window",
   "Native feel vs polished ad",
   "Text legibility & hold time",
   "Sound-off redundancy",
 ] as const;
 
 const VIDEO_TIER: Record<string, 1 | 2> = {
+  "On-screen text coverage": 1,
+  "Product first appearance": 2,
+  "Product visible duration": 2,
+  "Native feel vs polished ad": 2,
+  "Text legibility & hold time": 2,
+  "Sound-off redundancy": 2,
+  // Measurement-based criteria (see criteria.ts) — kept here too so findings
+  // referencing them (VIDEO_FINDING_CRITERIA below) get the right tier badge.
   "Cut frequency vs platform pacing": 1,
   "Hook window motion detected": 1,
   "Hook window face detected": 1,
   "Hook window text on screen": 1,
-  "On-screen text coverage": 1,
-  "Product first appearance": 2,
-  "Product visible duration": 2,
+  "Hook window audio onset": 1,
   "Message clarity in hook window": 2,
-  "Native feel vs polished ad": 2,
-  "Text legibility & hold time": 2,
-  "Sound-off redundancy": 2,
+  "Safe-zone overlap across full runtime": 1,
 };
+
+// Findings can still narrate the measurement-based criteria (e.g. "face
+// doesn't appear until 0:06") even though their pass/fail is computed from
+// the raw measurement, not judged directly — the narrative value doesn't
+// depend on who computes the verdict.
+const VIDEO_FINDING_CRITERIA = [
+  ...VIDEO_JUDGED_CRITERIA,
+  "Cut frequency vs platform pacing",
+  "Hook window motion detected",
+  "Hook window face detected",
+  "Hook window text on screen",
+  "Hook window audio onset",
+  "Message clarity in hook window",
+  "Safe-zone overlap across full runtime",
+] as const;
 
 // Safe-zone overlap is judged separately (see safeZoneMeasurementSchema
 // below) — see the comment on VIDEO_JUDGED_CRITERIA above.
@@ -97,6 +115,41 @@ const safeZoneMeasurementSchema = {
 
 type SafeZoneMeasurement = { maxTopIntrusionPct: number; maxBottomIntrusionPct: number };
 
+const hookMeasurementsSchema = {
+  type: "object" as const,
+  properties: {
+    avgSecondsPerCut: {
+      type: "number",
+      description: "Average seconds between cuts/scene changes across the full runtime — an editing-pace measurement, not a verdict.",
+    },
+    motionTimestampSeconds: {
+      type: ["number", "null"],
+      description: "Timestamp (seconds) of the first clearly visible motion or action, or null if the video is static/no motion.",
+    },
+    faceTimestampSeconds: {
+      type: ["number", "null"],
+      description: "Timestamp of the first clearly visible human face, or null if no face ever appears.",
+    },
+    textOnScreenTimestampSeconds: {
+      type: ["number", "null"],
+      description: "Timestamp of the first on-screen text or caption, or null if none appears.",
+    },
+    messageClarityTimestampSeconds: {
+      type: ["number", "null"],
+      description: "Timestamp at which the core message or value proposition first becomes clear to a viewer, or null if it never does.",
+    },
+  },
+  required: ["avgSecondsPerCut", "motionTimestampSeconds", "faceTimestampSeconds", "textOnScreenTimestampSeconds", "messageClarityTimestampSeconds"],
+};
+
+type HookMeasurements = {
+  avgSecondsPerCut: number;
+  motionTimestampSeconds: number | null;
+  faceTimestampSeconds: number | null;
+  textOnScreenTimestampSeconds: number | null;
+  messageClarityTimestampSeconds: number | null;
+};
+
 const topFixSchema = {
   type: "object" as const,
   properties: {
@@ -121,7 +174,13 @@ export async function judgeVideoCriteria({
   durationSeconds: number;
   audioOnsetSeconds: number | null;
   apiKey?: string | null;
-}): Promise<{ criteria: Criterion[]; findings: VideoFinding[]; topFix: TopFixResult; safeZoneMeasurement: SafeZoneMeasurement }> {
+}): Promise<{
+  criteria: Criterion[];
+  findings: VideoFinding[];
+  topFix: TopFixResult;
+  safeZoneMeasurement: SafeZoneMeasurement;
+  hookMeasurements: HookMeasurements;
+}> {
   const client = getClient(apiKey);
 
   const frameContent: Anthropic.Messages.ContentBlockParam[] = frames.flatMap((frame) => [
@@ -139,12 +198,12 @@ export async function judgeVideoCriteria({
       "You are Signal, an ad-creative analyst. Score a short-form vertical video ad against a fixed best-practice " +
       "criteria set using only what is visible in the sampled frames and the metadata provided. Be direct and " +
       "specific — every evidence string must be something you could point to, never a vague impression. " +
-      "The 'hook window' is the first " +
-      HOOK_WINDOW_SECONDS +
-      " seconds. Platform UI chrome overlays the top and bottom margins of the frame, but exactly how much varies " +
-      "by platform (TikTok vs Meta) — instead of judging safe-zone pass/fail yourself, measure and report how deep " +
-      "into the top and bottom margins key content (text/logo/product) actually reaches across the full runtime; " +
-      "the app converts that measurement into a verdict per platform. Never invent a criterion outside the fixed list.",
+      "Platform UI chrome overlays the top and bottom margins of the frame, and how tight the 'hook window' and " +
+      "cut pacing should be, all vary by platform (TikTok vs Meta) — instead of judging those yourself, measure " +
+      "and report: how deep into the top/bottom margins key content (text/logo/product) reaches across the full " +
+      "runtime; the average seconds between cuts; and the timestamp each hook element (motion, a face, on-screen " +
+      "text, message clarity) first appears. The app converts these measurements into verdicts per platform. " +
+      "Never invent a criterion outside the fixed list.",
     tools: [
       {
         name: "submit_video_analysis",
@@ -154,6 +213,7 @@ export async function judgeVideoCriteria({
           properties: {
             criteria: { type: "array", items: criterionSchema(VIDEO_JUDGED_CRITERIA), minItems: VIDEO_JUDGED_CRITERIA.length },
             safeZoneMeasurement: safeZoneMeasurementSchema,
+            hookMeasurements: hookMeasurementsSchema,
             findings: {
               type: "array",
               description: "5-8 timestamped observations worth surfacing, each tied to one of the provided frame timestamps.",
@@ -161,7 +221,7 @@ export async function judgeVideoCriteria({
                 type: "object",
                 properties: {
                   t: { type: "integer", description: "Must exactly match one of the provided frame timestamps." },
-                  criterion: { type: "string", enum: VIDEO_JUDGED_CRITERIA as unknown as string[] },
+                  criterion: { type: "string", enum: VIDEO_FINDING_CRITERIA as unknown as string[] },
                   failure: { type: "boolean" },
                   body: { type: "string", description: "One sentence, specific and falsifiable." },
                 },
@@ -170,7 +230,7 @@ export async function judgeVideoCriteria({
             },
             topFix: topFixSchema,
           },
-          required: ["criteria", "safeZoneMeasurement", "findings", "topFix"],
+          required: ["criteria", "safeZoneMeasurement", "hookMeasurements", "findings", "topFix"],
         },
       },
     ],
@@ -197,6 +257,7 @@ export async function judgeVideoCriteria({
   const result = toolUse.input as {
     criteria: { name: string; verdict: Criterion["verdict"]; evidence: string }[];
     safeZoneMeasurement: SafeZoneMeasurement;
+    hookMeasurements: HookMeasurements;
     findings: { t: number; criterion: string; failure: boolean; body: string }[];
     topFix: TopFixResult;
   };
@@ -217,7 +278,13 @@ export async function judgeVideoCriteria({
     body: f.body,
   }));
 
-  return { criteria, findings, topFix: result.topFix, safeZoneMeasurement: result.safeZoneMeasurement };
+  return {
+    criteria,
+    findings,
+    topFix: result.topFix,
+    safeZoneMeasurement: result.safeZoneMeasurement,
+    hookMeasurements: result.hookMeasurements,
+  };
 }
 
 export async function judgeStaticCriteria({

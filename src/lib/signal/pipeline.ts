@@ -4,6 +4,8 @@ import {
   resolutionCriterion,
   durationCriterion,
   audioOnsetCriterion,
+  cutPaceCriterion,
+  hookMomentCriterion,
   detectAudioOnsetSeconds,
   safeZoneCriterion,
 } from "./criteria";
@@ -37,24 +39,54 @@ function computeScore(criteria: Criterion[]) {
   return { score, failedChecks: fail };
 }
 
-// Safe-zone slots in right after the code-computed criteria, matching where
-// it sat in the old fixed judged-criteria list (first tier-1 judged item) —
-// everything else about the criteria order/grouping stays exactly as before.
-function buildPlatformResults(
+// Video has eight platform-varying criteria (duration, hook-window audio
+// onset, safe zone, cut pace, and the four "does X happen in the hook
+// window" checks) built here from Claude's raw measurements plus ffmpeg's
+// duration/audio-onset probes — everything else is judged once and shared
+// across every platform the asset targets.
+function buildVideoPlatformResults(
   codeComputed: Criterion[],
-  judgedCriteria: Criterion[],
+  sharedJudgedCriteria: Criterion[],
   platforms: Platform[],
+  durationSeconds: number,
+  audioOnsetSeconds: number | null,
   safeZoneMeasurement: { maxTopIntrusionPct: number; maxBottomIntrusionPct: number },
-  format: "video" | "static"
+  hookMeasurements: {
+    avgSecondsPerCut: number;
+    motionTimestampSeconds: number | null;
+    faceTimestampSeconds: number | null;
+    textOnScreenTimestampSeconds: number | null;
+    messageClarityTimestampSeconds: number | null;
+  }
 ): PlatformResult[] {
   return platforms.map((platform) => {
-    const safeZone = safeZoneCriterion(
-      safeZoneMeasurement.maxTopIntrusionPct,
-      safeZoneMeasurement.maxBottomIntrusionPct,
-      platform,
-      format
-    );
-    const criteria = [...codeComputed, safeZone, ...judgedCriteria];
+    const platformVarying = [
+      durationCriterion(durationSeconds, platform),
+      audioOnsetCriterion(audioOnsetSeconds, platform),
+      safeZoneCriterion(safeZoneMeasurement.maxTopIntrusionPct, safeZoneMeasurement.maxBottomIntrusionPct, platform, "video"),
+      cutPaceCriterion(hookMeasurements.avgSecondsPerCut, platform),
+      hookMomentCriterion("Hook window motion detected", 1, hookMeasurements.motionTimestampSeconds, platform, "No motion detected"),
+      hookMomentCriterion("Hook window face detected", 1, hookMeasurements.faceTimestampSeconds, platform, "No face detected"),
+      hookMomentCriterion("Hook window text on screen", 1, hookMeasurements.textOnScreenTimestampSeconds, platform, "No on-screen text detected"),
+      hookMomentCriterion("Message clarity in hook window", 2, hookMeasurements.messageClarityTimestampSeconds, platform, "Message never becomes clear"),
+    ];
+    const criteria = [...codeComputed, ...platformVarying, ...sharedJudgedCriteria];
+    const { score, failedChecks } = computeScore(criteria);
+    return { platform, score, failedChecks, criteria };
+  });
+}
+
+// Static has only one platform-varying criterion (safe zone) — everything
+// else about a still image's best practices doesn't depend on the platform.
+function buildStaticPlatformResults(
+  codeComputed: Criterion[],
+  sharedJudgedCriteria: Criterion[],
+  platforms: Platform[],
+  safeZoneMeasurement: { maxTopIntrusionPct: number; maxBottomIntrusionPct: number }
+): PlatformResult[] {
+  return platforms.map((platform) => {
+    const safeZone = safeZoneCriterion(safeZoneMeasurement.maxTopIntrusionPct, safeZoneMeasurement.maxBottomIntrusionPct, platform, "static");
+    const criteria = [...codeComputed, safeZone, ...sharedJudgedCriteria];
     const { score, failedChecks } = computeScore(criteria);
     return { platform, score, failedChecks, criteria };
   });
@@ -67,8 +99,6 @@ export async function runVideoPipeline(filePath: string, platforms: Platform[], 
   const codeComputed: Criterion[] = [
     aspectRatioCriterion(metadata.width, metadata.height, "video"),
     resolutionCriterion(metadata.width, metadata.height),
-    durationCriterion(metadata.durationSeconds),
-    audioOnsetCriterion(audioOnset),
   ];
 
   // Sample evenly across the clip, capped at 12 frames to bound cost/latency.
@@ -92,7 +122,15 @@ export async function runVideoPipeline(filePath: string, platforms: Platform[], 
     apiKey,
   });
 
-  const platformResults = buildPlatformResults(codeComputed, judged.criteria, platforms, judged.safeZoneMeasurement, "video");
+  const platformResults = buildVideoPlatformResults(
+    codeComputed,
+    judged.criteria,
+    platforms,
+    metadata.durationSeconds,
+    audioOnset,
+    judged.safeZoneMeasurement,
+    judged.hookMeasurements
+  );
   const primary = platformResults[0];
 
   return {
@@ -119,7 +157,7 @@ export async function runStaticPipeline(filePath: string, platforms: Platform[],
   const imageDataUrl = await imageToDataUrl(filePath);
   const judged = await judgeStaticCriteria({ imageDataUrl, apiKey });
 
-  const platformResults = buildPlatformResults(codeComputed, judged.criteria, platforms, judged.safeZoneMeasurement, "static");
+  const platformResults = buildStaticPlatformResults(codeComputed, judged.criteria, platforms, judged.safeZoneMeasurement);
   const primary = platformResults[0];
 
   return {
