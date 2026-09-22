@@ -31,6 +31,13 @@ export type StaticFinding = {
   region: { top: number; left: number; width: number; height: number };
 };
 
+// Rolled up across every signal_criteria row with verdict 'fail' in the
+// user's library. Criteria names come from a small fixed list (see
+// VIDEO_JUDGED_CRITERIA/STATIC_JUDGED_CRITERIA in lib/signal/claude.ts),
+// not free text, so an exact-match count is a real, honest aggregation —
+// no LLM clustering pass needed, unlike Outlier's free-text hook tags.
+export type FailureTheme = { name: string; tier: Tier; count: number };
+
 export type Asset = {
   id: string;
   filename: string;

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../../components";
-import { AddPlatformButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
+import { AddPlatformButton, BatchRepurposeButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
@@ -63,6 +63,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
           </div>
         </div>
         <div className="flex-1" />
+        <BatchRepurposeButton posts={posts} />
         <PullWithLimit handles={creator.handles} />
         <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} />
       </div>

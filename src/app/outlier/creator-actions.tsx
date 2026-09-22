@@ -4,7 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 import { useConfirm } from "@/components/ws-confirm";
-import type { Platform } from "./data";
+import { parseHandleInput } from "@/lib/outlier/parse-handle-input";
+import type { Platform, Post } from "./data";
 
 const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 
@@ -31,28 +32,52 @@ export function AddCreatorButton({ className, style, children }: { className: st
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [platform, setPlatform] = useState<Platform>("TT");
-  const [handle, setHandle] = useState("");
+  const [handleText, setHandleText] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // One line, one entry — a bare handle falls back to the platform picker
+  // above, but a pasted profile URL detects its own platform regardless of
+  // what's selected there. This is the same input for adding one creator or
+  // twenty; there's no separate "bulk" mode to find.
+  const lines = handleText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!handle.trim()) return;
+    if (lines.length === 0) return;
     setSaving(true);
-    const res = await fetch("/api/outlier/creators", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, handle: handle.trim() }),
-    });
-    const data = await res.json().catch(() => null);
-    setSaving(false);
-    if (res.ok) {
-      toast(`Tracking @${handle.trim()}.`, "success");
-      setOpen(false);
-      setHandle("");
-      router.refresh();
-    } else {
-      toast(data?.error ?? "Couldn't add that creator.", "error");
+    let successCount = 0;
+    let failCount = 0;
+    let firstHandle = "";
+    for (const line of lines) {
+      const parsed = parseHandleInput(line);
+      const entryPlatform = parsed.platform ?? platform;
+      const entryHandle = parsed.handle.replace(/^@/, "");
+      if (!entryHandle) continue;
+      if (!firstHandle) firstHandle = entryHandle;
+      const res = await fetch("/api/outlier/creators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: entryPlatform, handle: entryHandle }),
+      });
+      if (res.ok) successCount += 1;
+      else failCount += 1;
     }
+    setSaving(false);
+    if (successCount === 0) {
+      toast("Couldn't add any of those.", "error");
+      return;
+    }
+    if (failCount === 0) {
+      toast(successCount === 1 ? `Tracking @${firstHandle}.` : `Tracking ${successCount} creators.`, "success");
+    } else {
+      toast(`Tracking ${successCount} — ${failCount} couldn't be added (probably already tracked).`, "error");
+    }
+    setOpen(false);
+    setHandleText("");
+    router.refresh();
   }
 
   return (
@@ -68,15 +93,16 @@ export function AddCreatorButton({ className, style, children }: { className: st
         >
           <div className="ws-card ws-modal-in" style={{ width: 360, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
             <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Add a creator
+              Add creators
             </p>
             <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
               <PlatformPicker platform={platform} onChange={setPlatform} />
-              <input
+              <textarea
                 autoFocus
-                value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-                placeholder="handle (without @)"
+                rows={3}
+                value={handleText}
+                onChange={(e) => setHandleText(e.target.value)}
+                placeholder="handle or profile URL — one per line for multiple"
                 className="text-[12.5px] outline-none"
                 style={{
                   padding: "9px 12px",
@@ -84,8 +110,12 @@ export function AddCreatorButton({ className, style, children }: { className: st
                   border: "1px solid var(--ws-hairline-strong)",
                   background: "var(--ws-surface)",
                   color: "var(--ws-ink)",
+                  resize: "none",
                 }}
               />
+              <p className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                Platform above applies to bare handles — a pasted profile URL detects its own.
+              </p>
               <div className="mt-[4px] flex justify-end gap-[8px]">
                 <button
                   type="button"
@@ -97,11 +127,11 @@ export function AddCreatorButton({ className, style, children }: { className: st
                 </button>
                 <button
                   type="submit"
-                  disabled={saving || !handle.trim()}
+                  disabled={saving || lines.length === 0}
                   className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
                   style={{ padding: "9px 14px", opacity: saving ? 0.6 : 1 }}
                 >
-                  {saving ? "Adding…" : "Add creator"}
+                  {saving ? "Adding…" : lines.length > 1 ? `Add ${lines.length} creators` : "Add creator"}
                 </button>
               </div>
             </form>
@@ -168,8 +198,16 @@ export function AddPlatformButton({ creatorId }: { creatorId: string }) {
               <input
                 autoFocus
                 value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-                placeholder="handle (without @)"
+                onChange={(e) => {
+                  const parsed = parseHandleInput(e.target.value);
+                  if (parsed.platform) {
+                    setPlatform(parsed.platform);
+                    setHandle(parsed.handle);
+                  } else {
+                    setHandle(e.target.value);
+                  }
+                }}
+                placeholder="handle or profile URL"
                 className="text-[12.5px] outline-none"
                 style={{
                   padding: "9px 12px",
@@ -384,5 +422,130 @@ export function RemoveHandleButton({ handleId, handle }: { handleId: string; han
     >
       ✕
     </button>
+  );
+}
+
+// Generates a repurposed script from each of a creator's top analyzed
+// outliers in one pass, using the same single-post repurpose endpoint in a
+// loop — matching how PullHandlesButton already handles "one action, many
+// targets" rather than needing a separate batch API. Repurposing requires
+// a post's transcript/beats to already exist, so only analyzed posts are
+// eligible; unanalyzed ones (however high-scoring) are skipped.
+export function BatchRepurposeButton({ posts }: { posts: Post[] }) {
+  const router = useRouter();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const eligible = [...posts]
+    .filter((p) => p.analysisStatus === "done")
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  function handleOpen() {
+    if (eligible.length === 0) {
+      toast("Analyze at least one post first — repurposing borrows its hook and beat structure.");
+      return;
+    }
+    setOpen(true);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!topic.trim()) return;
+    setGenerating(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const post of eligible) {
+      const res = await fetch(`/api/outlier/posts/${post.id}/repurpose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: topic.trim() }),
+      });
+      if (res.ok) successCount += 1;
+      else failCount += 1;
+    }
+    setGenerating(false);
+    setOpen(false);
+    setTopic("");
+    if (successCount === 0) {
+      toast("Couldn't generate any scripts.", "error");
+      return;
+    }
+    toast(
+      failCount === 0
+        ? `Generated ${successCount} script${successCount === 1 ? "" : "s"} — see Recent repurposes on Home.`
+        : `Generated ${successCount} — ${failCount} failed.`,
+      failCount === 0 ? "success" : "error"
+    );
+    router.push("/outlier");
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="ws-btn-ghost shrink-0 rounded-[8px] text-[12px] font-medium"
+        style={{ padding: "8px 12px", opacity: eligible.length > 0 ? 1 : 0.6 }}
+      >
+        Repurpose top {eligible.length > 0 ? eligible.length : 3} →
+      </button>
+      {open && (
+        <div
+          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
+          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
+          onClick={() => !generating && setOpen(false)}
+        >
+          <div className="ws-card ws-modal-in" style={{ width: 400, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
+            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
+              Repurpose top {eligible.length} outlier{eligible.length === 1 ? "" : "s"}
+            </p>
+            <p className="mt-[6px] text-[12px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
+              One topic, {eligible.length} original scripts — each modeled on that post&rsquo;s own hook and beat
+              structure, not a copy of its words.
+            </p>
+            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
+              <textarea
+                autoFocus
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
+                rows={3}
+                className="text-[12.5px] outline-none"
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: 7,
+                  border: "1px solid var(--ws-hairline-strong)",
+                  background: "var(--ws-surface)",
+                  color: "var(--ws-ink)",
+                  resize: "none",
+                }}
+              />
+              <div className="mt-[4px] flex justify-end gap-[8px]">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  disabled={generating}
+                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
+                  style={{ padding: "9px 14px" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={generating || !topic.trim()}
+                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
+                  style={{ padding: "9px 14px", opacity: generating ? 0.6 : 1 }}
+                >
+                  {generating ? "Writing…" : `Generate ${eligible.length} script${eligible.length === 1 ? "" : "s"}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -32,7 +32,7 @@ export async function GET(request: Request) {
   const cutoff = new Date(Date.now() - DUE_AFTER_MS).toISOString();
   const { data: dueHandles, error } = await admin
     .from("outlier_handles")
-    .select("id, user_id, platform, handle")
+    .select("id, user_id, creator_id, platform, handle")
     .or(`last_pulled_at.is.null,last_pulled_at.lt.${cutoff}`)
     .returns<HandleToPull[]>();
 

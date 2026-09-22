@@ -9,9 +9,57 @@ function medianOf(nums: number[]) {
   return sorted.length % 2 === 0 ? Math.round((sorted[mid - 1] + sorted[mid]) / 2) : sorted[mid];
 }
 
-export type HandleToPull = { id: string; user_id: string; platform: "TT" | "IG" | "YT"; handle: string };
+export type HandleToPull = { id: string; user_id: string; creator_id: string; platform: "TT" | "IG" | "YT"; handle: string };
 export type PullApiKeys = { apifyKey?: string | null; groqKey?: string | null; anthropicKey?: string | null };
 export type PullOutcome = { ok: true; newCount: number; totalPulled: number; autoAnalyzed: string | null } | { ok: false; error: string };
+
+// A creator's median is computed across ALL of their handles combined
+// (matching how the UI's buildCreator() already does it), not per-handle —
+// so this re-derives it fresh from every post under the creator rather
+// than just the handle that was just pulled. Needs at least 6 posts before
+// trusting a comparison, same threshold as the UI's own trend displays
+// (Outlier's computeMedianTrend, Signal's computeScoreTrend) — and only
+// fires a notification past a 25% shift, since real short-form view counts
+// are naturally noisy and a smaller move isn't "meaningful" on its own.
+const TREND_ALERT_THRESHOLD_PCT = 25;
+
+async function checkMedianTrend(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: SupabaseClient<any>,
+  creatorId: string,
+  userId: string
+) {
+  const { data: handleRows } = await admin.from("outlier_handles").select("id").eq("creator_id", creatorId);
+  const handleIds = (handleRows ?? []).map((h) => h.id as string);
+  if (handleIds.length === 0) return;
+
+  const { data: postRows } = await admin.from("outlier_posts").select("views").in("handle_id", handleIds);
+  const views = (postRows ?? []).map((r) => r.views as number);
+  if (views.length < 6) return;
+
+  const newMedian = medianOf(views);
+  const { data: creatorRow } = await admin
+    .from("outlier_creators")
+    .select("last_median, display_name")
+    .eq("id", creatorId)
+    .single();
+
+  const oldMedian = creatorRow?.last_median as number | null;
+  if (oldMedian !== null && oldMedian !== undefined && oldMedian > 0) {
+    const pctChange = ((newMedian - oldMedian) / oldMedian) * 100;
+    if (Math.abs(pctChange) >= TREND_ALERT_THRESHOLD_PCT) {
+      const direction = pctChange >= 0 ? "jumped" : "dropped";
+      await admin.from("notifications").insert({
+        user_id: userId,
+        title: `${creatorRow?.display_name ?? "A creator"}'s median ${direction} ${Math.abs(Math.round(pctChange))}%`,
+        body: `New median ${newMedian.toLocaleString()} views, was ${oldMedian.toLocaleString()}.`,
+        href: `/outlier/creators/${creatorId}`,
+      });
+    }
+  }
+
+  await admin.from("outlier_creators").update({ last_median: newMedian }).eq("id", creatorId);
+}
 
 // The full pull pipeline for one handle — fetch via Apify, upsert posts,
 // auto-analyze the best new outlier, and record a job + notification.
@@ -86,6 +134,8 @@ export async function pullHandle(
         .update({ state: "done", new_posts_count: newCount, finished_at: new Date().toISOString() })
         .eq("id", jobId);
     }
+
+    await checkMedianTrend(admin, handle.creator_id, handle.user_id);
 
     // Auto-analyze the single best new outlier — analyzing every pulled
     // post (or even every new one) would multiply download+transcribe+

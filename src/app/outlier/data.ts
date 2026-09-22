@@ -53,6 +53,7 @@ export type Post = {
   followers: number;
   thin: boolean;
   favourite: boolean;
+  analysisStatus: "none" | "analyzing" | "done" | "failed";
 };
 
 export type TranscriptLine = { t: string; text: string; isHook: boolean };
@@ -81,6 +82,8 @@ export type Job = {
   waitReason?: string;
 };
 
+export type Collection = { id: string; name: string; postIds: string[] };
+
 export type RepurposeBeat = { name: string; script: string };
 
 export type RepurposeSummary = {
@@ -90,6 +93,7 @@ export type RepurposeSummary = {
   title: string;
   sourceScore: number;
   createdAtIso: string;
+  isPublic: boolean;
 };
 
 export type RepurposeDetail = RepurposeSummary & {

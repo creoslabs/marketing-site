@@ -12,6 +12,7 @@ import type {
   TagCount,
   RepurposeSummary,
   RepurposeDetail,
+  Collection,
 } from "./data";
 
 function isSupabaseConfigured() {
@@ -194,6 +195,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     followers: row.followers ?? 0,
     thin,
     favourite: row.favourited,
+    analysisStatus: row.analysis_status,
   };
 }
 
@@ -414,7 +416,10 @@ type RepurposeRow = {
   hook: string;
   beats: { name: string; script: string }[];
   created_at: string;
+  is_public: boolean;
 };
+
+const REPURPOSE_COLUMNS = "id, post_id, creator_id, topic, source_score, title, hook, beats, created_at, is_public";
 
 function toRepurposeSummary(row: RepurposeRow): RepurposeSummary {
   return {
@@ -424,6 +429,7 @@ function toRepurposeSummary(row: RepurposeRow): RepurposeSummary {
     title: row.title,
     sourceScore: row.source_score,
     createdAtIso: row.created_at,
+    isPublic: row.is_public,
   };
 }
 
@@ -434,21 +440,46 @@ export const getRecentRepurposes = cache(async (): Promise<RepurposeSummary[]> =
   const supabase = await createClient();
   const { data } = await supabase
     .from("outlier_repurposes")
-    .select("id, post_id, creator_id, topic, source_score, title, hook, beats, created_at")
+    .select(REPURPOSE_COLUMNS)
     .order("created_at", { ascending: false })
     .limit(5)
     .returns<RepurposeRow[]>();
   return (data ?? []).map(toRepurposeSummary);
 });
 
+// RLS grants a read here to the owner OR to anyone when is_public is true
+// (see migration 0013) — so this same function backs both the private
+// detail page and the public share page, with no separate query needed.
 export const getRepurposeDetail = cache(async (id: string): Promise<RepurposeDetail | null> => {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("outlier_repurposes")
-    .select("id, post_id, creator_id, topic, source_score, title, hook, beats, created_at")
-    .eq("id", id)
-    .maybeSingle<RepurposeRow>();
+  const { data } = await supabase.from("outlier_repurposes").select(REPURPOSE_COLUMNS).eq("id", id).maybeSingle<RepurposeRow>();
   if (!data) return null;
   return { ...toRepurposeSummary(data), topic: data.topic, hook: data.hook, beats: data.beats };
+});
+
+// Named groupings of favourited posts ("Q1 ideas", "Client X") — a post can
+// sit in more than one. Two queries (collections, then their memberships)
+// rather than a join, since most users will have a handful of collections
+// with a handful of posts each — not worth a heavier query shape.
+export const getCollections = cache(async (): Promise<Collection[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data: collections } = await supabase.from("outlier_collections").select("id, name").order("created_at");
+  if (!collections || collections.length === 0) return [];
+
+  const { data: memberships } = await supabase
+    .from("outlier_collection_posts")
+    .select("collection_id, post_id")
+    .in(
+      "collection_id",
+      collections.map((c) => c.id)
+    );
+
+  const postIdsByCollection = new Map<string, string[]>();
+  for (const m of memberships ?? []) {
+    postIdsByCollection.set(m.collection_id, [...(postIdsByCollection.get(m.collection_id) ?? []), m.post_id]);
+  }
+
+  return collections.map((c) => ({ id: c.id, name: c.name, postIds: postIdsByCollection.get(c.id) ?? [] }));
 });

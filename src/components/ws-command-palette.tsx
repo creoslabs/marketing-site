@@ -28,8 +28,52 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [searchItems, setSearchItems] = useState<Item[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  // Debounced live search over the caller's own creators/posts/Signal
+  // assets — separate from the static DESTINATIONS list below, which is
+  // just page navigation and matches instantly with no network call.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`).catch(() => null);
+      if (!res || !res.ok || cancelled) return;
+      const data = await res.json().catch(() => null);
+      if (!data || cancelled) return;
+      const results: Item[] = [
+        ...data.creators.map((c: { id: string; label: string }) => ({
+          key: `creator-${c.id}`,
+          label: c.label,
+          sublabel: "Creator",
+          run: () => router.push(`/outlier/creators/${c.id}`),
+        })),
+        ...data.posts.map((p: { id: string; label: string }) => ({
+          key: `post-${p.id}`,
+          label: p.label,
+          sublabel: "Post",
+          run: () => router.push(`/outlier/video/${p.id}`),
+        })),
+        ...data.assets.map((a: { id: string; label: string }) => ({
+          key: `asset-${a.id}`,
+          label: a.label,
+          sublabel: "Signal asset",
+          run: () => router.push(`/signal/report/${a.id}`),
+        })),
+      ];
+      if (!cancelled) {
+        setSearchItems(results);
+        setActiveIndex(0);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [query, router]);
 
   const items = useMemo<Item[]>(() => {
     const navItems: Item[] = DESTINATIONS.map((d) => ({
@@ -57,8 +101,10 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((item) => `${item.label} ${item.sublabel}`.toLowerCase().includes(q));
-  }, [items, query]);
+    const matchingNav = items.filter((item) => `${item.label} ${item.sublabel}`.toLowerCase().includes(q));
+    const effectiveSearchItems = q.length >= 2 ? searchItems : [];
+    return [...effectiveSearchItems, ...matchingNav];
+  }, [items, query, searchItems]);
 
   function openPalette() {
     setQuery("");
@@ -138,7 +184,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              placeholder="Jump to a page or run a command…"
+              placeholder="Jump to a page, creator, post, or asset…"
               className="w-full text-[13.5px]"
               style={{
                 padding: "16px 18px",

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   const { data: handle } = await admin
     .from("outlier_handles")
-    .select("id, user_id, platform, handle")
+    .select("id, user_id, creator_id, platform, handle")
     .eq("id", handleId)
     .single();
 

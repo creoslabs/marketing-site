@@ -5,6 +5,7 @@ import { getCreators, getPosts, getJobs, getRecentRepurposes } from "./live-data
 import { relativeTime } from "@/lib/relative-time";
 import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
 import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
+import { OnboardingChecklist } from "./onboarding-checklist";
 
 export const metadata: Metadata = {
   title: "Outlier — Creos Labs",
@@ -44,22 +45,16 @@ export default async function OutlierHomePage() {
   if (creators.length === 0) {
     return (
       <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
-        <EmptyState
-          size="large"
-          title="Add your first creator to get started"
-          description="Track a creator's posts and Outlier scores each one against their own median — surfacing the hooks worth repurposing."
-          action={
-            <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "11px 16px" }}>
-              + Add creator
-            </AddCreatorButton>
-          }
-        />
+        <div style={{ maxWidth: 420, width: "100%" }}>
+          <OnboardingChecklist creators={creators} posts={posts} />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
+      <OnboardingChecklist creators={creators} posts={posts} />
       <div className="flex flex-wrap items-start justify-between gap-[16px]">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>

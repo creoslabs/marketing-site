@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Asset, Criterion, Format, StaticFinding, VideoFinding } from "./data";
+import type { Asset, Criterion, FailureTheme, Format, StaticFinding, VideoFinding } from "./data";
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -34,6 +34,19 @@ export function percentileWithin(
   if (scores.length <= 1) return null;
   const below = scores.filter((s) => s < score).length;
   return Math.round((below / scores.length) * 100);
+}
+
+// Same reasoning and threshold as Outlier's computeMedianTrend: fewer than
+// six assets isn't enough to trust a "recent half vs older half" split, so
+// this returns null (shown as "not enough history yet") rather than a
+// trend that's really just noise from one or two assets.
+export function computeScoreTrend(scoresMostRecentFirst: number[]): number | null {
+  if (scoresMostRecentFirst.length < 6) return null;
+  const half = Math.floor(scoresMostRecentFirst.length / 2);
+  const recentMedian = medianOf(scoresMostRecentFirst.slice(0, half));
+  const olderMedian = medianOf(scoresMostRecentFirst.slice(half));
+  if (olderMedian === 0) return null;
+  return Math.round(((recentMedian - olderMedian) / olderMedian) * 100);
 }
 
 type LibraryRow = {
@@ -280,4 +293,31 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     frames,
     durationSeconds: assetRow.duration_seconds ?? undefined,
   };
+});
+
+// Only the top few most-frequent failures, and only ones that have failed
+// more than once — a single failure isn't a "recurring" theme, it's just
+// one asset's report.
+const MIN_RECURRING_FAILURES = 2;
+
+export const getFailureThemes = cache(async (): Promise<FailureTheme[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("signal_criteria")
+    .select("name, tier")
+    .eq("verdict", "fail")
+    .returns<{ name: string; tier: 1 | 2 }[]>();
+
+  const counts = new Map<string, FailureTheme>();
+  for (const row of data ?? []) {
+    const existing = counts.get(row.name);
+    if (existing) existing.count += 1;
+    else counts.set(row.name, { name: row.name, tier: row.tier, count: 1 });
+  }
+
+  return [...counts.values()]
+    .filter((t) => t.count >= MIN_RECURRING_FAILURES)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
 });

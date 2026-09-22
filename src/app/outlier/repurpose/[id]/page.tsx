@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getRepurposeDetail, getCreators } from "../../live-data";
 import { Avatar } from "../../components";
 import { CopyScriptButton } from "../copy-script-button";
+import { ShareToggle } from "../share-toggle";
 
 export async function generateMetadata(props: PageProps<"/outlier/repurpose/[id]">): Promise<Metadata> {
   const { id } = await props.params;
@@ -48,7 +49,10 @@ export default async function RepurposeDetailPage(props: PageProps<"/outlier/rep
             </p>
           </div>
         </div>
-        <CopyScriptButton hook={detail.hook} beats={detail.beats} />
+        <div className="flex shrink-0 items-center gap-[8px]">
+          <ShareToggle repurposeId={detail.id} initialPublic={detail.isPublic} />
+          <CopyScriptButton hook={detail.hook} beats={detail.beats} />
+        </div>
       </div>
 
       <div className="ws-card mt-[20px]" style={{ padding: "16px 18px" }}>
