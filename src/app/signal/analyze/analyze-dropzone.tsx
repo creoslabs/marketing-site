@@ -13,7 +13,7 @@ type QueueItem = {
   error?: string;
 };
 
-async function analyzeOne(file: File): Promise<{ assetId: string }> {
+export async function analyzeOne(file: File, revisionOf?: string): Promise<{ assetId: string }> {
   const format = file.type.startsWith("video/") ? "video" : "static";
 
   const urlRes = await fetch("/api/signal/upload-url", {
@@ -33,7 +33,7 @@ async function analyzeOne(file: File): Promise<{ assetId: string }> {
   const analyzeRes = await fetch("/api/signal/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: urlData.path, filename: file.name, format }),
+    body: JSON.stringify({ path: urlData.path, filename: file.name, format, revisionOf }),
   });
   const analyzeData = await analyzeRes.json();
   if (!analyzeRes.ok) throw new Error(analyzeData.error ?? "Analysis failed.");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Asset, Criterion, StaticFinding } from "../../data";
 import { ReportSubHeader, CriteriaTable } from "./video-report";
+import { ScoreFormula } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import type { PdfReportData } from "./report-pdf";
 
@@ -20,6 +21,8 @@ export function StaticReport({
   median,
   percentile,
   assetUrl,
+  previousVersion,
+  nextVersion,
 }: {
   asset: Asset;
   criteria: Criterion[];
@@ -28,6 +31,8 @@ export function StaticReport({
   median: number;
   percentile: number | null;
   assetUrl?: string | null;
+  previousVersion?: { id: string; filename: string; score: number } | null;
+  nextVersion?: { id: string; filename: string; score: number } | null;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const displayScore = useCountUp(asset.score);
@@ -49,7 +54,7 @@ export function StaticReport({
 
   return (
     <div className="ws-page-in">
-      <ReportSubHeader asset={asset} pdfData={pdfData} />
+      <ReportSubHeader asset={asset} pdfData={pdfData} previousVersion={previousVersion} nextVersion={nextVersion} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]">
         <div className="flex flex-col gap-[22px] lg:flex-row" style={{ padding: "22px", borderRight: "1px solid var(--ws-hairline)" }}>
@@ -154,7 +159,10 @@ export function StaticReport({
                 <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
                   {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
                 </p>
-                <p className="mt-[2px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                <div className="mt-[3px]">
+                  <ScoreFormula pass={counts.pass} partial={counts.partial} fail={counts.fail} />
+                </div>
+                <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                   {percentile === null
                     ? "First static analyzed in this set — not comparable to video scores."
                     : `${percentile}th percentile among statics in this set — not comparable to video scores.`}

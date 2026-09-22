@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
+import { usePaletteActions } from "@/components/ws-command-palette";
 
 export function FavouriteButton({ postId, initialFavourited }: { postId: string; initialFavourited: boolean }) {
   const router = useRouter();
@@ -38,6 +39,24 @@ export function FavouriteButton({ postId, initialFavourited }: { postId: string;
       router.refresh();
     }
   }
+
+  // Registered while this button is mounted (i.e. while viewing this
+  // post) — the same toggle the button itself triggers, so the palette
+  // action and the visible star can never disagree about what "saved"
+  // means.
+  const paletteActions = useMemo(
+    () => [
+      {
+        key: `favourite-${postId}`,
+        label: saved ? "Remove from Favourites" : "Add to Favourites",
+        sublabel: "This post",
+        run: handleClick,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleClick closes over `saved`/`pending` intentionally; re-created each render is fine here
+    [postId, saved]
+  );
+  usePaletteActions(paletteActions);
 
   return (
     <button

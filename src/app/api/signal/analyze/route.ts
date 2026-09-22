@@ -7,6 +7,7 @@ import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runVideoPipeline, runStaticPipeline } from "@/lib/signal/pipeline";
 import type { StaticFinding, VideoFinding } from "@/app/signal/data";
+import { shouldNotify } from "@/lib/notification-prefs";
 
 // Video analysis (ffmpeg + a Claude vision call per frame batch) can run
 // well past Vercel's default 10s function timeout — this needs at least a
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
   const filename = typeof body?.filename === "string" ? body.filename : null;
   const format = body?.format === "video" || body?.format === "static" ? body.format : null;
   const platform = typeof body?.platform === "string" ? body.platform : "Instagram";
+  const revisionOf = typeof body?.revisionOf === "string" ? body.revisionOf : null;
 
   if (!storagePath || !filename || !format) {
     return NextResponse.json({ error: "Missing path, filename, or format." }, { status: 400 });
@@ -40,9 +42,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Not configured." }, { status: 503 });
   }
 
+  if (revisionOf) {
+    const { data: original } = await admin.from("signal_assets").select("user_id, format").eq("id", revisionOf).maybeSingle();
+    if (!original || original.user_id !== user.id || original.format !== format) {
+      return NextResponse.json({ error: "That original asset isn't valid to revise." }, { status: 400 });
+    }
+  }
+
   const { data: assetRow, error: insertError } = await admin
     .from("signal_assets")
-    .insert({ user_id: user.id, filename, format, platform, storage_path: storagePath, status: "processing" })
+    .insert({ user_id: user.id, filename, format, platform, storage_path: storagePath, status: "processing", revision_of: revisionOf })
     .select("id")
     .single();
 
@@ -164,23 +173,27 @@ export async function POST(request: Request) {
       );
     }
 
-    await admin.from("notifications").insert({
-      user_id: user.id,
-      title: `Analysis complete — ${filename}`,
-      body: `Scored ${result.score} · ${result.failedChecks} check${result.failedChecks === 1 ? "" : "s"} failing.`,
-      href: `/signal/report/${assetId}`,
-    });
+    if (await shouldNotify(admin, user.id, "analysis")) {
+      await admin.from("notifications").insert({
+        user_id: user.id,
+        title: `Analysis complete — ${filename}`,
+        body: `Scored ${result.score} · ${result.failedChecks} check${result.failedChecks === 1 ? "" : "s"} failing.`,
+        href: `/signal/report/${assetId}`,
+      });
+    }
 
     return NextResponse.json({ assetId });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed.";
     await admin.from("signal_assets").update({ status: "failed", error: message }).eq("id", assetId);
-    await admin.from("notifications").insert({
-      user_id: user.id,
-      title: `Analysis failed — ${filename}`,
-      body: message,
-      href: "/signal",
-    });
+    if (await shouldNotify(admin, user.id, "analysis_failed")) {
+      await admin.from("notifications").insert({
+        user_id: user.id,
+        title: `Analysis failed — ${filename}`,
+        body: message,
+        href: "/signal",
+      });
+    }
     return NextResponse.json({ error: message, assetId }, { status: 500 });
   } finally {
     await unlink(tempPath).catch(() => {});

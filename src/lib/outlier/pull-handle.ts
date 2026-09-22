@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getApifyToken, pullTikTok, pullInstagram, pullYouTube } from "./apify";
 import { analyzeOutlierPost } from "./analyze-post";
+import { shouldNotify } from "@/lib/notification-prefs";
 
 function medianOf(nums: number[]) {
   if (nums.length === 0) return 0;
@@ -47,7 +48,7 @@ async function checkMedianTrend(
   const oldMedian = creatorRow?.last_median as number | null;
   if (oldMedian !== null && oldMedian !== undefined && oldMedian > 0) {
     const pctChange = ((newMedian - oldMedian) / oldMedian) * 100;
-    if (Math.abs(pctChange) >= TREND_ALERT_THRESHOLD_PCT) {
+    if (Math.abs(pctChange) >= TREND_ALERT_THRESHOLD_PCT && (await shouldNotify(admin, userId, "trend"))) {
       const direction = pctChange >= 0 ? "jumped" : "dropped";
       await admin.from("notifications").insert({
         user_id: userId,
@@ -163,14 +164,16 @@ export async function pullHandle(
       if (result.ok) autoAnalyzed = bestNew.id;
     }
 
-    await admin.from("notifications").insert({
-      user_id: handle.user_id,
-      title: `Pulled @${handle.handle}`,
-      body: autoAnalyzed
-        ? `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total · top outlier analyzed automatically.`
-        : `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total this pull.`,
-      href: autoAnalyzed ? `/outlier/video/${autoAnalyzed}` : "/outlier/feed",
-    });
+    if (await shouldNotify(admin, handle.user_id, "pull")) {
+      await admin.from("notifications").insert({
+        user_id: handle.user_id,
+        title: `Pulled @${handle.handle}`,
+        body: autoAnalyzed
+          ? `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total · top outlier analyzed automatically.`
+          : `${newCount} new post${newCount === 1 ? "" : "s"} · ${rawPosts.length} total this pull.`,
+        href: autoAnalyzed ? `/outlier/video/${autoAnalyzed}` : "/outlier/feed",
+      });
+    }
 
     return { ok: true, newCount, totalPulled: rawPosts.length, autoAnalyzed };
   } catch (err) {
@@ -179,12 +182,14 @@ export async function pullHandle(
     if (jobId) {
       await admin.from("outlier_jobs").update({ state: "failed", error: message, finished_at: new Date().toISOString() }).eq("id", jobId);
     }
-    await admin.from("notifications").insert({
-      user_id: handle.user_id,
-      title: `Pull failed — @${handle.handle}`,
-      body: message,
-      href: "/outlier/progress",
-    });
+    if (await shouldNotify(admin, handle.user_id, "pull_failed")) {
+      await admin.from("notifications").insert({
+        user_id: handle.user_id,
+        title: `Pull failed — @${handle.handle}`,
+        body: message,
+        href: "/outlier/progress",
+      });
+    }
     return { ok: false, error: message };
   }
 }

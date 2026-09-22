@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-function isWithinLastWeek(iso: string) {
-  return Date.now() - new Date(iso).getTime() < SEVEN_DAYS_MS;
+function sevenDaysAgoIso() {
+  return new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
 }
 
 export default async function OverviewPage() {
@@ -37,7 +37,19 @@ export default async function OverviewPage() {
   const runningJobs = jobs.filter((j) => j.state === "running");
   const isSyncing = runningJobs.length > 0;
 
-  const recentOutliers = outlierPosts.filter((p) => isWithinLastWeek(p.createdAtIso));
+  // "Today" always means "since you were last here" when we actually know
+  // that (a real, per-user timestamp — more precise than a fixed window,
+  // and the whole point of merging what used to be two separate cards:
+  // a fixed-week "Today" panel and a since-last-visit recap saying almost
+  // the same thing). Falls back to a 7-day window only when there's no
+  // recorded last visit yet — a brand-new user, or the first render after
+  // this tracking shipped — where "since you were last here" has no real
+  // answer.
+  const sinceIso = lastVisit ?? sevenDaysAgoIso();
+  const sincePhrase = lastVisit ? `since ${relativeTime(lastVisit)}` : "this week";
+  const isSince = (iso: string) => new Date(iso).getTime() > new Date(sinceIso).getTime();
+
+  const recentOutliers = outlierPosts.filter((p) => isSince(p.createdAtIso));
   const highestScore = outlierPosts.length > 0 ? Math.max(...outlierPosts.map((p) => p.score)) : null;
 
   const recentScores = [...posts]
@@ -49,27 +61,15 @@ export default async function OverviewPage() {
   const assets = library.assets;
   const assetsFailing = assets.filter((a) => a.failedChecks > 0).length;
   const avgSignalScore = assets.length > 0 ? Math.round(assets.reduce((sum, a) => sum + a.score, 0) / assets.length) : null;
-
-  // ---- Recap: what changed since the previous visit, not the last week —
-  // that's what "since you were last here" actually promises. Hidden on a
-  // first-ever visit (lastVisit is null) and whenever nothing changed, so
-  // it never shows an empty or meaningless recap.
-  const isSinceLastVisit = (iso: string) => (lastVisit ? new Date(iso).getTime() > new Date(lastVisit).getTime() : false);
-  const recap = lastVisit
-    ? {
-        newOutliers: outlierPosts.filter((p) => isSinceLastVisit(p.createdAtIso)).length,
-        newAssets: assets.filter((a) => isSinceLastVisit(a.createdAtIso)).length,
-        newRepurposes: recentRepurposes.filter((r) => isSinceLastVisit(r.createdAtIso)).length,
-      }
-    : null;
-  const hasRecap = recap && (recap.newOutliers > 0 || recap.newAssets > 0 || recap.newRepurposes > 0);
+  const recentAssets = assets.filter((a) => isSince(a.createdAtIso));
+  const recentRepurposeCount = recentRepurposes.filter((r) => isSince(r.createdAtIso)).length;
 
   // ---- Today: real, computed insights only — nothing here is invented. ----
   const insights: TodayInsight[] = [];
   if (recentOutliers.length > 0) {
     insights.push({
       id: "outlier-new",
-      text: `${recentOutliers.length} new outlier${recentOutliers.length === 1 ? "" : "s"} this week`,
+      text: `${recentOutliers.length} new outlier${recentOutliers.length === 1 ? "" : "s"} ${sincePhrase}`,
       meta: highestScore !== null ? `Highest: ${highestScore.toFixed(1)}× baseline` : undefined,
       href: "/outlier/feed",
     });
@@ -82,13 +82,27 @@ export default async function OverviewPage() {
       href: "/signal",
     });
   }
-  const recentPulls = finished.filter((f) => isWithinLastWeek(f.finishedAtIso));
+  const recentPulls = finished.filter((f) => isSince(f.finishedAtIso));
   const recentPulledPosts = recentPulls.reduce((sum, f) => sum + f.newPostsCount, 0);
   if (recentPulledPosts > 0) {
     insights.push({
       id: "outlier-pulled",
-      text: `${recentPulledPosts} new post${recentPulledPosts === 1 ? "" : "s"} pulled this week`,
+      text: `${recentPulledPosts} new post${recentPulledPosts === 1 ? "" : "s"} pulled ${sincePhrase}`,
       href: "/outlier/feed",
+    });
+  }
+  if (recentAssets.length > 0) {
+    insights.push({
+      id: "signal-new",
+      text: `${recentAssets.length} creative${recentAssets.length === 1 ? "" : "s"} analysed ${sincePhrase}`,
+      href: "/signal",
+    });
+  }
+  if (recentRepurposeCount > 0) {
+    insights.push({
+      id: "outlier-repurposed",
+      text: `${recentRepurposeCount} script${recentRepurposeCount === 1 ? "" : "s"} repurposed ${sincePhrase}`,
+      href: "/outlier",
     });
   }
 
@@ -172,21 +186,6 @@ export default async function OverviewPage() {
       </div>
 
       <div className="flex flex-col gap-[22px]">
-        {hasRecap && recap && lastVisit && (
-          <div className="ws-card" style={{ padding: "14px 18px" }}>
-            <p className="ws-eyebrow">SINCE YOUR LAST VISIT · {relativeTime(lastVisit).toUpperCase()}</p>
-            <p className="mt-[6px] text-[13px]" style={{ color: "var(--ws-ink)" }}>
-              {[
-                recap.newOutliers > 0 ? `${recap.newOutliers} new outlier${recap.newOutliers === 1 ? "" : "s"}` : null,
-                recap.newAssets > 0 ? `${recap.newAssets} creative${recap.newAssets === 1 ? "" : "s"} analysed` : null,
-                recap.newRepurposes > 0 ? `${recap.newRepurposes} script${recap.newRepurposes === 1 ? "" : "s"} repurposed` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          </div>
-        )}
-
         <TodayPanel insights={insights} viewAllHref={viewAllHref} />
 
         <div>
@@ -225,7 +224,7 @@ export default async function OverviewPage() {
                   </p>
                   {recentOutliers.length > 0 && (
                     <p className="mt-[2px] text-[12px] font-medium" style={{ color: "var(--ws-accent-text)" }}>
-                      +{recentOutliers.length} this week
+                      +{recentOutliers.length} {sincePhrase}
                     </p>
                   )}
                   <div className="mt-[14px]">

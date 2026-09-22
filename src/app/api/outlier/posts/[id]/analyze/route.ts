@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeOutlierPost } from "@/lib/outlier/analyze-post";
+import { shouldNotify } from "@/lib/notification-prefs";
 
 // Download + ffmpeg + Groq transcription + a Claude text call for one short
 // video — the same order of magnitude as Signal's per-asset video pipeline.
@@ -46,12 +47,14 @@ export async function POST(_request: Request, ctx: RouteContext<"/api/outlier/po
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
-  await admin.from("notifications").insert({
-    user_id: user.id,
-    title: "Post analyzed",
-    body: "Transcript and structure are ready.",
-    href: `/outlier/video/${id}`,
-  });
+  if (await shouldNotify(admin, user.id, "analysis")) {
+    await admin.from("notifications").insert({
+      user_id: user.id,
+      title: "Post analyzed",
+      body: "Transcript and structure are ready.",
+      href: `/outlier/video/${id}`,
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

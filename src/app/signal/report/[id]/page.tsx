@@ -34,6 +34,8 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
         percentile={percentile}
         frames={live.frames}
         durationSeconds={live.durationSeconds}
+        previousVersion={live.previousVersion}
+        nextVersion={live.nextVersion}
       />
     );
   }
@@ -46,6 +48,8 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
       median={median}
       percentile={percentile}
       assetUrl={live.assetUrl}
+      previousVersion={live.previousVersion}
+      nextVersion={live.nextVersion}
     />
   );
 }

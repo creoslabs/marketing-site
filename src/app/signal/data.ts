@@ -38,6 +38,12 @@ export type StaticFinding = {
 // no LLM clustering pass needed, unlike Outlier's free-text hook tags.
 export type FailureTheme = { name: string; tier: Tier; count: number };
 
+// A run of consecutive most-recent uploads (of that criterion's own
+// format) that all failed the same criterion — distinct from a cumulative
+// count, which can't tell "failed 5 times scattered across 20 uploads"
+// apart from "failed your last 5 in a row."
+export type FailureStreak = { name: string; tier: Tier; streak: number };
+
 export type Asset = {
   id: string;
   filename: string;

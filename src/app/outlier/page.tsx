@@ -1,11 +1,49 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
-import { getCreators, getPosts, getJobs, getRecentRepurposes } from "./live-data";
+import { getCreators, getPosts, getJobs, getRecentRepurposes, getFavouritePosts, getCollections } from "./live-data";
 import { relativeTime } from "@/lib/relative-time";
 import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
 import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
 import { OnboardingChecklist } from "./onboarding-checklist";
+import { NextStepSuggestion, type Suggestion } from "./next-step-suggestion";
+import { WhatsNewCard } from "@/components/whats-new-card";
+
+// Picked from real usage, most-relevant-first — never a fabricated
+// "try this" for a feature the data shows they wouldn't need. Only ever
+// returns one at a time so the home page doesn't accumulate nags.
+function computeNextStepSuggestion({
+  hasAnalyzedAny,
+  hasRepurposed,
+  favouritesCount,
+  hasCollections,
+}: {
+  hasAnalyzedAny: boolean;
+  hasRepurposed: boolean;
+  favouritesCount: number;
+  hasCollections: boolean;
+}): Suggestion | null {
+  if (!hasAnalyzedAny) return null; // still onboarding — the checklist already covers this
+  if (!hasRepurposed) {
+    return {
+      id: "try-repurpose",
+      title: "Turn a hook into your own script",
+      description: "You've analyzed a post — Outlier can generate an original script modeled on its structure.",
+      href: "/outlier/feed",
+      cta: "Find a post to repurpose",
+    };
+  }
+  if (favouritesCount >= 3 && !hasCollections) {
+    return {
+      id: "try-collections",
+      title: "Organize your favourites",
+      description: `You have ${favouritesCount} favourites saved — group them into a named collection to find them faster later.`,
+      href: "/outlier/favourites",
+      cta: "Create a collection",
+    };
+  }
+  return null;
+}
 
 export const metadata: Metadata = {
   title: "Outlier — Creos Labs",
@@ -20,12 +58,14 @@ function greeting() {
 }
 
 export default async function OutlierHomePage() {
-  const [user, creators, posts, { jobs }, recentRepurposes] = await Promise.all([
+  const [user, creators, posts, { jobs }, recentRepurposes, favouritePosts, collections] = await Promise.all([
     getUser(),
     getCreators(),
     getPosts(),
     getJobs(),
     getRecentRepurposes(),
+    getFavouritePosts(),
+    getCollections(),
   ]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
@@ -41,6 +81,12 @@ export default async function OutlierHomePage() {
   const hasPosts = posts.length > 0;
   const bestToday = hasPosts ? posts.reduce((best, post) => (post.score > best.score ? post : best), posts[0]) : null;
   const outlierPosts = posts.filter((post) => post.score >= 2);
+  const nextStepSuggestion = computeNextStepSuggestion({
+    hasAnalyzedAny: posts.some((p) => p.analysisStatus === "done"),
+    hasRepurposed: recentRepurposes.length > 0,
+    favouritesCount: favouritePosts.length,
+    hasCollections: collections.length > 0,
+  });
 
   if (creators.length === 0) {
     return (
@@ -55,6 +101,8 @@ export default async function OutlierHomePage() {
   return (
     <div className="ws-page-in px-6 py-[22px]">
       <OnboardingChecklist creators={creators} posts={posts} />
+      <WhatsNewCard />
+      <NextStepSuggestion suggestion={nextStepSuggestion} />
       <div className="flex flex-wrap items-start justify-between gap-[16px]">
         <div>
           <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>

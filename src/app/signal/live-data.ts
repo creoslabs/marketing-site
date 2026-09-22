@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Asset, Criterion, FailureTheme, Format, StaticFinding, VideoFinding } from "./data";
+import type { Asset, Criterion, FailureStreak, FailureTheme, Format, StaticFinding, VideoFinding } from "./data";
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -189,6 +189,8 @@ export const getSignalSummary = cache(
   }
 );
 
+type VersionLink = { id: string; filename: string; score: number };
+
 type AssetDetail = {
   asset: Asset;
   criteria: Criterion[];
@@ -197,6 +199,10 @@ type AssetDetail = {
   assetUrl: string | null;
   frames?: { t: number; url: string }[];
   durationSeconds: number | undefined;
+  // A simple predecessor/successor link, not a full version tree — "what
+  // did I try right before this" is the useful question here.
+  previousVersion: VersionLink | null;
+  nextVersion: VersionLink | null;
 };
 
 // cache() dedupes this across generateMetadata and the page component,
@@ -284,6 +290,15 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
           region: { top: r.region_top, left: r.region_left, width: r.region_width, height: r.region_height },
         })) as StaticFinding[]);
 
+  const [{ data: previousRow }, { data: nextRow }] = await Promise.all([
+    assetRow.revision_of
+      ? supabase.from("signal_assets").select("id, filename, score").eq("id", assetRow.revision_of).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from("signal_assets").select("id, filename, score").eq("revision_of", id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const previousVersion: VersionLink | null = previousRow ? { id: previousRow.id, filename: previousRow.filename, score: previousRow.score ?? 0 } : null;
+  const nextVersion: VersionLink | null = nextRow ? { id: nextRow.id, filename: nextRow.filename, score: nextRow.score ?? 0 } : null;
+
   return {
     asset,
     criteria,
@@ -292,6 +307,8 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     assetUrl: signedUrlData?.signedUrl ?? null,
     frames,
     durationSeconds: assetRow.duration_seconds ?? undefined,
+    previousVersion,
+    nextVersion,
   };
 });
 
@@ -320,4 +337,101 @@ export const getFailureThemes = cache(async (): Promise<FailureTheme[]> => {
     .filter((t) => t.count >= MIN_RECURRING_FAILURES)
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
+});
+
+// The inverse of failure themes: what your above-median-scoring assets
+// consistently nail. Restricted to above-median assets (not the whole
+// library) so this reads as "what your best work does right," not just
+// "what passes most often across everything" — most criteria pass most of
+// the time regardless of asset quality, so unfiltered pass counts wouldn't
+// say much.
+export const getRecurringPasses = cache(async (): Promise<FailureTheme[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+
+  const { data: assets } = await supabase
+    .from("signal_assets")
+    .select("id, score")
+    .eq("status", "done")
+    .returns<{ id: string; score: number | null }[]>();
+  const scored = (assets ?? []).filter((a): a is { id: string; score: number } => a.score !== null);
+  if (scored.length === 0) return [];
+
+  const med = medianOf(scored.map((a) => a.score));
+  const topAssetIds = scored.filter((a) => a.score >= med).map((a) => a.id);
+  if (topAssetIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("signal_criteria")
+    .select("name, tier")
+    .eq("verdict", "pass")
+    .in("asset_id", topAssetIds)
+    .returns<{ name: string; tier: 1 | 2 }[]>();
+
+  const counts = new Map<string, FailureTheme>();
+  for (const row of data ?? []) {
+    const existing = counts.get(row.name);
+    if (existing) existing.count += 1;
+    else counts.set(row.name, { name: row.name, tier: row.tier, count: 1 });
+  }
+
+  return [...counts.values()]
+    .filter((t) => t.count >= MIN_RECURRING_FAILURES)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+});
+
+const MIN_STREAK = 3;
+
+// Walks each criterion backward from the most recent asset it applies to
+// (skipping assets of a different format, since a criterion is
+// format-specific) and stops counting the moment it hits anything other
+// than a fail — a real "in a row," not just a high total.
+export const getFailureStreaks = cache(async (): Promise<FailureStreak[]> => {
+  if (!isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+
+  const { data: assets } = await supabase
+    .from("signal_assets")
+    .select("id, created_at")
+    .eq("status", "done")
+    .order("created_at", { ascending: false })
+    .returns<{ id: string; created_at: string }[]>();
+  if (!assets || assets.length === 0) return [];
+  const assetOrder = new Map(assets.map((a, i) => [a.id, i]));
+
+  const { data: criteriaRows } = await supabase
+    .from("signal_criteria")
+    .select("name, tier, verdict, asset_id")
+    .in(
+      "asset_id",
+      assets.map((a) => a.id)
+    )
+    .returns<{ name: string; tier: 1 | 2; verdict: string; asset_id: string }[]>();
+
+  const byName = new Map<string, { tier: 1 | 2; verdictByIndex: Map<number, string> }>();
+  for (const row of criteriaRows ?? []) {
+    const idx = assetOrder.get(row.asset_id);
+    if (idx === undefined) continue;
+    let entry = byName.get(row.name);
+    if (!entry) {
+      entry = { tier: row.tier, verdictByIndex: new Map() };
+      byName.set(row.name, entry);
+    }
+    entry.verdictByIndex.set(idx, row.verdict);
+  }
+
+  const streaks: FailureStreak[] = [];
+  for (const [name, { tier, verdictByIndex }] of byName) {
+    let streak = 0;
+    for (let i = 0; i < assets.length; i++) {
+      const verdict = verdictByIndex.get(i);
+      if (verdict === undefined) continue; // a different-format asset — doesn't break the streak, just isn't part of it
+      if (verdict === "fail") streak += 1;
+      else break;
+    }
+    if (streak >= MIN_STREAK) streaks.push({ name, tier, streak });
+  }
+
+  return streaks.sort((a, b) => b.streak - a.streak).slice(0, 3);
 });

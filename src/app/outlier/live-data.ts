@@ -95,7 +95,7 @@ function computeMedianTrend(viewsMostRecentFirst: number[]): number | null {
   return Math.round(((recentMedian - olderMedian) / olderMedian) * 100);
 }
 
-type CreatorRow = { id: string; display_name: string | null };
+type CreatorRow = { id: string; display_name: string | null; notes: string | null };
 type HandleRow = {
   id: string;
   creator_id: string;
@@ -143,6 +143,17 @@ function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<
   const initials = name.replace(/^@/, "").slice(0, 2).toUpperCase();
   const avatarUrl = handles.find((h) => h.avatar_url)?.avatar_url ?? null;
 
+  const postsByPlatform = new Map<Platform, PostRow[]>();
+  for (const post of allPosts) {
+    postsByPlatform.set(post.platform, [...(postsByPlatform.get(post.platform) ?? []), post]);
+  }
+  const platformStats = [...postsByPlatform.entries()].map(([platform, platPosts]) => {
+    const platViews = platPosts.map((p) => p.views);
+    const platMedian = medianOf(platViews);
+    const platScores = platMedian > 0 ? platViews.map((v) => v / platMedian) : [];
+    return { platform, median: platMedian, bestScore: platScores.length > 0 ? Math.max(...platScores) : 0, postCount: platPosts.length };
+  });
+
   return {
     id: row.id,
     displayName: name,
@@ -164,6 +175,8 @@ function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<
     cadence: computeCadence(allPosts.map((p) => p.posted_at)),
     medianTrend: computeMedianTrend(sortedDesc.map((p) => p.views)),
     spark: sortedDesc.slice(0, 10).map((p) => p.views).reverse(),
+    platformStats,
+    notes: row.notes,
   };
 }
 
@@ -213,7 +226,7 @@ const loadAll = cache(async () => {
   // (creators -> handles -> posts) into 2 steps, cutting a full
   // Supabase round trip off of every Outlier page load.
   const [{ data: creatorRows }, { data: handleRows }] = await Promise.all([
-    supabase.from("outlier_creators").select("id, display_name").order("created_at", { ascending: false }).returns<CreatorRow[]>(),
+    supabase.from("outlier_creators").select("id, display_name, notes").order("created_at", { ascending: false }).returns<CreatorRow[]>(),
     supabase
       .from("outlier_handles")
       .select("id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url")

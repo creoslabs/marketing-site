@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { Creator } from "../data";
+import type { Creator, Platform } from "../data";
+
+const ALL_PLATFORMS: Platform[] = ["TT", "IG", "YT"];
+const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 import { Avatar, EmptyState, Sparkline, ThinHistoryPill } from "../components";
 import { AddCreatorButton, RemoveCreatorButton } from "../creator-actions";
 import { formatCompact } from "../format";
@@ -71,19 +74,28 @@ function SortDropdown({ current, onChange }: { current: SortValue; onChange: (va
 export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }) {
   const [sort, setSort] = useState<SortValue>("recent");
   const [search, setSearch] = useState("");
+  const [platformFilter, setPlatformFilter] = useState<Platform | null>(null);
+  const [thinOnly, setThinOnly] = useState(false);
 
   const handleCount = allCreators.reduce((sum, creator) => sum + creator.handles.length, 0);
   const thinCount = allCreators.filter((creator) => creator.handles.some((h) => h.thin)).length;
+  const platformsPresent = useMemo(
+    () => ALL_PLATFORMS.filter((p) => allCreators.some((c) => c.handles.some((h) => h.platform === p))),
+    [allCreators]
+  );
 
   const creators = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const filtered = query
+    let filtered = query
       ? allCreators.filter(
           (c) =>
             c.displayName.toLowerCase().includes(query) ||
             c.handles.some((h) => h.handle.toLowerCase().includes(query))
         )
       : allCreators;
+
+    if (platformFilter) filtered = filtered.filter((c) => c.handles.some((h) => h.platform === platformFilter));
+    if (thinOnly) filtered = filtered.filter((c) => c.handles.some((h) => h.thin));
 
     if (sort === "recent") return filtered;
 
@@ -101,7 +113,7 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
       if (b.medianTrend === null) return -1;
       return b.medianTrend - a.medianTrend;
     });
-  }, [allCreators, sort, search]);
+  }, [allCreators, sort, search, platformFilter, thinOnly]);
 
   const isRanked = sort !== "recent";
 
@@ -137,6 +149,41 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
         </div>
       </div>
 
+      {allCreators.length > 0 && (platformsPresent.length > 1 || thinCount > 0) && (
+        <div className="mt-[12px] flex flex-wrap items-center gap-[8px]">
+          {platformsPresent.length > 1 &&
+            platformsPresent.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPlatformFilter((prev) => (prev === p ? null : p))}
+                className="rounded-[20px] text-[12px] font-medium"
+                style={
+                  platformFilter === p
+                    ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
+                    : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
+                }
+              >
+                {PLATFORM_LABEL[p]}
+              </button>
+            ))}
+          {thinCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setThinOnly((v) => !v)}
+              className="rounded-[20px] text-[12px] font-medium"
+              style={
+                thinOnly
+                  ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
+                  : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
+              }
+            >
+              Thin history ({thinCount})
+            </button>
+          )}
+        </div>
+      )}
+
       {allCreators.length === 0 ? (
         <div className="ws-card mt-[18px]">
           <EmptyState
@@ -147,7 +194,7 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
         </div>
       ) : creators.length === 0 ? (
         <div className="ws-card mt-[18px]">
-          <EmptyState size="large" title="No creators match that search" />
+          <EmptyState size="large" title="No creators match these filters" />
         </div>
       ) : (
         <div className="mt-[18px] overflow-x-auto">

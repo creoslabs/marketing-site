@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Asset } from "../data";
-import { getLibrary, medianOf, percentileWithin, computeScoreTrend, getFailureThemes } from "../live-data";
+import { getLibrary, medianOf, percentileWithin, computeScoreTrend, getFailureThemes, getRecurringPasses, getFailureStreaks } from "../live-data";
+import type { FailureTheme, FailureStreak } from "../data";
 import { ScoreBadge } from "../components";
 import { EmptyState } from "@/components/ws-empty-state";
 
@@ -103,8 +104,67 @@ function platformMediansFor(assets: Asset[]) {
   }));
 }
 
+function ThemeList({
+  title,
+  description,
+  themes,
+  verb,
+  tintColor,
+  textColor,
+  streaks,
+}: {
+  title: string;
+  description: string;
+  themes: FailureTheme[];
+  verb: string;
+  tintColor: string;
+  textColor: string;
+  streaks?: FailureStreak[];
+}) {
+  return (
+    <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
+      <p className="ws-eyebrow">{title}</p>
+      <p className="mt-[6px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+        {description}
+      </p>
+      {streaks && streaks.length > 0 && (
+        <div className="mt-[10px] flex flex-col gap-[4px]">
+          {streaks.map((s) => (
+            <p key={s.name} className="text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
+              ⚠ {s.name} has failed your last {s.streak} uploads in a row
+            </p>
+          ))}
+        </div>
+      )}
+      <div className="mt-[14px] flex flex-col gap-[8px]">
+        {themes.map((theme) => (
+          <div key={theme.name} className="flex items-center gap-[10px]">
+            <span className="min-w-0 flex-1 truncate text-[12.5px]" style={{ color: "var(--ws-ink)" }}>
+              {theme.name}
+            </span>
+            <span
+              className="rounded-[4px] text-[9.5px] font-semibold uppercase"
+              style={{ padding: "2px 5px", background: tintColor, color: textColor }}
+            >
+              Tier {theme.tier}
+            </span>
+            <span className="ws-tabular shrink-0 text-[12px] font-medium" style={{ color: textColor }}>
+              {verb} {theme.count}×
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function BenchmarksPage() {
-  const [live, failureThemes] = await Promise.all([getLibrary(), getFailureThemes()]);
+  const [live, failureThemes, recurringPasses, failureStreaks] = await Promise.all([
+    getLibrary(),
+    getFailureThemes(),
+    getRecurringPasses(),
+    getFailureStreaks(),
+  ]);
   const assets = live.assets;
   const staticAssets = assets.filter((a) => a.format === "static");
   const videoAssets = assets.filter((a) => a.format === "video");
@@ -157,30 +217,29 @@ export default async function BenchmarksPage() {
         </p>
       </div>
 
-      {failureThemes.length > 0 && (
-        <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
-          <p className="ws-eyebrow">RECURRING FAILURES ACROSS YOUR LIBRARY</p>
-          <p className="mt-[6px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            Criteria that have failed on more than one asset — an exact count, not a fabricated pattern.
-          </p>
-          <div className="mt-[14px] flex flex-col gap-[8px]">
-            {failureThemes.map((theme) => (
-              <div key={theme.name} className="flex items-center gap-[10px]">
-                <span className="min-w-0 flex-1 truncate text-[12.5px]" style={{ color: "var(--ws-ink)" }}>
-                  {theme.name}
-                </span>
-                <span
-                  className="rounded-[4px] text-[9.5px] font-semibold uppercase"
-                  style={{ padding: "2px 5px", background: "var(--ws-warn-tint)", color: "var(--ws-warn-text)" }}
-                >
-                  Tier {theme.tier}
-                </span>
-                <span className="ws-tabular shrink-0 text-[12px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
-                  failed {theme.count}×
-                </span>
-              </div>
-            ))}
-          </div>
+      {(failureThemes.length > 0 || recurringPasses.length > 0) && (
+        <div className="mt-[14px] grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+          {failureThemes.length > 0 && (
+            <ThemeList
+              title="RECURRING FAILURES ACROSS YOUR LIBRARY"
+              description="Criteria that have failed on more than one asset — an exact count, not a fabricated pattern."
+              themes={failureThemes}
+              verb="failed"
+              tintColor="var(--ws-warn-tint)"
+              textColor="var(--ws-warn-text)"
+              streaks={failureStreaks}
+            />
+          )}
+          {recurringPasses.length > 0 && (
+            <ThemeList
+              title="WHAT YOUR BEST WORK NAILS"
+              description="Criteria that consistently pass on your above-median-scoring assets."
+              themes={recurringPasses}
+              verb="passed"
+              tintColor="var(--ws-accent-tint)"
+              textColor="var(--ws-accent-text)"
+            />
+          )}
         </div>
       )}
 

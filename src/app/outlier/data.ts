@@ -24,6 +24,11 @@ export type Creator = {
   cadence: string;
   medianTrend: number | null; // null = thin history, no reliable trend
   spark: number[];
+  // Per-platform breakdown, each scored against that platform's own
+  // median — not the cross-platform blended one above. Only meaningful to
+  // show when a creator has more than one platform.
+  platformStats: { platform: Platform; median: number; bestScore: number; postCount: number }[];
+  notes: string | null;
 };
 
 export type Post = {

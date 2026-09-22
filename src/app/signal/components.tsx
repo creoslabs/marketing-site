@@ -89,3 +89,19 @@ export function VerdictLabel({ verdict }: { verdict: "pass" | "partial" | "fail"
     </span>
   );
 }
+
+// Spells out the exact arithmetic behind the headline score (a pass/partial/
+// fail count is shown right next to the number already, but not how those
+// counts actually become "69") — the same formula computeScore() in
+// lib/signal/pipeline.ts uses, just rendered instead of hidden.
+export function ScoreFormula({ pass, partial, fail }: { pass: number; partial: number; fail: number }) {
+  const total = pass + partial + fail;
+  if (total === 0) return null;
+  const weighted = pass + partial * 0.5;
+  return (
+    <p className="ws-tabular text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+      {pass} pass + {partial} partial × 0.5 = {weighted % 1 === 0 ? weighted : weighted.toFixed(1)} ÷ {total} criteria × 100 ={" "}
+      {Math.round((weighted / total) * 100)}
+    </p>
+  );
+}

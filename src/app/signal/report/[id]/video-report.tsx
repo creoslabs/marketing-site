@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Asset, Criterion, VideoFinding } from "../../data";
-import { VerdictLabel } from "../../components";
+import { VerdictLabel, ScoreFormula } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import { CompareButton } from "./compare-button";
 import { ExportPdfButton, type PdfReportData } from "./report-pdf";
+import { ReanalyzeButton } from "./reanalyze-button";
 
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60);
@@ -37,6 +38,8 @@ export function VideoReport({
   percentile,
   frames,
   durationSeconds,
+  previousVersion,
+  nextVersion,
 }: {
   asset: Asset;
   criteria: Criterion[];
@@ -46,6 +49,8 @@ export function VideoReport({
   percentile: number | null;
   frames?: { t: number; url: string }[];
   durationSeconds?: number;
+  previousVersion?: { id: string; filename: string; score: number } | null;
+  nextVersion?: { id: string; filename: string; score: number } | null;
 }) {
   const duration = Math.max(1, Math.round(durationSeconds ?? 18));
   const [t, setT] = useState(0);
@@ -102,7 +107,7 @@ export function VideoReport({
 
   return (
     <div className="ws-page-in">
-      <ReportSubHeader asset={asset} pdfData={pdfData} />
+      <ReportSubHeader asset={asset} pdfData={pdfData} previousVersion={previousVersion} nextVersion={nextVersion} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]" style={{ minHeight: 0 }}>
         {/* Left: player + score */}
@@ -217,7 +222,10 @@ export function VideoReport({
                 <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
                   {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
                 </p>
-                <p className="mt-[2px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                <div className="mt-[3px]">
+                  <ScoreFormula pass={counts.pass} partial={counts.partial} fail={counts.fail} />
+                </div>
+                <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                   {percentile === null
                     ? "First video analyzed in this set — not comparable to static scores."
                     : `${percentile}th percentile among video ads in this set — not comparable to static scores.`}
@@ -442,7 +450,17 @@ export function CriteriaTable({
   );
 }
 
-export function ReportSubHeader({ asset, pdfData }: { asset: Asset; pdfData: PdfReportData }) {
+export function ReportSubHeader({
+  asset,
+  pdfData,
+  previousVersion,
+  nextVersion,
+}: {
+  asset: Asset;
+  pdfData: PdfReportData;
+  previousVersion?: { id: string; filename: string; score: number } | null;
+  nextVersion?: { id: string; filename: string; score: number } | null;
+}) {
   return (
     <div
       className="flex flex-wrap items-center gap-[14px] px-6"
@@ -462,7 +480,18 @@ export function ReportSubHeader({ asset, pdfData }: { asset: Asset; pdfData: Pdf
       <span className="text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
         {asset.platform} · {asset.postedAt}
       </span>
+      {previousVersion && (
+        <Link href={`/signal/report/${previousVersion.id}`} className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-45)" }}>
+          ← Revision of {previousVersion.filename} ({previousVersion.score})
+        </Link>
+      )}
+      {nextVersion && (
+        <Link href={`/signal/report/${nextVersion.id}`} className="text-[11.5px] font-medium" style={{ color: "var(--ws-accent-text)" }}>
+          Newer revision: {nextVersion.filename} ({nextVersion.score}) →
+        </Link>
+      )}
       <div className="flex-1" />
+      <ReanalyzeButton assetId={asset.id} />
       <ExportPdfButton data={pdfData} />
       <CompareButton assetId={asset.id} format={asset.format} />
     </div>

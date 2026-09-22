@@ -5,6 +5,8 @@ import { getCreatorDetail } from "../../live-data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../../components";
 import { AddPlatformButton, BatchRepurposeButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
+import { ExportCsvButton } from "./export-csv-button";
+import { NotesField } from "./notes-field";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
   const { id } = await props.params;
@@ -63,10 +65,13 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
           </div>
         </div>
         <div className="flex-1" />
+        <ExportCsvButton posts={posts} filename={`${creator.displayName.replace(/\s+/g, "-").toLowerCase()}-posts.csv`} />
         <BatchRepurposeButton posts={posts} />
         <PullWithLimit handles={creator.handles} />
         <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} />
       </div>
+
+      <NotesField creatorId={creator.id} initialNotes={creator.notes} />
 
       <div className="ws-stack-row mt-[18px]">
         <div className="flex-1" style={{ padding: "15px 16px" }}>
@@ -94,6 +99,33 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
           </p>
         </div>
       </div>
+
+      {creator.platformStats.length > 1 && (
+        <div className="ws-card mt-[14px]" style={{ padding: "16px 18px" }}>
+          <p className="ws-eyebrow">PLATFORM COMPARISON</p>
+          <p className="mt-[4px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+            Each scored against that platform&rsquo;s own median, not blended together.
+          </p>
+          <div className="mt-[12px] grid gap-[10px]" style={{ gridTemplateColumns: `repeat(${creator.platformStats.length}, 1fr)` }}>
+            {creator.platformStats.map((stat) => (
+              <div key={stat.platform} className="rounded-[8px]" style={{ padding: "12px 14px", background: "var(--ws-surface-header)" }}>
+                <div className="flex items-center gap-[6px]">
+                  <PlatformBadge platform={stat.platform} />
+                  <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                    {stat.postCount} post{stat.postCount === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <p className="ws-tabular mt-[8px] text-[17px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-accent-text)" }}>
+                  {stat.bestScore.toFixed(1)}×
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                  best · median {formatCompact(stat.median)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {totalPosts === 0 ? (
         <div className="ws-card mt-[14px]">

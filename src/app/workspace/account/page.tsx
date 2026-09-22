@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
+import { createClient } from "@/lib/supabase/server";
 import { WorkspacePageHeader } from "../page-header";
 import { ConnectButton, DeleteAccountButton } from "./account-actions";
 import { EditableNameRow, EditableEmailRow, EditablePasswordRow, EditableApiKeyRow } from "./editable-fields";
+import { NotificationPreferences } from "./notification-preferences";
 
 export const metadata: Metadata = {
   title: "Account — Creos Labs",
@@ -34,6 +36,15 @@ function Row({
 
 export default async function AccountPage() {
   const user = await getUser();
+  let disabledNotifications: string[] = [];
+  if (user) {
+    const supabase = await createClient();
+    const { data } = await supabase.from("notification_preferences").select("categories").eq("user_id", user.id).maybeSingle();
+    const categories = (data?.categories as Record<string, boolean>) ?? {};
+    disabledNotifications = Object.entries(categories)
+      .filter(([, enabled]) => enabled === false)
+      .map(([key]) => key);
+  }
   const email = user?.email ?? "";
   const name = getDisplayName(user);
   const hasAnthropicKey = Boolean(
@@ -152,6 +163,13 @@ export default async function AccountPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="ws-card" style={{ padding: "20px 0" }}>
+            <p className="ws-eyebrow" style={{ padding: "0 22px", marginBottom: 15 }}>
+              NOTIFICATIONS
+            </p>
+            <NotificationPreferences initialDisabled={disabledNotifications} />
           </div>
 
           <div

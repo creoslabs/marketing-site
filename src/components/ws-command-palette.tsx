@@ -22,13 +22,23 @@ const DESTINATIONS: Destination[] = [
 
 type Item = { key: string; label: string; sublabel: string; run: () => void };
 
-const PaletteContext = createContext<(() => void) | null>(null);
+type PaletteContextValue = {
+  open: () => void;
+  setContextActions: (actions: Item[]) => void;
+};
+
+const PaletteContext = createContext<PaletteContextValue | null>(null);
 
 export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [searchItems, setSearchItems] = useState<Item[]>([]);
+  // Whatever page is currently mounted can register its own actions here
+  // (see usePaletteActions) — e.g. "Favourite this post" while looking at
+  // one. Cleared whenever that page unmounts, so stale actions never
+  // linger once you navigate away.
+  const [contextActions, setContextActions] = useState<Item[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -95,8 +105,8 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         },
       },
     ];
-    return [...navItems, ...actionItems];
-  }, [router]);
+    return [...contextActions, ...navItems, ...actionItems];
+  }, [router, contextActions]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -166,7 +176,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   }
 
   return (
-    <PaletteContext.Provider value={openPalette}>
+    <PaletteContext.Provider value={{ open: openPalette, setContextActions }}>
       {children}
       {open && (
         <div
@@ -234,5 +244,17 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
 export function useCommandPalette() {
   const ctx = useContext(PaletteContext);
   if (!ctx) throw new Error("useCommandPalette must be used within a CommandPaletteProvider");
-  return ctx;
+  return ctx.open;
+}
+
+// Lets the current page contribute its own actions to the palette while
+// mounted — e.g. a video page registering "Favourite this post." Pass a
+// memoized array (useMemo) since a new array identity every render would
+// just mean re-registering on every render; harmless, but wasteful.
+export function usePaletteActions(actions: { key: string; label: string; sublabel: string; run: () => void }[]) {
+  const ctx = useContext(PaletteContext);
+  useEffect(() => {
+    ctx?.setContextActions(actions);
+    return () => ctx?.setContextActions([]);
+  }, [ctx, actions]);
 }

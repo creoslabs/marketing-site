@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateRepurpose } from "@/lib/outlier/repurpose";
+import { shouldNotify } from "@/lib/notification-prefs";
 
 // A single text-generation call over an already-analyzed post — no video
 // download or transcription involved, unlike the analyze route.
@@ -82,12 +83,14 @@ export async function POST(request: Request, ctx: RouteContext<"/api/outlier/pos
       .single();
     if (error) throw new Error(error.message);
 
-    await admin.from("notifications").insert({
-      user_id: user.id,
-      title: "Repurposed script ready",
-      body: script.title,
-      href: `/outlier/repurpose/${inserted.id}`,
-    });
+    if (await shouldNotify(admin, user.id, "repurpose")) {
+      await admin.from("notifications").insert({
+        user_id: user.id,
+        title: "Repurposed script ready",
+        body: script.title,
+        href: `/outlier/repurpose/${inserted.id}`,
+      });
+    }
 
     return NextResponse.json({ id: inserted.id });
   } catch (err) {
