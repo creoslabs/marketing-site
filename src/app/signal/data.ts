@@ -5,6 +5,29 @@
 export type Format = "video" | "static";
 export type Verdict = "pass" | "partial" | "fail";
 export type Tier = 1 | 2;
+// Facebook and Instagram share one placement/safe-zone standard for Reels
+// and Stories, so they're one "Meta" bucket rather than two — TikTok's UI
+// chrome (caption/CTA cluster, icon rail) sits differently, which is the
+// one criterion (safe-zone overlap) that actually varies by platform today.
+export type Platform = "TikTok" | "Meta";
+
+// Safe-zone overlap is the one criterion whose verdict depends on which
+// platform an asset targets — kept here (not in lib/signal/criteria.ts,
+// which pulls in node-only ffmpeg tooling) so client components can name it
+// without bundling server-only code.
+export const SAFE_ZONE_CRITERION_NAME: Record<Format, string> = {
+  video: "Safe-zone overlap across full runtime",
+  static: "Safe-zone overlap",
+};
+
+// Approximate, publicly-documented safe-zone margins for each platform's own
+// UI chrome — Meta's Reels/Stories overlay (caption + CTA, lower-right icon
+// rail) vs TikTok's (heavier bottom caption/music/CTA cluster, right-side
+// icon rail).
+export const SAFE_ZONE_THRESHOLDS: Record<Platform, { topPct: number; bottomPct: number }> = {
+  Meta: { topPct: 15, bottomPct: 20 },
+  TikTok: { topPct: 8, bottomPct: 24 },
+};
 
 export type Criterion = {
   name: string;
@@ -48,7 +71,10 @@ export type Asset = {
   id: string;
   filename: string;
   format: Format;
-  platform: "TikTok" | "Instagram";
+  // platforms[0] is the "primary" platform — its score/criteria are what
+  // score/failedChecks below represent. Additional platforms' scores live
+  // in PlatformScore rows (see AssetDetail in live-data.ts).
+  platforms: Platform[];
   score: number;
   failedChecks: number;
   postedAt: string;
@@ -59,4 +85,16 @@ export type Asset = {
   issuePill?: string;
   criteria: Criterion[];
   assetUrl?: string | null;
+};
+
+// A placement beyond the primary one this asset was scored against — same
+// criteria set, just with the safe-zone criterion re-judged against that
+// platform's own UI-overlay geometry (see safeZoneCriterion in
+// lib/signal/criteria.ts).
+export type PlatformScore = {
+  platform: Platform;
+  score: number;
+  failedChecks: number;
+  safeZoneEvidence: string;
+  safeZoneVerdict: Verdict;
 };

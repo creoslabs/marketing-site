@@ -28,6 +28,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
       <VideoReport
         asset={live.asset}
         criteria={live.criteria}
+        platformScores={live.platformScores}
         findings={live.findings as import("../../data").VideoFinding[]}
         topFix={live.topFix}
         median={median}
@@ -43,6 +44,7 @@ export default async function ReportPage(props: PageProps<"/signal/report/[id]">
     <StaticReport
       asset={live.asset}
       criteria={live.criteria}
+      platformScores={live.platformScores}
       findings={live.findings as import("../../data").StaticFinding[]}
       topFix={live.topFix}
       median={median}

@@ -185,7 +185,7 @@ async function buildDocument(data: PdfReportData) {
               <Text style={styles.formatBadge}>
                 {asset.format === "video" ? `VIDEO · ${asset.duration ?? ""} · 9:16` : "STATIC · 4:5"}
               </Text>
-              <Text>{asset.platform}</Text>
+              <Text>{asset.platforms.join(" + ")}</Text>
               <Text>·</Text>
               <Text>{asset.postedAt}</Text>
             </View>

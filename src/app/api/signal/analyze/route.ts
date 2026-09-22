@@ -6,8 +6,10 @@ import { randomUUID } from "node:crypto";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runVideoPipeline, runStaticPipeline } from "@/lib/signal/pipeline";
-import type { StaticFinding, VideoFinding } from "@/app/signal/data";
+import { SAFE_ZONE_CRITERION_NAME, type Platform, type StaticFinding, type VideoFinding } from "@/app/signal/data";
 import { shouldNotify } from "@/lib/notification-prefs";
+
+const VALID_PLATFORMS: Platform[] = ["TikTok", "Meta"];
 
 // Video analysis (ffmpeg + a Claude vision call per frame batch) can run
 // well past Vercel's default 10s function timeout — this needs at least a
@@ -24,8 +26,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const storagePath = typeof body?.path === "string" ? body.path : null;
   const filename = typeof body?.filename === "string" ? body.filename : null;
-  const format = body?.format === "video" || body?.format === "static" ? body.format : null;
-  const platform = typeof body?.platform === "string" ? body.platform : "Instagram";
+  const format: "video" | "static" | null = body?.format === "video" || body?.format === "static" ? body.format : null;
+  const platforms: Platform[] = Array.isArray(body?.platforms)
+    ? body.platforms.filter((p: unknown): p is Platform => VALID_PLATFORMS.includes(p as Platform))
+    : [];
+  if (platforms.length === 0) platforms.push("Meta");
   const revisionOf = typeof body?.revisionOf === "string" ? body.revisionOf : null;
 
   if (!storagePath || !filename || !format) {
@@ -51,7 +56,16 @@ export async function POST(request: Request) {
 
   const { data: assetRow, error: insertError } = await admin
     .from("signal_assets")
-    .insert({ user_id: user.id, filename, format, platform, storage_path: storagePath, status: "processing", revision_of: revisionOf })
+    .insert({
+      user_id: user.id,
+      filename,
+      format,
+      platform: platforms[0],
+      platforms,
+      storage_path: storagePath,
+      status: "processing",
+      revision_of: revisionOf,
+    })
     .select("id")
     .single();
 
@@ -74,7 +88,9 @@ export async function POST(request: Request) {
         ? user.user_metadata.signal_anthropic_api_key
         : null;
     const result =
-      format === "video" ? await runVideoPipeline(tempPath, userApiKey) : await runStaticPipeline(tempPath, userApiKey);
+      format === "video"
+        ? await runVideoPipeline(tempPath, platforms, userApiKey)
+        : await runStaticPipeline(tempPath, platforms, userApiKey);
 
     await admin
       .from("signal_assets")
@@ -100,6 +116,21 @@ export async function POST(request: Request) {
         verdict: c.verdict,
         sort_order: i,
       }))
+    );
+
+    const safeZoneName = SAFE_ZONE_CRITERION_NAME[format];
+    await admin.from("signal_platform_scores").insert(
+      result.platformResults.map((p) => {
+        const safeZone = p.criteria.find((c) => c.name === safeZoneName);
+        return {
+          asset_id: assetId,
+          platform: p.platform,
+          score: p.score,
+          failed_checks: p.failedChecks,
+          safe_zone_evidence: safeZone?.evidence ?? "",
+          safe_zone_verdict: safeZone?.verdict ?? "partial",
+        };
+      })
     );
 
     if (format === "video") {

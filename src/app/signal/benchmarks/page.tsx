@@ -6,7 +6,7 @@ import type { FailureTheme, FailureStreak } from "../data";
 import { ScoreBadge } from "../components";
 import { EmptyState } from "@/components/ws-empty-state";
 
-const PLATFORM_SHORT: Record<Asset["platform"], string> = { TikTok: "TT", Instagram: "IG" };
+const PLATFORM_SHORT: Record<Asset["platforms"][number], string> = { TikTok: "TT", Meta: "META" };
 
 export const metadata: Metadata = {
   title: "Benchmarks — Signal",
@@ -23,7 +23,7 @@ function FormatColumn({
   title: string;
   assets: Asset[];
   median: number;
-  platformMedians: { platform: Asset["platform"]; median: number }[];
+  platformMedians: { platform: Asset["platforms"][number]; median: number }[];
   trend: number | null;
 }) {
   const sorted = [...assets].sort((a, b) => b.score - a.score);
@@ -69,7 +69,7 @@ function FormatColumn({
                 className="shrink-0 rounded-[4px] text-[9.5px] font-semibold uppercase"
                 style={{ padding: "2px 5px", background: "var(--ws-surface-header)", color: "var(--ws-ink-45)" }}
               >
-                {PLATFORM_SHORT[asset.platform]}
+                {PLATFORM_SHORT[asset.platforms[0]]}
               </span>
               <span className="w-[110px] shrink-0 truncate text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
                 {asset.filename}
@@ -95,12 +95,14 @@ function FormatColumn({
 }
 
 // assets arrives most-recent-first (getLibrary orders by created_at desc),
-// which is exactly the order computeScoreTrend needs.
+// which is exactly the order computeScoreTrend needs. Grouped by each
+// asset's primary platform (platforms[0]) — an asset targeting more than
+// one platform is only counted once here, under its primary.
 function platformMediansFor(assets: Asset[]) {
-  const platforms = [...new Set(assets.map((a) => a.platform))];
+  const platforms = [...new Set(assets.map((a) => a.platforms[0]))];
   return platforms.map((platform) => ({
     platform,
-    median: medianOf(assets.filter((a) => a.platform === platform).map((a) => a.score)),
+    median: medianOf(assets.filter((a) => a.platforms[0] === platform).map((a) => a.score)),
   }));
 }
 

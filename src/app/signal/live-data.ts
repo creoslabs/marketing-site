@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import type { Asset, Criterion, FailureStreak, FailureTheme, Format, StaticFinding, VideoFinding } from "./data";
+import type { Asset, Criterion, FailureStreak, FailureTheme, Format, Platform, PlatformScore, StaticFinding, VideoFinding } from "./data";
 
 function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -53,7 +53,7 @@ type LibraryRow = {
   id: string;
   filename: string;
   format: Format;
-  platform: string | null;
+  platforms: Platform[] | null;
   score: number | null;
   failed_checks: number | null;
   duration_seconds: number | null;
@@ -73,7 +73,7 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("signal_assets")
-    .select("id, filename, format, platform, score, failed_checks, duration_seconds, created_at, status, storage_path")
+    .select("id, filename, format, platforms, score, failed_checks, duration_seconds, created_at, status, storage_path")
     .order("created_at", { ascending: false })
     .returns<LibraryRow[]>();
 
@@ -133,7 +133,7 @@ export const getLibrary = cache(async (): Promise<{ assets: Asset[]; isLive: boo
     id: row.id,
     filename: row.filename,
     format: row.format,
-    platform: (row.platform as Asset["platform"]) ?? "Instagram",
+    platforms: row.platforms && row.platforms.length > 0 ? row.platforms : ["Meta"],
     score: row.score ?? 0,
     failedChecks: row.failed_checks ?? 0,
     postedAt: formatDate(row.created_at),
@@ -194,6 +194,9 @@ type VersionLink = { id: string; filename: string; score: number };
 type AssetDetail = {
   asset: Asset;
   criteria: Criterion[];
+  // Only present for platforms beyond the primary one (asset.platforms[0]) —
+  // the primary's score/criteria are already on `asset`/`criteria` above.
+  platformScores: PlatformScore[];
   findings: VideoFinding[] | StaticFinding[];
   topFix: { title: string; clears: number; body: string };
   assetUrl: string | null;
@@ -221,16 +224,18 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
   // of waterfalling sequential round-trips. Videos no longer have a source
   // file to sign (deleted after analysis) — they get their persisted
   // keyframes instead; statics still sign their one original file.
-  const [{ data: criteriaRows }, { data: findingRows }, { data: signedUrlData }, { data: frameRows }] = await Promise.all([
-    supabase.from("signal_criteria").select("*").eq("asset_id", id).order("sort_order"),
-    supabase.from("signal_findings").select("*").eq("asset_id", id).order("sort_order"),
-    isVideo
-      ? Promise.resolve({ data: null })
-      : supabase.storage.from("signal-assets").createSignedUrl(assetRow.storage_path, 60 * 60),
-    isVideo
-      ? supabase.from("signal_frames").select("t, storage_path").eq("asset_id", id).order("t")
-      : Promise.resolve({ data: [] as { t: number; storage_path: string }[] }),
-  ]);
+  const [{ data: criteriaRows }, { data: findingRows }, { data: signedUrlData }, { data: frameRows }, { data: platformScoreRows }] =
+    await Promise.all([
+      supabase.from("signal_criteria").select("*").eq("asset_id", id).order("sort_order"),
+      supabase.from("signal_findings").select("*").eq("asset_id", id).order("sort_order"),
+      isVideo
+        ? Promise.resolve({ data: null })
+        : supabase.storage.from("signal-assets").createSignedUrl(assetRow.storage_path, 60 * 60),
+      isVideo
+        ? supabase.from("signal_frames").select("t, storage_path").eq("asset_id", id).order("t")
+        : Promise.resolve({ data: [] as { t: number; storage_path: string }[] }),
+      supabase.from("signal_platform_scores").select("*").eq("asset_id", id),
+    ]);
 
   let frames: { t: number; url: string }[] | undefined;
   if (isVideo && frameRows && frameRows.length > 0) {
@@ -249,7 +254,7 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     id: assetRow.id,
     filename: assetRow.filename,
     format: assetRow.format,
-    platform: assetRow.platform ?? "Instagram",
+    platforms: assetRow.platforms && assetRow.platforms.length > 0 ? assetRow.platforms : ["Meta"],
     score: assetRow.score ?? 0,
     failedChecks: assetRow.failed_checks ?? 0,
     postedAt: formatDate(assetRow.created_at),
@@ -257,6 +262,19 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
     duration: assetRow.duration_seconds ? formatDuration(assetRow.duration_seconds) : undefined,
     criteria: [],
   };
+
+  // Only the additional (non-primary) platforms are surfaced here — the
+  // primary's own row duplicates asset.score/failedChecks and the safe-zone
+  // entry already in `criteria` above.
+  const platformScores: PlatformScore[] = (platformScoreRows ?? [])
+    .filter((r) => r.platform !== asset.platforms[0])
+    .map((r) => ({
+      platform: r.platform,
+      score: r.score,
+      failedChecks: r.failed_checks,
+      safeZoneEvidence: r.safe_zone_evidence,
+      safeZoneVerdict: r.safe_zone_verdict,
+    }));
 
   const criteria: Criterion[] = (criteriaRows ?? []).map((r) => ({
     name: r.name,
@@ -302,6 +320,7 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
   return {
     asset,
     criteria,
+    platformScores,
     findings,
     topFix,
     assetUrl: signedUrlData?.signedUrl ?? null,

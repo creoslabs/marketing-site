@@ -1,11 +1,32 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import ffmpegPath from "@ffmpeg-installer/ffmpeg";
-import type { Criterion, Format } from "@/app/signal/data";
+import { SAFE_ZONE_CRITERION_NAME, SAFE_ZONE_THRESHOLDS, type Criterion, type Format, type Platform } from "@/app/signal/data";
 
 const run = promisify(execFile);
 
 export const HOOK_WINDOW_SECONDS = 4;
+
+// Claude reports where key content (text/logo/product) actually sits, once,
+// regardless of platform — this turns that measurement into a per-platform
+// verdict without a second vision call. A few points over the line is still
+// "partial" (occasional/brief overlap); further over is a "fail".
+export function safeZoneCriterion(
+  maxTopIntrusionPct: number,
+  maxBottomIntrusionPct: number,
+  platform: Platform,
+  format: Format
+): Criterion {
+  const { topPct, bottomPct } = SAFE_ZONE_THRESHOLDS[platform];
+  const worstOver = Math.max(maxTopIntrusionPct - topPct, maxBottomIntrusionPct - bottomPct);
+  const verdict: Criterion["verdict"] = worstOver <= 0 ? "pass" : worstOver <= 5 ? "partial" : "fail";
+  return {
+    name: SAFE_ZONE_CRITERION_NAME[format],
+    tier: 1,
+    evidence: `Key content reaches ${maxTopIntrusionPct}% from top, ${maxBottomIntrusionPct}% from bottom — ${platform}'s safe zone is ${topPct}%/${bottomPct}%`,
+    verdict,
+  };
+}
 
 // Criteria that are exactly measurable from file metadata don't need a
 // vision model's judgment — computing them in code is both cheaper and

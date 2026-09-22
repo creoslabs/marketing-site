@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useWsTheme } from "@/components/ws-theme";
 import { useCommandPalette } from "@/components/ws-command-palette";
 import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav, type WsTab } from "@/components/ws-tab-nav";
+import { ProductSwitcher } from "@/components/product-switcher";
 
 const TABS: WsTab[] = [
   { href: "/signal/analyze", label: "Analyze" },
@@ -22,21 +22,7 @@ export function SignalChrome() {
         className="flex items-center gap-[10px] px-4 sm:gap-[22px] sm:px-6"
         style={{ height: 58, borderBottom: "1px solid var(--ws-hairline)" }}
       >
-        <div className="flex items-center gap-[8px]">
-          <Link href="/workspace" className="hidden text-[13px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
-            Creos Labs
-          </Link>
-          <span className="hidden sm:inline" style={{ color: "var(--ws-ink-45)" }}>
-            /
-          </span>
-          <Link
-            href="/signal"
-            className="text-[17px] font-bold tracking-[-0.02em]"
-            style={{ color: "var(--ws-ink)" }}
-          >
-            Signal
-          </Link>
-        </div>
+        <ProductSwitcher current="signal" />
 
         <div className="flex-1" />
 

@@ -143,7 +143,7 @@ export default async function OverviewPage() {
       icon: <SignalMark size={14} />,
       accentColor: "#8b5cf6",
       text: asset.failedChecks > 0 ? `${asset.filename} flagged ${asset.failedChecks} issue${asset.failedChecks === 1 ? "" : "s"}` : `${asset.filename} scored ${Math.round(asset.score)}`,
-      meta: asset.platform,
+      meta: asset.platforms.join(" + "),
       timestampIso: asset.createdAtIso,
       href: `/signal/report/${asset.id}`,
     });

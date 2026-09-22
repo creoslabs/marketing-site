@@ -1,15 +1,29 @@
 import { probeVideo, extractFrames, probeImage, imageToDataUrl } from "./media";
-import { aspectRatioCriterion, resolutionCriterion, durationCriterion, audioOnsetCriterion, detectAudioOnsetSeconds } from "./criteria";
+import {
+  aspectRatioCriterion,
+  resolutionCriterion,
+  durationCriterion,
+  audioOnsetCriterion,
+  detectAudioOnsetSeconds,
+  safeZoneCriterion,
+} from "./criteria";
 import { judgeVideoCriteria, judgeStaticCriteria } from "./claude";
-import type { Criterion, StaticFinding, VideoFinding } from "@/app/signal/data";
+import type { Criterion, Platform, StaticFinding, VideoFinding } from "@/app/signal/data";
+
+export type PlatformResult = { platform: Platform; score: number; failedChecks: number; criteria: Criterion[] };
 
 export type PipelineResult = {
+  // The primary platform's (platforms[0]) score/criteria — kept at the top
+  // level since most of the app (library list, benchmarks, notifications)
+  // only ever cares about one number per asset. Every targeted platform's
+  // full result, primary included, is also in platformResults.
   score: number;
   failedChecks: number;
   width: number;
   height: number;
   durationSeconds?: number;
   criteria: Criterion[];
+  platformResults: PlatformResult[];
   findings: VideoFinding[] | StaticFinding[];
   topFix: { title: string; clears: number; body: string };
   frames?: { t: number; buffer: Buffer }[];
@@ -23,7 +37,30 @@ function computeScore(criteria: Criterion[]) {
   return { score, failedChecks: fail };
 }
 
-export async function runVideoPipeline(filePath: string, apiKey?: string | null): Promise<PipelineResult> {
+// Safe-zone slots in right after the code-computed criteria, matching where
+// it sat in the old fixed judged-criteria list (first tier-1 judged item) —
+// everything else about the criteria order/grouping stays exactly as before.
+function buildPlatformResults(
+  codeComputed: Criterion[],
+  judgedCriteria: Criterion[],
+  platforms: Platform[],
+  safeZoneMeasurement: { maxTopIntrusionPct: number; maxBottomIntrusionPct: number },
+  format: "video" | "static"
+): PlatformResult[] {
+  return platforms.map((platform) => {
+    const safeZone = safeZoneCriterion(
+      safeZoneMeasurement.maxTopIntrusionPct,
+      safeZoneMeasurement.maxBottomIntrusionPct,
+      platform,
+      format
+    );
+    const criteria = [...codeComputed, safeZone, ...judgedCriteria];
+    const { score, failedChecks } = computeScore(criteria);
+    return { platform, score, failedChecks, criteria };
+  });
+}
+
+export async function runVideoPipeline(filePath: string, platforms: Platform[], apiKey?: string | null): Promise<PipelineResult> {
   const metadata = await probeVideo(filePath);
   const audioOnset = await detectAudioOnsetSeconds(filePath);
 
@@ -55,23 +92,24 @@ export async function runVideoPipeline(filePath: string, apiKey?: string | null)
     apiKey,
   });
 
-  const allCriteria = [...codeComputed, ...judged.criteria];
-  const { score, failedChecks } = computeScore(allCriteria);
+  const platformResults = buildPlatformResults(codeComputed, judged.criteria, platforms, judged.safeZoneMeasurement, "video");
+  const primary = platformResults[0];
 
   return {
-    score,
-    failedChecks,
+    score: primary.score,
+    failedChecks: primary.failedChecks,
     width: metadata.width,
     height: metadata.height,
     durationSeconds: metadata.durationSeconds,
-    criteria: allCriteria,
+    criteria: primary.criteria,
+    platformResults,
     findings: judged.findings,
     topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, body: judged.topFix.body },
     frames,
   };
 }
 
-export async function runStaticPipeline(filePath: string, apiKey?: string | null): Promise<PipelineResult> {
+export async function runStaticPipeline(filePath: string, platforms: Platform[], apiKey?: string | null): Promise<PipelineResult> {
   const metadata = await probeImage(filePath);
   const codeComputed: Criterion[] = [
     aspectRatioCriterion(metadata.width, metadata.height, "static"),
@@ -81,15 +119,16 @@ export async function runStaticPipeline(filePath: string, apiKey?: string | null
   const imageDataUrl = await imageToDataUrl(filePath);
   const judged = await judgeStaticCriteria({ imageDataUrl, apiKey });
 
-  const allCriteria = [...codeComputed, ...judged.criteria];
-  const { score, failedChecks } = computeScore(allCriteria);
+  const platformResults = buildPlatformResults(codeComputed, judged.criteria, platforms, judged.safeZoneMeasurement, "static");
+  const primary = platformResults[0];
 
   return {
-    score,
-    failedChecks,
+    score: primary.score,
+    failedChecks: primary.failedChecks,
     width: metadata.width,
     height: metadata.height,
-    criteria: allCriteria,
+    criteria: primary.criteria,
+    platformResults,
     findings: judged.findings,
     topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, body: judged.topFix.body },
   };

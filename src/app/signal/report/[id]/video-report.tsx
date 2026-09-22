@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { Asset, Criterion, VideoFinding } from "../../data";
-import { VerdictLabel, ScoreFormula } from "../../components";
+import type { Asset, Criterion, Platform, PlatformScore, VideoFinding } from "../../data";
+import { SAFE_ZONE_CRITERION_NAME, SAFE_ZONE_THRESHOLDS } from "../../data";
+import { VerdictLabel, ScoreBreakdown, PlatformTabs } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import { CompareButton } from "./compare-button";
 import { ExportPdfButton, type PdfReportData } from "./report-pdf";
@@ -32,6 +33,7 @@ function describeFrame(t: number, findings: VideoFinding[]) {
 export function VideoReport({
   asset,
   criteria,
+  platformScores,
   findings,
   topFix,
   median,
@@ -43,6 +45,7 @@ export function VideoReport({
 }: {
   asset: Asset;
   criteria: Criterion[];
+  platformScores: PlatformScore[];
   findings: VideoFinding[];
   topFix: { title: string; clears: number; body: string };
   median: number;
@@ -83,21 +86,39 @@ export function VideoReport({
   const inViolation = findings.some(
     (f) => f.failure && f.criterion.toLowerCase().includes("safe-zone") && Math.abs(f.t - t) <= 1
   );
-  const displayScore = useCountUp(asset.score);
+
+  // Every criterion but safe-zone is identical across platforms — only that
+  // one row (and therefore the score) changes when switching tabs.
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(asset.platforms[0]);
+  const altPlatform = platformScores.find((p) => p.platform === selectedPlatform);
+  const activeScore = selectedPlatform === asset.platforms[0] ? asset.score : altPlatform?.score ?? asset.score;
+  const PLAYER_HEIGHT = 444;
+  const zoneThresholds = SAFE_ZONE_THRESHOLDS[selectedPlatform];
+  const topBandHeight = (zoneThresholds.topPct / 100) * PLAYER_HEIGHT;
+  const bottomBandHeight = (zoneThresholds.bottomPct / 100) * PLAYER_HEIGHT;
+  const displayCriteria = altPlatform
+    ? criteria.map((c) =>
+        c.name === SAFE_ZONE_CRITERION_NAME.video
+          ? { ...c, evidence: altPlatform.safeZoneEvidence, verdict: altPlatform.safeZoneVerdict }
+          : c
+      )
+    : criteria;
+
+  const displayScore = useCountUp(activeScore);
   const revealed = useRevealed();
-  const tier1 = criteria.filter((c) => c.tier === 1);
-  const tier2 = criteria.filter((c) => c.tier === 2);
+  const tier1 = displayCriteria.filter((c) => c.tier === 1);
+  const tier2 = displayCriteria.filter((c) => c.tier === 2);
   const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
   const tier2Issues = tier2.filter((c) => c.verdict !== "pass").length;
   const counts = {
-    pass: criteria.filter((c) => c.verdict === "pass").length,
-    partial: criteria.filter((c) => c.verdict === "partial").length,
-    fail: criteria.filter((c) => c.verdict === "fail").length,
+    pass: displayCriteria.filter((c) => c.verdict === "pass").length,
+    partial: displayCriteria.filter((c) => c.verdict === "partial").length,
+    fail: displayCriteria.filter((c) => c.verdict === "fail").length,
   };
 
   const pdfData: PdfReportData = {
     asset,
-    criteria,
+    criteria: displayCriteria,
     findings,
     topFix,
     median,
@@ -126,24 +147,24 @@ export function VideoReport({
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               )}
-              {/* Safe-zone bands */}
+              {/* Safe-zone bands — sized to the selected platform's own UI-chrome margins */}
               <div
                 className="absolute inset-x-0 top-0"
-                style={{ height: 116, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
+                style={{ height: topBandHeight, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
               />
               <div
                 className="absolute inset-x-0 bottom-0"
-                style={{ height: 158, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderTop: "1.5px dashed var(--ws-warn)" }}
+                style={{ height: bottomBandHeight, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderTop: "1.5px dashed var(--ws-warn)" }}
               />
               <div
                 className="absolute"
-                style={{ top: 116, bottom: 158, left: 14, right: 14, border: "1.5px dashed var(--ws-accent)" }}
+                style={{ top: topBandHeight, bottom: bottomBandHeight, left: 14, right: 14, border: "1.5px dashed var(--ws-accent)" }}
               />
               <span
                 className="absolute rounded-[4px] text-[9px] font-semibold uppercase"
-                style={{ bottom: 162, left: 14, letterSpacing: "0.06em", padding: "3px 6px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }}
+                style={{ bottom: bottomBandHeight + 4, left: 14, letterSpacing: "0.06em", padding: "3px 6px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }}
               >
-                SAFE ZONE · TIKTOK
+                SAFE ZONE · {selectedPlatform.toUpperCase()}
               </span>
 
               {/* Violation overlay */}
@@ -213,24 +234,17 @@ export function VideoReport({
 
           {/* Score column */}
           <div className="flex-1">
-            <p className="ws-eyebrow">BEST PRACTICE SCORE (VIDEO) — 16 CRITERIA</p>
-            <div className="mt-[10px] flex items-end gap-[16px]">
-              <span className="ws-tabular font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
-                {displayScore}
-              </span>
-              <div className="pb-[6px]">
-                <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-                  {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
-                </p>
-                <div className="mt-[3px]">
-                  <ScoreFormula pass={counts.pass} partial={counts.partial} fail={counts.fail} />
-                </div>
-                <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                  {percentile === null
-                    ? "First video analyzed in this set — not comparable to static scores."
-                    : `${percentile}th percentile among video ads in this set — not comparable to static scores.`}
-                </p>
-              </div>
+            <div className="flex items-center justify-between">
+              <p className="ws-eyebrow">BEST PRACTICE SCORE (VIDEO) — 16 CRITERIA</p>
+              <PlatformTabs platforms={asset.platforms} selected={selectedPlatform} onSelect={setSelectedPlatform} />
+            </div>
+            <div className="mt-[10px]">
+              <ScoreBreakdown score={displayScore} pass={counts.pass} partial={counts.partial} fail={counts.fail} revealed={revealed} />
+              <p className="mt-[10px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                {percentile === null
+                  ? "First video analyzed in this set — not comparable to static scores."
+                  : `${percentile}th percentile among video ads in this set — not comparable to static scores.`}
+              </p>
             </div>
 
             <div className="mt-[14px]">
@@ -238,7 +252,7 @@ export function VideoReport({
                 <div
                   className="h-full rounded-[4px]"
                   style={{
-                    width: revealed ? `${asset.score}%` : "0%",
+                    width: revealed ? `${activeScore}%` : "0%",
                     background: "var(--ws-ink)",
                     transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
@@ -478,7 +492,7 @@ export function ReportSubHeader({
         {asset.format === "video" ? `VIDEO · ${asset.duration} · 9:16` : "STATIC · 4:5"}
       </span>
       <span className="text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
-        {asset.platform} · {asset.postedAt}
+        {asset.platforms.join(" + ")} · {asset.postedAt}
       </span>
       {previousVersion && (
         <Link href={`/signal/report/${previousVersion.id}`} className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-45)" }}>
@@ -491,7 +505,7 @@ export function ReportSubHeader({
         </Link>
       )}
       <div className="flex-1" />
-      <ReanalyzeButton assetId={asset.id} />
+      <ReanalyzeButton assetId={asset.id} platforms={asset.platforms} />
       <ExportPdfButton data={pdfData} />
       <CompareButton assetId={asset.id} format={asset.format} />
     </div>

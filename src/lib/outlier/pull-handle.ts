@@ -150,7 +150,7 @@ export async function pullHandle(
       .eq("handle_id", handle.id);
     const median = medianOf((allPostRows ?? []).map((r) => r.views));
     const bestNew = (allPostRows ?? [])
-      .filter((r) => !existingIds.has(r.external_id) && handle.platform !== "YT" && median > 0 && r.views / median >= 2)
+      .filter((r) => !existingIds.has(r.external_id) && handle.platform !== "YT" && median > 0 && r.views / median >= 3)
       .sort((a, b) => b.views - a.views)[0];
 
     if (bestNew) {

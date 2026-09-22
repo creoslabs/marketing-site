@@ -4,6 +4,9 @@ import { useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { Platform } from "../data";
+
+const ALL_PLATFORMS: Platform[] = ["TikTok", "Meta"];
 
 type QueueItem = {
   id: string;
@@ -13,7 +16,11 @@ type QueueItem = {
   error?: string;
 };
 
-export async function analyzeOne(file: File, revisionOf?: string): Promise<{ assetId: string }> {
+export async function analyzeOne(
+  file: File,
+  revisionOf?: string,
+  platforms: Platform[] = ["Meta"]
+): Promise<{ assetId: string }> {
   const format = file.type.startsWith("video/") ? "video" : "static";
 
   const urlRes = await fetch("/api/signal/upload-url", {
@@ -33,7 +40,7 @@ export async function analyzeOne(file: File, revisionOf?: string): Promise<{ ass
   const analyzeRes = await fetch("/api/signal/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: urlData.path, filename: file.name, format, revisionOf }),
+    body: JSON.stringify({ path: urlData.path, filename: file.name, format, revisionOf, platforms }),
   });
   const analyzeData = await analyzeRes.json();
   if (!analyzeRes.ok) throw new Error(analyzeData.error ?? "Analysis failed.");
@@ -46,7 +53,19 @@ export function AnalyzeDropzone() {
   const [dragOver, setDragOver] = useState(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
+  const [platforms, setPlatforms] = useState<Platform[]>(["Meta"]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  function togglePlatform(platform: Platform) {
+    setPlatforms((prev) => {
+      if (prev.includes(platform)) {
+        // Always leave at least one platform selected — an asset needs
+        // somewhere to be scored against.
+        return prev.length === 1 ? prev : prev.filter((p) => p !== platform);
+      }
+      return [...prev, platform];
+    });
+  }
 
   const idle = queue.length === 0;
   const finished = queue.length > 0 && !running && queue.every((q) => q.status === "done" || q.status === "error");
@@ -71,7 +90,7 @@ export function AnalyzeDropzone() {
       setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "uploading" } : q)));
       try {
         setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "analyzing" } : q)));
-        const { assetId } = await analyzeOne(item.file);
+        const { assetId } = await analyzeOne(item.file, undefined, platforms);
         lastAssetId = assetId;
         setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "done", assetId } : q)));
       } catch (err) {
@@ -103,6 +122,33 @@ export function AnalyzeDropzone() {
 
   return (
     <div className="mx-auto max-w-[520px]">
+      {idle && (
+        <div className="mb-[14px] flex items-center justify-center gap-[8px]">
+          <span className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-45)" }}>
+            Where will this run?
+          </span>
+          {ALL_PLATFORMS.map((platform) => {
+            const active = platforms.includes(platform);
+            return (
+              <button
+                key={platform}
+                type="button"
+                onClick={() => togglePlatform(platform)}
+                className="rounded-[20px] text-[11.5px] font-medium"
+                style={{
+                  padding: "5px 12px",
+                  border: `1px solid ${active ? "var(--ws-accent)" : "var(--ws-hairline)"}`,
+                  background: active ? "var(--ws-accent-tint)" : "transparent",
+                  color: active ? "var(--ws-accent-tint-ink)" : "var(--ws-ink-60)",
+                }}
+              >
+                {platform}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div
         onDragOver={(e) => {
           e.preventDefault();

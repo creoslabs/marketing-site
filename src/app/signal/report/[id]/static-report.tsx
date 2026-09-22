@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Asset, Criterion, StaticFinding } from "../../data";
+import type { Asset, Criterion, Platform, PlatformScore, StaticFinding } from "../../data";
+import { SAFE_ZONE_CRITERION_NAME, SAFE_ZONE_THRESHOLDS } from "../../data";
 import { ReportSubHeader, CriteriaTable } from "./video-report";
-import { ScoreFormula } from "../../components";
+import { ScoreBreakdown, PlatformTabs } from "../../components";
 import { useCountUp, useRevealed } from "./score-reveal";
 import type { PdfReportData } from "./report-pdf";
 
@@ -16,6 +17,7 @@ const MARKER_STYLE: Record<StaticFinding["marker"], { bg: string; fg: string; la
 export function StaticReport({
   asset,
   criteria,
+  platformScores,
   findings,
   topFix,
   median,
@@ -26,6 +28,7 @@ export function StaticReport({
 }: {
   asset: Asset;
   criteria: Criterion[];
+  platformScores: PlatformScore[];
   findings: StaticFinding[];
   topFix: { title: string; clears: number; body: string };
   median: number;
@@ -35,22 +38,39 @@ export function StaticReport({
   nextVersion?: { id: string; filename: string; score: number } | null;
 }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const displayScore = useCountUp(asset.score);
+
+  // Every criterion but safe-zone is identical across platforms — only that
+  // one row (and therefore the score) changes when switching tabs.
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>(asset.platforms[0]);
+  const altPlatform = platformScores.find((p) => p.platform === selectedPlatform);
+  const activeScore = selectedPlatform === asset.platforms[0] ? asset.score : altPlatform?.score ?? asset.score;
+  const displayCriteria = altPlatform
+    ? criteria.map((c) =>
+        c.name === SAFE_ZONE_CRITERION_NAME.static
+          ? { ...c, evidence: altPlatform.safeZoneEvidence, verdict: altPlatform.safeZoneVerdict }
+          : c
+      )
+    : criteria;
+
+  const displayScore = useCountUp(activeScore);
   const revealed = useRevealed();
-  const tier1 = criteria.filter((c) => c.tier === 1);
-  const tier2 = criteria.filter((c) => c.tier === 2);
+  const tier1 = displayCriteria.filter((c) => c.tier === 1);
+  const tier2 = displayCriteria.filter((c) => c.tier === 2);
   const tier1Issues = tier1.filter((c) => c.verdict !== "pass").length;
   const tier2Issues = tier2.filter((c) => c.verdict !== "pass").length;
   const counts = {
-    pass: criteria.filter((c) => c.verdict === "pass").length,
-    partial: criteria.filter((c) => c.verdict === "partial").length,
-    fail: criteria.filter((c) => c.verdict === "fail").length,
+    pass: displayCriteria.filter((c) => c.verdict === "pass").length,
+    partial: displayCriteria.filter((c) => c.verdict === "partial").length,
+    fail: displayCriteria.filter((c) => c.verdict === "fail").length,
   };
 
   const FRAME_W = 300;
   const FRAME_H = 375;
+  const zoneThresholds = SAFE_ZONE_THRESHOLDS[selectedPlatform];
+  const topBandHeight = (zoneThresholds.topPct / 100) * FRAME_H;
+  const bottomBandHeight = (zoneThresholds.bottomPct / 100) * FRAME_H;
 
-  const pdfData: PdfReportData = { asset, criteria, findings, topFix, median, percentile, thumbnailUrl: assetUrl };
+  const pdfData: PdfReportData = { asset, criteria: displayCriteria, findings, topFix, median, percentile, thumbnailUrl: assetUrl };
 
   return (
     <div className="ws-page-in">
@@ -74,15 +94,15 @@ export function StaticReport({
               )}
               <div
                 className="absolute inset-x-0 top-0"
-                style={{ height: 52, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
+                style={{ height: topBandHeight, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderBottom: "1.5px dashed var(--ws-warn)" }}
               />
               <div
                 className="absolute inset-x-0 bottom-0"
-                style={{ height: 78, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderTop: "1.5px dashed var(--ws-warn)" }}
+                style={{ height: bottomBandHeight, background: "color-mix(in srgb, var(--ws-warn) 16%, transparent)", borderTop: "1.5px dashed var(--ws-warn)" }}
               />
               <div
                 className="absolute"
-                style={{ top: 52, bottom: 78, left: 14, right: 14, border: "1.5px dashed var(--ws-accent)" }}
+                style={{ top: topBandHeight, bottom: bottomBandHeight, left: 14, right: 14, border: "1.5px dashed var(--ws-accent)" }}
               />
 
               {findings.map((finding) => {
@@ -150,24 +170,17 @@ export function StaticReport({
 
           {/* Score column */}
           <div className="flex-1">
-            <p className="ws-eyebrow">BEST PRACTICE SCORE (STATIC) — 7 CRITERIA</p>
-            <div className="mt-[10px] flex items-end gap-[16px]">
-              <span className="ws-tabular font-bold" style={{ fontSize: 52, letterSpacing: "-0.035em", color: "var(--ws-ink)" }}>
-                {displayScore}
-              </span>
-              <div className="pb-[6px]">
-                <p className="text-[14.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-                  {counts.pass} pass · {counts.partial} partial · {counts.fail} fail
-                </p>
-                <div className="mt-[3px]">
-                  <ScoreFormula pass={counts.pass} partial={counts.partial} fail={counts.fail} />
-                </div>
-                <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                  {percentile === null
-                    ? "First static analyzed in this set — not comparable to video scores."
-                    : `${percentile}th percentile among statics in this set — not comparable to video scores.`}
-                </p>
-              </div>
+            <div className="flex items-center justify-between">
+              <p className="ws-eyebrow">BEST PRACTICE SCORE (STATIC) — 7 CRITERIA</p>
+              <PlatformTabs platforms={asset.platforms} selected={selectedPlatform} onSelect={setSelectedPlatform} />
+            </div>
+            <div className="mt-[10px]">
+              <ScoreBreakdown score={displayScore} pass={counts.pass} partial={counts.partial} fail={counts.fail} revealed={revealed} />
+              <p className="mt-[10px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                {percentile === null
+                  ? "First static analyzed in this set — not comparable to video scores."
+                  : `${percentile}th percentile among statics in this set — not comparable to video scores.`}
+              </p>
             </div>
 
             <div className="mt-[14px]">
@@ -175,7 +188,7 @@ export function StaticReport({
                 <div
                   className="h-full rounded-[4px]"
                   style={{
-                    width: revealed ? `${asset.score}%` : "0%",
+                    width: revealed ? `${activeScore}%` : "0%",
                     background: "var(--ws-accent)",
                     transition: "width 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}

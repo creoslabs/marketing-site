@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 import { analyzeOne } from "../../analyze/analyze-dropzone";
+import type { Platform } from "../../data";
 
-export function ReanalyzeButton({ assetId }: { assetId: string }) {
+export function ReanalyzeButton({ assetId, platforms }: { assetId: string; platforms: Platform[] }) {
   const router = useRouter();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,7 +16,7 @@ export function ReanalyzeButton({ assetId }: { assetId: string }) {
     if (!file) return;
     setUploading(true);
     try {
-      const { assetId: newAssetId } = await analyzeOne(file, assetId);
+      const { assetId: newAssetId } = await analyzeOne(file, assetId, platforms);
       router.push(`/signal/report/${newAssetId}`);
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't analyze that revision.", "error");

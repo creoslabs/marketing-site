@@ -17,8 +17,10 @@ function getClient(overrideApiKey?: string | null) {
 
 const MODEL = "claude-sonnet-5";
 
+// Safe-zone overlap is judged separately (see safeZoneMeasurementSchema
+// below) — its pass/partial/fail depends on which platform(s) the asset
+// targets, so Claude reports a raw measurement here instead of a verdict.
 const VIDEO_JUDGED_CRITERIA = [
-  "Safe-zone overlap across full runtime",
   "Cut frequency vs platform pacing",
   "Hook window motion detected",
   "Hook window face detected",
@@ -33,7 +35,6 @@ const VIDEO_JUDGED_CRITERIA = [
 ] as const;
 
 const VIDEO_TIER: Record<string, 1 | 2> = {
-  "Safe-zone overlap across full runtime": 1,
   "Cut frequency vs platform pacing": 1,
   "Hook window motion detected": 1,
   "Hook window face detected": 1,
@@ -47,8 +48,9 @@ const VIDEO_TIER: Record<string, 1 | 2> = {
   "Sound-off redundancy": 2,
 };
 
+// Safe-zone overlap is judged separately (see safeZoneMeasurementSchema
+// below) — see the comment on VIDEO_JUDGED_CRITERIA above.
 const STATIC_JUDGED_CRITERIA = [
-  "Safe-zone overlap",
   "On-screen text legibility",
   "Product framing & legibility",
   "Scroll-stopping composition",
@@ -56,7 +58,6 @@ const STATIC_JUDGED_CRITERIA = [
 ] as const;
 
 const STATIC_TIER: Record<string, 1 | 2> = {
-  "Safe-zone overlap": 1,
   "On-screen text legibility": 1,
   "Product framing & legibility": 2,
   "Scroll-stopping composition": 2,
@@ -77,6 +78,24 @@ const criterionSchema = (names: readonly string[]) => ({
   },
   required: ["name", "verdict", "evidence"],
 });
+
+const safeZoneMeasurementSchema = {
+  type: "object" as const,
+  properties: {
+    maxTopIntrusionPct: {
+      type: "number",
+      description:
+        "Deepest measured intrusion of key content (text/logo/product) into the top margin, as a percentage (0-100) of frame height, at its worst point.",
+    },
+    maxBottomIntrusionPct: {
+      type: "number",
+      description: "Same, for the bottom margin.",
+    },
+  },
+  required: ["maxTopIntrusionPct", "maxBottomIntrusionPct"],
+};
+
+type SafeZoneMeasurement = { maxTopIntrusionPct: number; maxBottomIntrusionPct: number };
 
 const topFixSchema = {
   type: "object" as const,
@@ -102,7 +121,7 @@ export async function judgeVideoCriteria({
   durationSeconds: number;
   audioOnsetSeconds: number | null;
   apiKey?: string | null;
-}): Promise<{ criteria: Criterion[]; findings: VideoFinding[]; topFix: TopFixResult }> {
+}): Promise<{ criteria: Criterion[]; findings: VideoFinding[]; topFix: TopFixResult; safeZoneMeasurement: SafeZoneMeasurement }> {
   const client = getClient(apiKey);
 
   const frameContent: Anthropic.Messages.ContentBlockParam[] = frames.flatMap((frame) => [
@@ -122,8 +141,10 @@ export async function judgeVideoCriteria({
       "specific — every evidence string must be something you could point to, never a vague impression. " +
       "The 'hook window' is the first " +
       HOOK_WINDOW_SECONDS +
-      " seconds. The safe zone excludes the top ~15% and bottom ~20% of the frame (platform UI overlays that region). " +
-      "Never invent a criterion outside the fixed list.",
+      " seconds. Platform UI chrome overlays the top and bottom margins of the frame, but exactly how much varies " +
+      "by platform (TikTok vs Meta) — instead of judging safe-zone pass/fail yourself, measure and report how deep " +
+      "into the top and bottom margins key content (text/logo/product) actually reaches across the full runtime; " +
+      "the app converts that measurement into a verdict per platform. Never invent a criterion outside the fixed list.",
     tools: [
       {
         name: "submit_video_analysis",
@@ -132,6 +153,7 @@ export async function judgeVideoCriteria({
           type: "object",
           properties: {
             criteria: { type: "array", items: criterionSchema(VIDEO_JUDGED_CRITERIA), minItems: VIDEO_JUDGED_CRITERIA.length },
+            safeZoneMeasurement: safeZoneMeasurementSchema,
             findings: {
               type: "array",
               description: "5-8 timestamped observations worth surfacing, each tied to one of the provided frame timestamps.",
@@ -148,7 +170,7 @@ export async function judgeVideoCriteria({
             },
             topFix: topFixSchema,
           },
-          required: ["criteria", "findings", "topFix"],
+          required: ["criteria", "safeZoneMeasurement", "findings", "topFix"],
         },
       },
     ],
@@ -174,6 +196,7 @@ export async function judgeVideoCriteria({
 
   const result = toolUse.input as {
     criteria: { name: string; verdict: Criterion["verdict"]; evidence: string }[];
+    safeZoneMeasurement: SafeZoneMeasurement;
     findings: { t: number; criterion: string; failure: boolean; body: string }[];
     topFix: TopFixResult;
   };
@@ -194,7 +217,7 @@ export async function judgeVideoCriteria({
     body: f.body,
   }));
 
-  return { criteria, findings, topFix: result.topFix };
+  return { criteria, findings, topFix: result.topFix, safeZoneMeasurement: result.safeZoneMeasurement };
 }
 
 export async function judgeStaticCriteria({
@@ -203,7 +226,7 @@ export async function judgeStaticCriteria({
 }: {
   imageDataUrl: string;
   apiKey?: string | null;
-}): Promise<{ criteria: Criterion[]; findings: StaticFinding[]; topFix: TopFixResult }> {
+}): Promise<{ criteria: Criterion[]; findings: StaticFinding[]; topFix: TopFixResult; safeZoneMeasurement: SafeZoneMeasurement }> {
   const client = getClient(apiKey);
 
   const message = await client.messages.create({
@@ -212,8 +235,10 @@ export async function judgeStaticCriteria({
     system:
       "You are Signal, an ad-creative analyst. Score a static (4:5) ad image against a fixed best-practice criteria " +
       "set using only what is visible in the image. Be direct and specific — every evidence string must be something " +
-      "you could point to, never a vague impression. The safe zone excludes the top ~14% and bottom ~21% of the " +
-      "frame (platform UI overlays that region). Never invent a criterion outside the fixed list.",
+      "you could point to, never a vague impression. Platform UI chrome overlays the top and bottom margins, but " +
+      "exactly how much varies by platform (TikTok vs Meta) — instead of judging safe-zone pass/fail yourself, " +
+      "measure and report how deep into the top and bottom margins key content (text/logo/product) actually " +
+      "reaches; the app converts that measurement into a verdict per platform. Never invent a criterion outside the fixed list.",
     tools: [
       {
         name: "submit_static_analysis",
@@ -222,6 +247,7 @@ export async function judgeStaticCriteria({
           type: "object",
           properties: {
             criteria: { type: "array", items: criterionSchema(STATIC_JUDGED_CRITERIA), minItems: STATIC_JUDGED_CRITERIA.length },
+            safeZoneMeasurement: safeZoneMeasurementSchema,
             findings: {
               type: "array",
               description: "2-4 spatial observations, each anchored to a region of the image as percentages (0-100).",
@@ -247,7 +273,7 @@ export async function judgeStaticCriteria({
             },
             topFix: topFixSchema,
           },
-          required: ["criteria", "findings", "topFix"],
+          required: ["criteria", "safeZoneMeasurement", "findings", "topFix"],
         },
       },
     ],
@@ -271,6 +297,7 @@ export async function judgeStaticCriteria({
 
   const result = toolUse.input as {
     criteria: { name: string; verdict: Criterion["verdict"]; evidence: string }[];
+    safeZoneMeasurement: SafeZoneMeasurement;
     findings: {
       marker: "A" | "B" | "check";
       criterion: string;
@@ -296,5 +323,5 @@ export async function judgeStaticCriteria({
     region: f.region,
   }));
 
-  return { criteria, findings, topFix: result.topFix };
+  return { criteria, findings, topFix: result.topFix, safeZoneMeasurement: result.safeZoneMeasurement };
 }
