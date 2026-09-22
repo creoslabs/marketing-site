@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase/data";
+import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeOutlierPost } from "@/lib/outlier/analyze-post";
 
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(_request: Request, ctx: RouteContext<"/api/outlier/posts/[id]/analyze">) {
-  const user = await getUser();
+  const user = await getVerifiedUser();
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }

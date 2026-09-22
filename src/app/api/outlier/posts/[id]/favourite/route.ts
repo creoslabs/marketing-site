@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getUser } from "@/lib/supabase/data";
+import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request, ctx: RouteContext<"/api/outlier/posts/[id]/favourite">) {
-  const user = await getUser();
+  const user = await getVerifiedUser();
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }

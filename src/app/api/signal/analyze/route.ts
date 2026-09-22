@@ -3,7 +3,7 @@ import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { getUser } from "@/lib/supabase/data";
+import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runVideoPipeline, runStaticPipeline } from "@/lib/signal/pipeline";
 import type { StaticFinding, VideoFinding } from "@/app/signal/data";
@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
-  const user = await getUser();
+  const user = await getVerifiedUser();
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }

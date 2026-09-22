@@ -26,6 +26,33 @@ export const getUser = cache(async () => {
   }
 });
 
+// getSession() above trusts whatever's in the request's cookies without
+// verifying the JWT against Supabase's Auth server — fine for page renders,
+// where every actual data query still goes through the RLS-scoped client
+// and gets independently re-verified at the database layer regardless of
+// what this function returns. It is NOT fine for API routes that use
+// createAdminClient() (service role, bypasses RLS entirely): there, this
+// user object is the *only* thing standing between one account's data and
+// another's, so it must be cryptographically real. proxy.ts calls the real,
+// server-verified supabase.auth.getUser() on every request — but only for
+// page routes matching PROTECTED_ROUTES; every /api/* request skips that
+// check (isProtected only matches bare /workspace, /outlier, /signal,
+// /dashboard prefixes, not /api/outlier/... or /api/signal/...). So any
+// route that hands the caller's user.id to an admin client — analyze,
+// favourite, repurpose, the outlier pull routes, signal's analyze and
+// upload-url — must call this instead.
+export const getVerifiedUser = cache(async () => {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
+});
+
 type NamedUser = { email?: string | null; user_metadata?: { full_name?: unknown } | null } | null;
 
 // Prefers the real display name set via the Account tab (stored in Supabase

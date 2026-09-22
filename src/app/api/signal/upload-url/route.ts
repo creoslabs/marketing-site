@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { getUser } from "@/lib/supabase/data";
+import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Returns a signed Storage upload URL scoped to this user's own folder.
@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // since serverless function request bodies are capped well under the
 // 500MB assets Signal is meant to accept.
 export async function POST(request: Request) {
-  const user = await getUser();
+  const user = await getVerifiedUser();
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
