@@ -44,7 +44,7 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
-function resolveTheme(pref: ThemePreference): "dark" | "light" {
+export function resolveTheme(pref: ThemePreference): "dark" | "light" {
   if (pref === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }

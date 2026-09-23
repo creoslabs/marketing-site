@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
 import { useToast } from "@/components/ws-toast";
+import { useWsTheme, resolveTheme } from "@/components/ws-theme";
 import type { Asset, Criterion, StaticFinding, VideoFinding } from "../../data";
 
 export type PdfReportData = {
@@ -15,10 +16,10 @@ export type PdfReportData = {
   thumbnailUrl?: string | null;
 };
 
-// The light-mode palette from globals.css — a PDF sent to a designer should
-// read as a print-ready document, not a screenshot of the dark dashboard, so
-// this mirrors the report page's actual tokens rather than the dark theme.
-const COLOR = {
+// Both palettes mirror globals.css's own light/dark tokens exactly — the PDF
+// should match whichever theme the report page was viewed in, not always
+// default to one.
+const LIGHT_COLOR = {
   ground: "#faf9f7",
   surface: "#ffffff",
   surfaceHeader: "#f7f6f3",
@@ -37,13 +38,36 @@ const COLOR = {
   warnTint: "#ffeee9",
 };
 
+const DARK_COLOR = {
+  ground: "#000000",
+  surface: "#0b0b0d",
+  surfaceHeader: "#131316",
+  ink: "#f5f5f7",
+  ink60: "rgba(245,245,247,0.6)",
+  ink45: "rgba(245,245,247,0.45)",
+  hairline: "rgba(255,255,255,0.14)",
+  accent: "#0a84ff",
+  accentInk: "#ffffff",
+  accentText: "#64a9ff",
+  accentTint: "#0a1a2e",
+  accentTintBorder: "rgba(10,132,255,0.3)",
+  accentTintInk: "#d3e6ff",
+  warn: "#ff6b4a",
+  warnInk: "#2b0b03",
+  warnTint: "#210d07",
+};
+
+type PdfColor = typeof LIGHT_COLOR;
+
 // Matches VerdictLabel in ../../components.tsx: pass reads as accent blue,
 // fail as warn orange, partial as neutral gray — not a traffic-light scheme.
-const VERDICT_COLOR: Record<Criterion["verdict"], string> = {
-  pass: COLOR.accentText,
-  partial: COLOR.ink60,
-  fail: COLOR.warn,
-};
+function verdictColor(color: PdfColor): Record<Criterion["verdict"], string> {
+  return {
+    pass: color.accentText,
+    partial: color.ink60,
+    fail: color.warn,
+  };
+}
 
 function isVideoFinding(f: VideoFinding | StaticFinding): f is VideoFinding {
   return "t" in f;
@@ -62,8 +86,11 @@ function slugify(name: string) {
 // react-pdf is a real vector PDF renderer (not a screenshot tool), but its
 // bundle is sizeable — both it and this document are loaded dynamically on
 // click so neither weighs down the report page itself.
-async function buildDocument(data: PdfReportData) {
+async function buildDocument(data: PdfReportData, theme: "dark" | "light") {
   const { Document, Page, View, Text, Image, StyleSheet } = await import("@react-pdf/renderer");
+
+  const COLOR = theme === "dark" ? DARK_COLOR : LIGHT_COLOR;
+  const VERDICT_COLOR = verdictColor(COLOR);
 
   const styles = StyleSheet.create({
     page: { padding: 32, fontSize: 10, fontFamily: "Helvetica", color: COLOR.ink, backgroundColor: COLOR.ground },
@@ -267,11 +294,13 @@ async function buildDocument(data: PdfReportData) {
 export function ExportPdfButton({ data }: { data: PdfReportData }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [themePreference] = useWsTheme();
 
   async function handleExport() {
     setBusy(true);
     try {
-      const [{ pdf }, doc] = await Promise.all([import("@react-pdf/renderer"), buildDocument(data)]);
+      const theme = resolveTheme(themePreference);
+      const [{ pdf }, doc] = await Promise.all([import("@react-pdf/renderer"), buildDocument(data, theme)]);
       const blob = await pdf(doc as React.ReactElement<DocumentProps>).toBlob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
