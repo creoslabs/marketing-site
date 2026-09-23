@@ -89,9 +89,14 @@ export function VideoReport({
 
   // 8 of the 16 criteria (duration, hook-window timing, cut pace, safe zone)
   // vary by platform — switching tabs swaps in that platform's full result.
+  // A platform row with an empty criteria array is stale data from before a
+  // criteria-set update (it was analyzed, then the schema/prompt changed) —
+  // treat it as unusable rather than rendering a broken empty state.
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(asset.platforms[0]);
-  const altPlatform = platformScores.find((p) => p.platform === selectedPlatform);
-  const activeScore = selectedPlatform === asset.platforms[0] ? asset.score : altPlatform?.score ?? asset.score;
+  const rawAltPlatform = platformScores.find((p) => p.platform === selectedPlatform);
+  const altPlatform = rawAltPlatform && rawAltPlatform.criteria.length > 0 ? rawAltPlatform : null;
+  const isStalePlatform = selectedPlatform !== asset.platforms[0] && !altPlatform;
+  const activeScore = altPlatform ? altPlatform.score : asset.score;
   const displayCriteria = altPlatform ? altPlatform.criteria : criteria;
   const PLAYER_HEIGHT = 444;
   const zoneThresholds = SAFE_ZONE_THRESHOLDS[selectedPlatform];
@@ -234,6 +239,12 @@ export function VideoReport({
             </div>
             <div className="mt-[10px]">
               <ScoreBreakdown score={displayScore} pass={counts.pass} partial={counts.partial} fail={counts.fail} revealed={revealed} />
+              {isStalePlatform && (
+                <p className="mt-[10px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-warn-text)" }}>
+                  {selectedPlatform} hasn&apos;t been scored with the current criteria yet — showing {asset.platforms[0]}&apos;s
+                  result instead. Upload a revision to refresh it.
+                </p>
+              )}
               <p className="mt-[10px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
                 {percentile === null
                   ? "First video analyzed in this set — not comparable to static scores."
