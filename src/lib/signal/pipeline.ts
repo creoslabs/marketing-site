@@ -27,7 +27,7 @@ export type PipelineResult = {
   criteria: Criterion[];
   platformResults: PlatformResult[];
   findings: VideoFinding[] | StaticFinding[];
-  topFix: { title: string; clears: number; body: string };
+  topFix: { title: string; clears: number; criteria: string[]; body: string };
   frames?: { t: number; buffer: Buffer }[];
 };
 
@@ -142,7 +142,7 @@ export async function runVideoPipeline(filePath: string, platforms: Platform[], 
     criteria: primary.criteria,
     platformResults,
     findings: judged.findings,
-    topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, body: judged.topFix.body },
+    topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, criteria: judged.topFix.addressesCriteria, body: judged.topFix.body },
     frames,
   };
 }
@@ -168,6 +168,6 @@ export async function runStaticPipeline(filePath: string, platforms: Platform[],
     criteria: primary.criteria,
     platformResults,
     findings: judged.findings,
-    topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, body: judged.topFix.body },
+    topFix: { title: judged.topFix.title, clears: judged.topFix.addressesCriteria.length, criteria: judged.topFix.addressesCriteria, body: judged.topFix.body },
   };
 }

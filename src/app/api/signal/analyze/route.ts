@@ -103,6 +103,7 @@ export async function POST(request: Request) {
         duration_seconds: result.durationSeconds ?? null,
         top_fix_title: result.topFix.title,
         top_fix_clears: result.topFix.clears,
+        top_fix_criteria: result.topFix.criteria,
         top_fix_body: result.topFix.body,
       })
       .eq("id", assetId);

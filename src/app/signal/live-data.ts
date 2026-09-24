@@ -198,7 +198,7 @@ type AssetDetail = {
   // the primary's score/criteria are already on `asset`/`criteria` above.
   platformScores: PlatformScore[];
   findings: VideoFinding[] | StaticFinding[];
-  topFix: { title: string; clears: number; body: string };
+  topFix: { title: string; clears: number; criteria: string[]; body: string };
   assetUrl: string | null;
   frames?: { t: number; url: string }[];
   durationSeconds: number | undefined;
@@ -284,6 +284,7 @@ export const getAssetDetail = cache(async (id: string): Promise<AssetDetail | nu
   const topFix = {
     title: assetRow.top_fix_title ?? "",
     clears: assetRow.top_fix_clears ?? 0,
+    criteria: assetRow.top_fix_criteria ?? [],
     body: assetRow.top_fix_body ?? "",
   };
 

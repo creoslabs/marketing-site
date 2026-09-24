@@ -47,7 +47,7 @@ export function VideoReport({
   criteria: Criterion[];
   platformScores: PlatformScore[];
   findings: VideoFinding[];
-  topFix: { title: string; clears: number; body: string };
+  topFix: { title: string; clears: number; criteria: string[]; body: string };
   median: number;
   percentile: number | null;
   frames?: { t: number; url: string }[];
@@ -123,6 +123,7 @@ export function VideoReport({
     median,
     percentile,
     thumbnailUrl: frames && frames.length > 0 ? frames[0].url : null,
+    durationSeconds,
   };
 
   return (

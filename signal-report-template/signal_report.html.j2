@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Signal — Best-Practice Report — {{ file.name }}</title>
+<style>
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: {{ theme.bg }};
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+</style>
+</head>
+<body style="--accent: {{ accent | default('#2997ff') }};">
+
+{% macro status_pill(status) -%}
+{%- if status == 'pass' -%}
+<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px 4px 9px; border-radius: 9999px; background: {{ theme.pass_bg }}; border: 1px solid {{ theme.pass_border }}; color: {{ theme.accent_ink }}; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ theme.accent_ink }}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Pass</span>
+{%- elif status == 'partial' -%}
+<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px 4px 9px; border-radius: 9999px; background: {{ theme.partial_bg }}; border: 1px solid {{ theme.partial_border }}; color: {{ theme.warn_ink }}; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ theme.warn_ink }}" stroke-width="3.5" stroke-linecap="round"><path d="M12 8v5"></path><circle cx="12" cy="16.2" r="0.4" fill="{{ theme.warn_ink }}" stroke="none"></circle></svg>Partial</span>
+{%- else -%}
+<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px 4px 9px; border-radius: 9999px; background: {{ theme.fail_bg }}; border: 1px solid {{ theme.fail_border }}; color: {{ theme.danger_ink }}; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="{{ theme.danger_ink }}" stroke-width="3.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>Fail</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro criterion_row(row, is_last) -%}
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; {% if row.status == 'fail' %}padding: 18px 12px; margin: 0 -12px; background: {{ theme.fail_row_tint }}; border-radius: 8px;{% else %}padding: 18px 0;{% endif %}{% if not is_last %} border-bottom: 1px solid {{ theme.border }};{% endif %}">
+  <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+    <span style="font-size: 15px; font-weight: 600; color: {{ theme.ink }};">{{ row.name }}</span>
+    <span style="font-size: 13px; color: {{ theme.ink_secondary }}; line-height: 1.5; text-wrap: pretty;">{{ row.detail }}</span>
+  </div>
+  <div style="flex-shrink: 0; padding-top: 2px;">{{ status_pill(row.status) }}</div>
+</div>
+{%- if row.panel %}
+<div style="padding: 4px 0 22px 0; border-bottom: 1px solid {{ theme.border }};">
+  {{ frame_map_panel(row.panel) }}
+</div>
+{%- endif %}
+{%- endmacro %}
+
+{% macro frame_map_panel(panel) -%}
+<div style="background: {{ theme.panel_bg }}; border: 1px solid {{ theme.panel_border }}; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: {{ theme.panel_shadow }};">
+  <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: {{ theme.ink_secondary }}; text-transform: uppercase;">{{ panel.caption }}</span>
+  <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+    {% for frame in panel.frames %}
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+      <div style="position: relative; width: 104px; height: 185px; border-radius: 8px; border: 1px solid {{ theme.frame_border }}; background: {{ theme.frame_bg }}; overflow: hidden; flex-shrink: 0; box-shadow: {{ theme.frame_shadow }}; box-sizing: border-box;">
+        {% for band in frame.bands %}
+        {% if band.tone == 'hatch' %}
+        <div style="position: absolute; left: 0; right: 0; top: {{ band.top }}%; height: {{ band.height }}%; background: repeating-linear-gradient(45deg, {{ theme.hatch_strong }} 0px, {{ theme.hatch_strong }} 4px, {{ theme.hatch_soft }} 4px, {{ theme.hatch_soft }} 8px); display: flex; align-items: center; justify-content: center;">
+          <span style="font-size: 7px; font-weight: 700; color: {{ theme.danger_tint_text }};">{{ band.label }}</span>
+        </div>
+        {% elif band.tone == 'danger' %}
+        <div style="position: absolute; left: 0; right: 0; top: {{ band.top }}%; height: {{ band.height }}%; background: {{ band.strong | default(false) and theme.danger_tint_bg_strong or theme.danger_tint_bg }}; {% if band.bordered %}border-top: 1px dashed {{ theme.danger_tint_border_dashed }}; border-bottom: 1px dashed {{ theme.danger_tint_border_dashed }};{% endif %} display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 4px;">
+          <span style="font-size: 8px; font-weight: 700; color: {{ theme.danger_tint_text }}; text-align: center; line-height: 1.2;">{{ band.label }}</span>
+        </div>
+        {% else %}
+        <div style="position: absolute; left: 0; right: 0; top: {{ band.top }}%; height: {{ band.height }}%; background: {{ theme.info_tint_bg }}; {% if band.bordered %}border-bottom: 1px dashed {{ theme.info_tint_border_dashed }};{% endif %} display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 4px;">
+          <span style="font-size: 8px; font-weight: 700; color: {{ theme.info_tint_text }}; text-align: center; line-height: 1.2;">{{ band.label }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      <span style="font-size: 11px; font-weight: 700; color: {{ theme.ink }}; font-variant-numeric: tabular-nums;">{{ frame.timestamp }}</span>
+    </div>
+    {% endfor %}
+    <div style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1; min-width: 180px; padding-top: 4px;">
+      {% for item in panel.legend %}
+      <div style="display: flex; align-items: center; gap: 6px;">
+        {% if item.tone == 'hatch' %}
+        <span style="width: 10px; height: 10px; border-radius: 2px; background: repeating-linear-gradient(45deg, {{ theme.legend_hatch_strong }} 0px, {{ theme.legend_hatch_strong }} 2px, {{ theme.legend_hatch_soft }} 2px, {{ theme.legend_hatch_soft }} 4px); flex-shrink: 0;"></span>
+        {% else %}
+        <span style="width: 10px; height: 10px; border-radius: 2px; background: {{ theme.legend_info_swatch_bg }}; border: 1px dashed {{ theme.legend_info_swatch_border }}; flex-shrink: 0;"></span>
+        {% endif %}
+        <span style="font-size: 12px; color: {{ theme.ink_secondary }};">{{ item.label }}</span>
+      </div>
+      {% endfor %}
+      <span style="font-size: 12px; color: {{ theme.ink_secondary }}; line-height: 1.5; text-wrap: pretty;">{{ panel.note }}</span>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+<div style="width: 816px; box-sizing: border-box; padding: 72px; display: flex; flex-direction: column; gap: 48px; color: {{ theme.ink }};">
+
+  <!-- HERO / MASTHEAD -->
+  <div style="position: relative; overflow: hidden; background: {{ theme.hero_bg }}; {% if theme.hero_border != 'none' %}border-bottom: {{ theme.hero_border }};{% endif %} margin: -72px -72px 0 -72px; width: calc(100% + 144px); padding: 56px 72px 48px 72px; display: flex; flex-direction: column; gap: 24px; box-sizing: border-box;">
+
+    {% if theme.hero_glow %}
+    <div style="position: absolute; z-index: -1; top: -160px; right: -100px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, {{ theme.accent_raw }} 0%, rgba(41,151,255,0) 70%); opacity: 0.18; pointer-events: none;"></div>
+    <div style="position: absolute; z-index: -1; bottom: -180px; left: -120px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, {{ theme.accent_raw }} 0%, rgba(41,151,255,0) 70%); opacity: 0.08; pointer-events: none;"></div>
+    {% else %}
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: {{ theme.accent_raw }};"></div>
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme.accent_raw }}; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 21px; font-weight: 700; color: {{ theme.ink }}; letter-spacing: -0.01em;">{{ product_name | default('Signal') }}</span>
+          <span style="font-size: 11px; color: {{ theme.hero_secondary }};">by Creos Labs</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: {{ theme.accent_ink }}; text-transform: uppercase;">Best-practice report</span>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: {{ theme.hero_secondary if theme.hero_glow else theme.border }}; {% if theme.hero_glow %}opacity: 0.12;{% endif %}"></div>
+
+    <div style="display: flex; gap: 24px; align-items: flex-start;">
+      <div style="position: relative; width: 96px; height: 171px; border-radius: 12px; background: {{ theme.video_thumb_bg }}; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7-11-7z" fill="{{ theme.video_thumb_icon }}" opacity="0.85"></path></svg>
+        <span style="position: absolute; bottom: 8px; right: 8px; font-size: 10px; color: {{ theme.video_thumb_label }}; font-weight: 600;">{{ file.aspect_label | default('9:16') }}</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1; min-width: 0;">
+        <span style="font-size: 30px; font-weight: 700; color: {{ theme.ink }}; letter-spacing: -0.02em; text-wrap: balance;">{{ file.name }}</span>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span style="display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 9999px; background: {{ 'rgba(255,255,255,0.06)' if theme.hero_glow else 'rgba(0,0,0,0.04)' }}; border: 1px solid {{ 'rgba(255,255,255,0.14)' if theme.hero_glow else 'rgba(0,0,0,0.12)' }}; font-size: 12px; font-weight: 600; color: {{ theme.ink }}; white-space: nowrap;">{{ file.format_tag }}</span>
+          <span style="font-size: 13px; color: {{ theme.hero_secondary }};">{{ file.platform }} · {{ file.date }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: {{ theme.hero_secondary if theme.hero_glow else theme.border }}; {% if theme.hero_glow %}opacity: 0.12;{% endif %}"></div>
+
+    <div style="display: flex; gap: 32px; align-items: center; flex-wrap: wrap;">
+      <div style="position: relative; width: 136px; height: 136px; flex-shrink: 0;">
+        <svg width="136" height="136" viewBox="0 0 136 136" style="transform: rotate(-90deg);">
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="{{ theme.accent_raw }}" stop-opacity="0.55"></stop>
+              <stop offset="100%" stop-color="{{ theme.accent_raw }}" stop-opacity="1"></stop>
+            </linearGradient>
+          </defs>
+          <circle cx="68" cy="68" r="58" fill="none" stroke="{{ theme.score_ring_track }}" stroke-width="11"></circle>
+          <circle cx="68" cy="68" r="58" fill="none" stroke="url(#scoreGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="{{ (score.value / 100 * 364.4) | round(1) }} 364.4"></circle>
+        </svg>
+        <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0px;">
+          <span style="font-size: 38px; font-weight: 700; color: {{ theme.ink }}; letter-spacing: -0.02em; line-height: 1;">{{ score.value }}</span>
+          <span style="font-size: 11px; color: {{ theme.hero_secondary }}; font-weight: 600;">/ 100</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; flex-grow: 1; min-width: 220px;">
+        <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{ theme.ink }};"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme.legend_pass }}; flex-shrink: 0;"></span>{{ score.pass_count }} pass</span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{ theme.ink }};"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme.legend_partial }}; flex-shrink: 0;"></span>{{ score.partial_count }} partial</span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{ theme.ink }};"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme.legend_fail }}; flex-shrink: 0;"></span>{{ score.fail_count }} fail</span>
+        </div>
+        {% set total = score.pass_count + score.partial_count + score.fail_count %}
+        <div style="display: flex; width: 100%; height: 10px; border-radius: 9999px; overflow: hidden;">
+          <div style="width: {{ (score.pass_count / total * 100) | round(2) }}%; height: 100%; background: {{ theme.legend_pass }};"></div>
+          <div style="width: {{ (score.partial_count / total * 100) | round(2) }}%; height: 100%; background: {{ theme.legend_partial }};"></div>
+          <div style="width: {{ (score.fail_count / total * 100) | round(2) }}%; height: 100%; background: {{ theme.legend_fail }};"></div>
+        </div>
+        <span style="font-size: 13px; color: {{ theme.hero_secondary }};">{{ score.percentile_label }} · {{ total }} criteria checked</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: {{ theme.hero_secondary }}; text-transform: uppercase;">Benchmark vs. set median</span>
+      <div style="position: relative; width: 100%; height: 8px; border-radius: 9999px; background: {{ theme.benchmark_track }};">
+        <div style="position: absolute; left: 0; top: 0; height: 8px; width: {{ score.value }}%; border-radius: 9999px; background: {{ theme.accent_raw }};"></div>
+        <div style="position: absolute; left: {{ score.median }}%; top: -4px; width: 2px; height: 16px; background: {{ theme.benchmark_tick }};"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: {{ theme.hero_secondary }};">
+        <span>0</span>
+        <span>median {{ score.median }}</span>
+        <span>100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIER 1 -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; font-weight: 700; color: {{ theme.tier_chip_text }}; border: 1px solid {{ theme.tier_chip_border }}; border-radius: 4px; padding: 2px 6px; font-variant-numeric: tabular-nums;">01</span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: {{ theme.tier_chip_text }}; text-transform: uppercase;">{{ tier1.label | default('Tier 1 · Structural') }}</span>
+    </div>
+    <div style="display: flex; flex-direction: column; border-top: 1px solid {{ theme.border }};">
+      {% for row in tier1.rows %}
+      {{ criterion_row(row, loop.last) }}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TIER 2 -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 11px; font-weight: 700; color: {{ theme.tier_chip_text }}; border: 1px solid {{ theme.tier_chip_border }}; border-radius: 4px; padding: 2px 6px; font-variant-numeric: tabular-nums;">02</span>
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: {{ theme.tier_chip_text }}; text-transform: uppercase;">{{ tier2.label | default('Tier 2 · Contextual') }}</span>
+    </div>
+    <div style="display: flex; flex-direction: column; border-top: 1px solid {{ theme.border }};">
+      {% for row in tier2.rows %}
+      {{ criterion_row(row, loop.last) }}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- FINDINGS -->
+  <div style="display: flex; flex-direction: column; gap: 20px;">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: {{ theme.tier_chip_text }}; text-transform: uppercase;">Findings · Timestamped</span>
+
+    <div style="display: flex; flex-direction: column; gap: 0;">
+      <div style="position: relative; height: 34px;">
+        {% for mark in findings_timeline if mark.row == 0 %}
+        <div style="position: absolute; left: {{ mark.position }}%; bottom: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <span style="font-size: 10px; font-weight: 600; color: {{ theme.hero_secondary }}; white-space: nowrap; font-variant-numeric: tabular-nums;">{{ mark.timestamp }}</span>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme[mark.status + '_ink'] }}; flex-shrink: 0;"></span>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="position: relative; height: 1px; background: {{ theme.border }};"></div>
+      <div style="position: relative; height: 34px;">
+        {% for mark in findings_timeline if mark.row == 1 %}
+        <div style="position: absolute; left: {{ mark.position }}%; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: {{ theme[mark.status + '_ink'] }}; flex-shrink: 0;"></span>
+          <span style="font-size: 10px; font-weight: 600; color: {{ theme.hero_secondary }}; white-space: nowrap; font-variant-numeric: tabular-nums;">{{ mark.timestamp }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      {% for f in findings %}
+      <div style="border: 1px solid {{ theme.card_border }}; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: {{ theme.card_shadow }};">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px; background: {{ theme.findings_badge_bg }}; color: {{ theme.findings_badge_text }}; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;">{{ f.timestamp }}</span>
+          <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: {{ theme.ink_secondary }}; text-transform: uppercase;">{{ f.tier }}</span>
+        </div>
+        <span style="font-size: 14px; font-weight: 600; color: {{ theme.ink }};">{{ f.title }}</span>
+        <span style="font-size: 13px; color: {{ theme.ink_secondary }}; line-height: 1.5; text-wrap: pretty;">{{ f.detail }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- TOP FIX -->
+  <div style="background: {{ theme.top_fix_bg }}; border: 1px solid {{ theme.top_fix_border }}; border-radius: 16px; padding: 32px; display: flex; gap: 20px; align-items: flex-start; box-shadow: {{ theme.top_fix_shadow }};">
+    <div style="flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: {{ theme.top_fix_icon_bg }}; border: 1px solid {{ theme.top_fix_icon_border }}; display: flex; align-items: center; justify-content: center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ theme.top_fix_icon_stroke }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"></path></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+      <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; color: {{ theme.tier_chip_text }}; text-transform: uppercase;">Top fix · Clears {{ top_fix.checklist | length }} checks</span>
+      <span style="font-size: 19px; font-weight: 700; color: {{ theme.ink }}; line-height: 1.35; text-wrap: balance;">{{ top_fix.headline }}</span>
+      <span style="font-size: 14px; color: {{ theme.ink_secondary }}; line-height: 1.55; text-wrap: pretty;">{{ top_fix.body }}</span>
+      <div style="display: flex; flex-direction: column; gap: 9px; padding-top: 6px; border-top: 1px solid {{ theme.top_fix_divider }}; margin-top: 2px;">
+        {% for item in top_fix.checklist %}
+        <div style="display: flex; align-items: center; gap: 10px; {% if loop.first %}padding-top: 8px;{% endif %}">
+          <span style="width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid {{ theme.checklist_box_border }}; flex-shrink: 0;"></span>
+          <span style="font-size: 13px; font-weight: 600; color: {{ theme.ink }};">{{ item }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSING -->
+  <div style="display: flex; flex-direction: column; gap: 16px; align-items: center; padding-top: 8px;">
+    <div style="width: 100%; height: 1px; background: {{ theme.border }};"></div>
+    <span style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 9999px; border: 1px solid {{ theme.cta_border }}; font-size: 12px; font-weight: 600; color: {{ theme.cta_text }};">Made these changes? Re-run {{ product_name | default('Signal') }} to confirm the score moves.</span>
+    <span style="font-size: 12px; color: {{ theme.footer_text }}; letter-spacing: 0.04em;">Creos Labs · {{ product_name | default('Signal') }}</span>
+  </div>
+
+</div>
+
+</body>
+</html>

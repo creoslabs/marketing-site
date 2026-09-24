@@ -30,7 +30,7 @@ export function StaticReport({
   criteria: Criterion[];
   platformScores: PlatformScore[];
   findings: StaticFinding[];
-  topFix: { title: string; clears: number; body: string };
+  topFix: { title: string; clears: number; criteria: string[]; body: string };
   median: number;
   percentile: number | null;
   assetUrl?: string | null;

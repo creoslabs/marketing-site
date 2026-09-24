@@ -1,0 +1,179 @@
+{
+  "accent": "#2997ff",
+  "product_name": "Signal",
+  "file": {
+    "name": "video_1.mp4",
+    "format_tag": "VIDEO · 0:08 · 9:16",
+    "platform": "Instagram",
+    "date": "Sep 18",
+    "aspect_label": "9:16"
+  },
+  "score": {
+    "value": 50,
+    "pass_count": 5,
+    "partial_count": 6,
+    "fail_count": 5,
+    "median": 63,
+    "percentile_label": "0th percentile among videos in this set"
+  },
+  "tier1": {
+    "label": "Tier 1 · Structural",
+    "rows": [
+      { "name": "Aspect ratio", "status": "pass", "detail": "720×1280 (1.78:1)" },
+      { "name": "Resolution", "status": "partial", "detail": "720×1280" },
+      { "name": "Duration", "status": "pass", "detail": "0:08, within platform pacing" },
+      { "name": "Hook window audio onset", "status": "fail", "detail": "Onset at 0:08, after the hook window" },
+      {
+        "name": "Safe-zone overlap across full runtime",
+        "status": "fail",
+        "detail": "At 0:01–0:04 the headline \"Smart saving, sweet rewards.\" sits in the upper third but disclaimer text at 0:02–0:04 is placed just above the bottom third (~75–80% down), close to the bottom 20% exclusion zone, and at 0:06–0:08 the \"5.10% p.a\" block and disclaimer text run from ~25% to ~75% height, with disclaimer text extending into the bottom ~20% safe zone boundary.",
+        "panel": {
+          "caption": "Safe-zone map · where the on-screen text lands",
+          "frames": [
+            {
+              "timestamp": "0:01–0:04",
+              "bands": [
+                { "top": 0, "height": 33, "tone": "info", "bordered": true, "label": "Headline" },
+                { "top": 75, "height": 9, "tone": "danger", "strong": true, "label": "Disclaimer" }
+              ]
+            },
+            {
+              "timestamp": "0:06–0:08",
+              "bands": [
+                { "top": 25, "height": 50, "tone": "danger", "bordered": true, "label": "Rate + disclaimer" },
+                { "top": 80, "height": 20, "tone": "hatch", "label": "20% exclusion" }
+              ]
+            }
+          ],
+          "legend": [
+            { "tone": "info", "label": "On-screen text" },
+            { "tone": "hatch", "label": "Bottom 20% exclusion zone" }
+          ],
+          "note": "The disclaimer text overlaps the bottom exclusion zone in both windows shown — the band most apps reserve for captions and UI controls."
+        }
+      },
+      {
+        "name": "Cut frequency vs platform pacing",
+        "status": "partial",
+        "detail": "Only one hard cut is visible, at 0:05 (solid color transition frame) separating the candy-jar scene (0:00–0:04) from the end-card (0:06–0:08); for an 8.3s vertical ad this is a single transition, slower than the typical 2–3 cuts recommended for short-form pacing."
+      },
+      {
+        "name": "Hook window motion detected",
+        "status": "pass",
+        "detail": "Frames 0:00–0:03 show a hand actively moving into the candy bowl, fingers shifting position between frames, indicating continuous motion in the first four seconds."
+      },
+      {
+        "name": "Hook window face detected",
+        "status": "partial",
+        "detail": "A blurred, out-of-focus partial face is visible in the background at 0:00–0:03 but it is not in focus or centered, so it's only weakly detectable."
+      },
+      {
+        "name": "Hook window text on screen",
+        "status": "pass",
+        "detail": "Text \"Smart saving, sweet rewards.\" appears by 0:01 and remains through 0:03, well within the four-second hook window."
+      },
+      {
+        "name": "On-screen text coverage",
+        "status": "partial",
+        "detail": "At 0:02–0:04 three text blocks (headline plus legal disclaimer) are stacked simultaneously, and at 0:06–0:08 the end card has headline, subhead, disclaimer and CTA button all visible at once, covering roughly 40–50% of vertical frame space."
+      }
+    ]
+  },
+  "tier2": {
+    "label": "Tier 2 · Contextual",
+    "rows": [
+      {
+        "name": "Product first appearance",
+        "status": "fail",
+        "detail": "The actual product (IMB Bank term deposit / logo) does not appear until the end card at 0:06; the first six seconds show only a candy-bowl metaphor with no bank branding or product visual."
+      },
+      {
+        "name": "Product visible duration",
+        "status": "fail",
+        "detail": "Bank logo and product name (\"imb bank\", \"6 month Term Deposit\") are only visible from 0:06 to 0:08 — roughly 2.3 seconds out of 8.3 total runtime (~28%)."
+      },
+      {
+        "name": "Message clarity in hook window",
+        "status": "partial",
+        "detail": "By 0:01–0:03 the tagline \"Smart saving, sweet rewards.\" conveys a savings theme, but no specific product, rate or bank name is shown until 0:06, so the core offer is unclear in the hook window."
+      },
+      {
+        "name": "Native feel vs polished ad",
+        "status": "partial",
+        "detail": "The candy-bowl lifestyle footage (0:00–0:04) has a native, UGC-like handheld feel, but the abrupt cut to a highly designed, branded end card at 0:06–0:08 breaks the native illusion partway through."
+      },
+      {
+        "name": "Text legibility & hold time",
+        "status": "pass",
+        "detail": "The \"5.10% p.a\" rate text and \"OPEN ONLINE\" CTA at 0:06–0:08 use high-contrast neon green on a dark teal background and hold for roughly two-plus seconds each, making them easily legible."
+      },
+      {
+        "name": "Sound-off redundancy",
+        "status": "fail",
+        "detail": "Audio onset is at 0:08, meaning the first eight seconds — the entire hook window and offer explanation — carry no audio cue and no captions restating the spoken content, relying solely on on-screen text."
+      }
+    ]
+  },
+  "findings_timeline": [
+    { "timestamp": "0:01", "position": 14, "status": "pass", "row": 0 },
+    { "timestamp": "0:05", "position": 62, "status": "partial", "row": 0 },
+    { "timestamp": "0:08", "position": 98, "status": "fail", "row": 0 },
+    { "timestamp": "0:00", "position": 2, "status": "fail", "row": 1 },
+    { "timestamp": "0:02", "position": 26, "status": "partial", "row": 1 },
+    { "timestamp": "0:06", "position": 74, "status": "fail", "row": 1 },
+    { "timestamp": "0:08", "position": 98, "status": "pass", "row": 1 }
+  ],
+  "findings": [
+    {
+      "timestamp": "0:00",
+      "tier": "Tier 2",
+      "title": "Product first appearance",
+      "detail": "At 0:00 the frame shows only a hand reaching into a candy bowl with no bank product, logo, or brand cue present."
+    },
+    {
+      "timestamp": "0:01",
+      "tier": "Tier 1",
+      "title": "Hook window text on screen",
+      "detail": "By 0:01 the headline \"Smart saving, sweet rewards.\" appears in bold white and green text within the first second of the hook window."
+    },
+    {
+      "timestamp": "0:02",
+      "tier": "Tier 1",
+      "title": "On-screen text coverage",
+      "detail": "At 0:02 three separate text elements (headline plus a dense legal disclaimer block) are stacked on screen simultaneously, increasing visual clutter."
+    },
+    {
+      "timestamp": "0:05",
+      "tier": "Tier 1",
+      "title": "Cut frequency vs platform pacing",
+      "detail": "At 0:05 the video cuts to a flat two-color transition frame, marking the only major scene cut in the entire 8.3-second runtime."
+    },
+    {
+      "timestamp": "0:06",
+      "tier": "Tier 2",
+      "title": "Product visible duration",
+      "detail": "The IMB Bank logo and \"5.10% p.a, 6 month Term Deposit\" offer first appear at 0:06, leaving only ~2.3 seconds for product and brand visibility."
+    },
+    {
+      "timestamp": "0:08",
+      "tier": "Tier 2",
+      "title": "Sound-off redundancy",
+      "detail": "Audio onset occurs at 0:08, the very end of the video, meaning virtually the entire ad plays silently with no synced narration to reinforce the text."
+    },
+    {
+      "timestamp": "0:08",
+      "tier": "Tier 2",
+      "title": "Text legibility & hold time",
+      "detail": "At 0:08 the CTA \"OPEN ONLINE\" button uses high-contrast neon green against dark teal, remaining legible and held steady through the final frame."
+    }
+  ],
+  "top_fix": {
+    "headline": "Move the bank logo, product name, and rate into the first 2–3 seconds instead of withholding them until 0:06.",
+    "body": "Currently the entire hook window (0–4s) is a generic candy-bowl metaphor with zero brand or product cues, so viewers who drop off before six seconds never see what's being advertised. Front-loading the \"5.10% p.a\" Term Deposit offer and the IMB Bank logo would fix the three checks below simultaneously.",
+    "checklist": [
+      "Product first appearance",
+      "Product visible duration",
+      "Message clarity in hook window"
+    ]
+  }
+}
