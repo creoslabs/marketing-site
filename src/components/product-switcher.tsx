@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { OutlierMark, SignalMark } from "./product-icons";
 
 const PRODUCTS = [
-  { key: "outlier", href: "/outlier", label: "Outlier" },
-  { key: "signal", href: "/signal", label: "Signal" },
+  { key: "outlier", href: "/outlier", label: "Outlier", Mark: OutlierMark },
+  { key: "signal", href: "/signal", label: "Signal", Mark: SignalMark },
 ] as const;
 
 export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) {
@@ -34,8 +35,9 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-[5px]"
+          className="flex items-center gap-[7px]"
         >
+          <active.Mark size={18} />
           <span className="text-[17px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
             {active.label}
           </span>
@@ -54,7 +56,10 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
                 className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[8px] text-[12.5px] font-medium"
                 style={{ color: p.key === current ? "var(--ws-ink)" : "var(--ws-ink-60)" }}
               >
-                {p.label}
+                <span className="flex items-center gap-[8px]">
+                  <p.Mark size={15} />
+                  {p.label}
+                </span>
                 {p.key === current && <span style={{ color: "var(--ws-accent-text)" }}>•</span>}
               </Link>
             ))}

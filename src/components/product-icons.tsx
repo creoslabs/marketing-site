@@ -17,30 +17,36 @@ export function CreosMark({ size = 20, className }: IconProps) {
   );
 }
 
-// Outlier: a tight cluster of ordinary points, plus one point that's broken
-// away from the group — the statistical-outlier concept, literally.
+// Outlier: a baseline of ordinary points fading in, plus one point that's
+// broken away above — the statistical-outlier concept, literally. The
+// baseline dots and connecting dash use currentColor so they inherit
+// whatever ink color the surrounding context already uses (nav text, a
+// stat-card heading, etc.); only the outlier point itself carries the fixed
+// brand accent (--outlier-accent — swaps to the on-dark tint automatically
+// since it's set per .ws theme).
 export function OutlierMark({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <circle cx="8" cy="15" r="1.6" fill="currentColor" opacity="0.35" />
-      <circle cx="12.5" cy="16.5" r="1.6" fill="currentColor" opacity="0.35" />
-      <circle cx="10" cy="18.5" r="1.6" fill="currentColor" opacity="0.35" />
-      <circle cx="14" cy="13" r="1.6" fill="currentColor" opacity="0.35" />
-      <path d="M12 14 L18.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeDasharray="1.5 2" opacity="0.4" />
-      <circle cx="19" cy="6" r="2.6" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" className={className} aria-hidden>
+      <circle cx="20" cy="84" r="9" fill="currentColor" opacity="0.3" />
+      <circle cx="46" cy="90" r="9" fill="currentColor" opacity="0.65" />
+      <circle cx="72" cy="86" r="9" fill="currentColor" />
+      <line x1="92" y1="80" x2="92" y2="50" stroke="currentColor" strokeWidth="3" strokeDasharray="3 7" strokeLinecap="round" opacity="0.35" />
+      <circle cx="92" cy="34" r="15" fill="var(--outlier-accent, #3b82f6)" />
     </svg>
   );
 }
 
-// Signal: a simple ascending bar read — the "score" concept, not a generic
-// analytics chart (deliberately just four bars, no axes/labels).
+// Signal: broadcast arcs radiating from a source point — the "signal" being
+// read, not a generic analytics chart. Reads fine on both light and dark
+// grounds at the same fixed accent color, so unlike OutlierMark nothing
+// here uses currentColor.
 export function SignalMark({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <rect x="4" y="14" width="3.2" height="6" rx="1" fill="currentColor" opacity="0.4" />
-      <rect x="9.4" y="10" width="3.2" height="10" rx="1" fill="currentColor" opacity="0.6" />
-      <rect x="14.8" y="12" width="3.2" height="8" rx="1" fill="currentColor" opacity="0.5" />
-      <rect x="19" y="6" width="3.2" height="14" rx="1" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 120 120" fill="none" className={className} aria-hidden>
+      <path d="M 37,76.7 A 30,30 0 0 1 83,76.7" stroke="var(--signal-accent, #8b5cf6)" strokeWidth="10" strokeLinecap="round" />
+      <path d="M 24.8,66.4 A 46,46 0 0 1 95.2,66.4" stroke="var(--signal-accent, #8b5cf6)" strokeWidth="8" strokeLinecap="round" opacity="0.65" />
+      <path d="M 12.5,56.1 A 62,62 0 0 1 107.5,56.1" stroke="var(--signal-accent, #8b5cf6)" strokeWidth="6" strokeLinecap="round" opacity="0.4" />
+      <circle cx="60" cy="96" r="10" fill="var(--signal-accent, #8b5cf6)" />
     </svg>
   );
 }

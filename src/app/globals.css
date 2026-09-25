@@ -350,6 +350,14 @@ button:hover .cta-arrow {
   --ws-warn-tint: #210d07;
   --ws-warn-tint-ink: #ffdbd0;
 
+  /* Product brand accents (OutlierMark/SignalMark in product-icons.tsx) —
+     fixed per-product identity colors, not part of the general .ws palette.
+     Outlier's ink-colored dots use currentColor and don't need a token; only
+     its accent point swaps for on-dark contrast. Signal's arcs are already
+     legible on both grounds, so one value covers both themes. */
+  --outlier-accent: #60a5fa;
+  --signal-accent: #8b5cf6;
+
   background: var(--ws-ground);
   color: var(--ws-ink);
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -381,6 +389,7 @@ button:hover .cta-arrow {
   --ws-warn-text: #d14424;
   --ws-warn-tint: #ffeee9;
   --ws-warn-tint-ink: #5c1f0c;
+  --outlier-accent: #3b82f6;
 }
 
 .ws .ws-placeholder {

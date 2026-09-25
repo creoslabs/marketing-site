@@ -1,0 +1,10 @@
+<!-- Spec: "same as light version — the purple already reads fine on dark;
+     use #A78BFA if it needs more contrast." At favicon/tile sizes on the
+     #15171C ground it does benefit, so this dark-ground variant uses the
+     lighter tint; the base #8B5CF6 file is what a light-ground context wants. -->
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M 37,76.7 A 30,30 0 0 1 83,76.7" stroke="#A78BFA" stroke-width="10" stroke-linecap="round"/>
+  <path d="M 24.8,66.4 A 46,46 0 0 1 95.2,66.4" stroke="#A78BFA" stroke-width="8" stroke-linecap="round" opacity="0.65"/>
+  <path d="M 12.5,56.1 A 62,62 0 0 1 107.5,56.1" stroke="#A78BFA" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  <circle cx="60" cy="96" r="10" fill="#A78BFA"/>
+</svg>
