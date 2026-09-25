@@ -6,22 +6,40 @@ import { useRouter } from "next/navigation";
 import type { Creator, Platform, Post } from "../data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb } from "../components";
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
-import { SortDropdown, PlatformFilter, type SortValue } from "./feed-controls";
+import { SortDropdown, type SortValue } from "./feed-controls";
 import { useToast } from "@/components/ws-toast";
 
-const ALL_PLATFORMS: Platform[] = ["TT", "IG", "YT"];
+const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
+const OUTLIER_THRESHOLD = 2;
+const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function isFreshlyPulled(post: Post) {
+  return Date.now() - new Date(post.createdAtIso).getTime() < NEW_WINDOW_MS;
+}
 
 export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; posts: Post[] }) {
   const router = useRouter();
   const toast = useToast();
   const [sort, setSort] = useState<SortValue>("score");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(ALL_PLATFORMS);
+  // null = all platforms. A single click on a chip isolates to just that
+  // platform; clicking the active one again (or "All") clears it — no
+  // dropdown, no multi-select checkboxes to fuss with.
+  const [platformFilter, setPlatformFilter] = useState<Platform | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [favouriting, setFavouriting] = useState(false);
+  // Outliers-only is the default view — the whole point of this feed is
+  // surfacing the posts that broke out, not a chronological dump of
+  // everything pulled. Forced back to true (ignoring the user's own choice)
+  // when nothing has crossed the bar yet, so a thin-history creator never
+  // renders a blank grid with no way to see the posts that exist.
+  const [showAll, setShowAll] = useState(false);
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
-  const above2x = useMemo(() => allPosts.filter((post) => post.score >= 2).length, [allPosts]);
+  const above2x = useMemo(() => allPosts.filter((post) => post.score >= OUTLIER_THRESHOLD).length, [allPosts]);
+  // Only worth showing the isolate chips at all when there's more than one
+  // platform in the watchlist to isolate between.
+  const platformsPresent = useMemo(() => [...new Set(allPosts.map((post) => post.platform))], [allPosts]);
 
   function toggleSelectMode() {
     setSelectMode((v) => !v);
@@ -62,17 +80,30 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
     router.refresh();
   }
 
+  const platformFiltered = useMemo(
+    () => (platformFilter ? allPosts.filter((post) => post.platform === platformFilter) : allPosts),
+    [allPosts, platformFilter]
+  );
+  const outliersOnly = useMemo(
+    () => platformFiltered.filter((post) => post.score >= OUTLIER_THRESHOLD),
+    [platformFiltered]
+  );
+  // Nothing has crossed the bar yet (a thin-history creator, or every
+  // platform with an outlier just got filtered out) — fall back to showing
+  // everything rather than an empty grid with no way to see what exists.
+  const noOutliersYet = platformFiltered.length > 0 && outliersOnly.length === 0;
+  const effectiveShowAll = showAll || noOutliersYet;
+  const hiddenCount = platformFiltered.length - outliersOnly.length;
+
   const posts = useMemo(
     () =>
-      allPosts
-        .filter((post) => selectedPlatforms.includes(post.platform))
-        .sort((a, b) => {
-          if (sort === "views") return b.views - a.views;
-          if (sort === "newest") return new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime();
-          if (sort === "oldest") return new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime();
-          return b.score - a.score;
-        }),
-    [allPosts, selectedPlatforms, sort]
+      [...(effectiveShowAll ? platformFiltered : outliersOnly)].sort((a, b) => {
+        if (sort === "views") return b.views - a.views;
+        if (sort === "newest") return new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime();
+        if (sort === "oldest") return new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime();
+        return b.score - a.score;
+      }),
+    [effectiveShowAll, platformFiltered, outliersOnly, sort]
   );
 
   return (
@@ -83,12 +114,54 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
             Top outliers
           </h1>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {above2x} posts above 2×
+            {noOutliersYet
+              ? "No posts have crossed 2× yet — showing everything pulled."
+              : `${above2x} posts above 2×`}
           </p>
         </div>
         <div className="flex items-center gap-[9px]">
+          {!noOutliersYet && hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
+              style={{ padding: "9px 12px" }}
+            >
+              {showAll ? "Show outliers only" : `Show all posts · ${hiddenCount}`}
+            </button>
+          )}
           <SortDropdown current={sort} onChange={setSort} />
-          <PlatformFilter selected={selectedPlatforms} onChange={setSelectedPlatforms} />
+          {platformsPresent.length > 1 && (
+            <div className="flex items-center gap-[6px]">
+              <button
+                type="button"
+                onClick={() => setPlatformFilter(null)}
+                className="rounded-[20px] text-[12px] font-medium"
+                style={
+                  platformFilter === null
+                    ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
+                    : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
+                }
+              >
+                All
+              </button>
+              {platformsPresent.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPlatformFilter((prev) => (prev === p ? null : p))}
+                  className="rounded-[20px] text-[12px] font-medium"
+                  style={
+                    platformFilter === p
+                      ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
+                      : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
+                  }
+                >
+                  {PLATFORM_LABEL[p]}
+                </button>
+              ))}
+            </div>
+          )}
           {allPosts.length > 0 && (
             <button
               type="button"
@@ -128,7 +201,7 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
         </div>
       ) : posts.length === 0 ? (
         <div className="mt-[18px]">
-          <EmptyState size="large" title="No posts match these filters" description="Try enabling more platforms." />
+          <EmptyState size="large" title="No posts match these filters" description="Try a different platform." />
         </div>
       ) : (
         <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
@@ -157,7 +230,7 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   )}
-                  {selectMode && (
+                  {selectMode ? (
                     <div
                       className="absolute right-[8px] top-[8px] flex h-[20px] w-[20px] items-center justify-center rounded-[5px] text-[12px]"
                       style={
@@ -168,6 +241,22 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
                     >
                       {isSelected ? "✓" : ""}
                     </div>
+                  ) : (
+                    isFreshlyPulled(post) && (
+                      <span
+                        className="absolute right-[8px] top-[8px] rounded-[5px] font-semibold uppercase"
+                        style={{
+                          zIndex: 2,
+                          fontSize: 9.5,
+                          letterSpacing: "0.04em",
+                          padding: "3px 6px",
+                          background: "var(--ws-accent)",
+                          color: "var(--ws-accent-ink)",
+                        }}
+                      >
+                        New
+                      </span>
+                    )
                   )}
                   <div className="absolute left-[8px] top-[8px]" style={{ zIndex: 2 }}>
                     <PlatformBadge platform={post.platform} />
@@ -181,7 +270,7 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
                     }}
                   />
                   <div className="absolute bottom-[8px] left-[8px]" style={{ zIndex: 2 }}>
-                    <ScoreChip score={post.score} />
+                    <ScoreChip score={post.score} median={post.median} />
                   </div>
                 </Thumb>
 

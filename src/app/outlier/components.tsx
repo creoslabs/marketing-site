@@ -92,12 +92,16 @@ export function ThinHistoryPill() {
   );
 }
 
-export function ScoreChip({ score, size = "sm" }: { score: number; size?: "sm" | "lg" }) {
+// median is optional only for callers that genuinely don't have it handy —
+// pass it whenever available so the score reads as "3.1x this creator's own
+// median" on hover instead of a bare, unexplained multiplier.
+export function ScoreChip({ score, median, size = "sm" }: { score: number; median?: number; size?: "sm" | "lg" }) {
   const filled = score >= 4;
   const big = size === "lg";
   return (
     <span
       className="inline-flex items-center rounded-[8px] font-semibold"
+      title={median !== undefined ? `${formatScore(score)} this creator's median — ${median.toLocaleString()} views` : undefined}
       style={{
         fontSize: big ? 20 : 18,
         letterSpacing: "-0.035em",

@@ -258,7 +258,7 @@ export function FavouritesGrid({
                     }}
                   />
                   <div className="absolute bottom-[8px] left-[8px]" style={{ zIndex: 2 }}>
-                    <ScoreChip score={post.score} />
+                    <ScoreChip score={post.score} median={post.median} />
                   </div>
                 </Thumb>
 

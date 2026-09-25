@@ -249,7 +249,7 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
                     <PlatformBadge platform={post.platform} />
                   </div>
                   <div className="absolute bottom-[7px] left-[7px]" style={{ zIndex: 2 }}>
-                    <ScoreChip score={post.score} />
+                    <ScoreChip score={post.score} median={post.median} />
                   </div>
                 </Thumb>
                 <div className="mt-[6px]">

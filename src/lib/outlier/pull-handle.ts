@@ -71,7 +71,12 @@ export async function pullHandle(
   admin: SupabaseClient<any>,
   handle: HandleToPull,
   apiKeys: PullApiKeys,
-  postLimit = 30
+  // 30 meant a prolific creator's older posts could age out of the scrape
+  // window and stop having their views refreshed at all, even if they were
+  // still genuinely picking up steam. 50 doesn't eliminate that (nothing
+  // short of unbounded history would), but it buys meaningfully more runway
+  // for a fairly cheap increase in what each pull fetches.
+  postLimit = 50
 ): Promise<PullOutcome> {
   const { data: jobRow } = await admin
     .from("outlier_jobs")
@@ -138,19 +143,24 @@ export async function pullHandle(
 
     await checkMedianTrend(admin, handle.creator_id, handle.user_id);
 
-    // Auto-analyze the single best new outlier — analyzing every pulled
-    // post (or even every new one) would multiply download+transcribe+
-    // Claude cost across a whole pull for posts nobody will ever look at,
-    // and could easily blow well past this request's time budget. The rest
-    // stay one click away via the manual "Transcribe & analyze" button.
+    // Auto-analyze the single best never-analyzed outlier — analyzing every
+    // pulled post (or even every new one) would multiply download+
+    // transcribe+Claude cost across a whole pull for posts nobody will ever
+    // look at, and could easily blow well past this request's time budget.
+    // The rest stay one click away via the manual "Transcribe & analyze"
+    // button. Eligibility is "never analyzed" rather than "new this pull" —
+    // a post that flopped on day one and later crosses the outlier bar
+    // (its views/likes get refreshed on every pull, same as any other post)
+    // is still a real find and shouldn't be permanently skipped just
+    // because it already existed before this specific pull.
     let autoAnalyzed: string | null = null;
     const { data: allPostRows } = await admin
       .from("outlier_posts")
-      .select("id, external_id, caption, url, video_url, duration_seconds, views")
+      .select("id, external_id, caption, url, video_url, duration_seconds, views, analyzed_at")
       .eq("handle_id", handle.id);
     const median = medianOf((allPostRows ?? []).map((r) => r.views));
     const bestNew = (allPostRows ?? [])
-      .filter((r) => !existingIds.has(r.external_id) && handle.platform !== "YT" && median > 0 && r.views / median >= 3)
+      .filter((r) => r.analyzed_at === null && handle.platform !== "YT" && median > 0 && r.views / median >= 3)
       .sort((a, b) => b.views - a.views)[0];
 
     if (bestNew) {
