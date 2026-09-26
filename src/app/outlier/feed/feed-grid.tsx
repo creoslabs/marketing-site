@@ -17,7 +17,21 @@ function isFreshlyPulled(post: Post) {
   return Date.now() - new Date(post.createdAtIso).getTime() < NEW_WINDOW_MS;
 }
 
-export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; posts: Post[] }) {
+export function FeedGrid({
+  creators,
+  posts: allPosts,
+  title = "Top outliers",
+  backLink,
+  emptyTitle,
+  emptyDescription,
+}: {
+  creators: Creator[];
+  posts: Post[];
+  title?: string;
+  backLink?: { href: string; label: string };
+  emptyTitle?: string;
+  emptyDescription?: string;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [sort, setSort] = useState<SortValue>("score");
@@ -108,10 +122,15 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
+      {backLink && (
+        <Link href={backLink.href} className="mb-[10px] inline-block text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
+          ← {backLink.label}
+        </Link>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-[16px]">
         <div>
           <h1 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-            Top outliers
+            {title}
           </h1>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
             {noOutliersYet
@@ -182,14 +201,15 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
         <div className="mt-[18px]">
           <EmptyState
             size="large"
-            title={creators.length === 0 ? "Nothing to show yet" : "No posts pulled yet"}
+            title={emptyTitle ?? (creators.length === 0 ? "Nothing to show yet" : "No posts pulled yet")}
             description={
-              creators.length === 0
+              emptyDescription ??
+              (creators.length === 0
                 ? "Add a creator to your watchlist to start seeing their posts ranked here."
-                : "Your watchlist is set up — pull now to start scoring posts against each creator's own median."
+                : "Your watchlist is set up — pull now to start scoring posts against each creator's own median.")
             }
             action={
-              creators.length === 0 ? (
+              emptyTitle ? undefined : creators.length === 0 ? (
                 <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "10px 14px" }}>
                   + Add creator
                 </AddCreatorButton>

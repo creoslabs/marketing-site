@@ -209,7 +209,19 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ assetId });
+    // Returning the score/counts here saves a round trip for callers that
+    // want to show a result summary immediately — the batch scorecard in
+    // analyze-dropzone.tsx, specifically — instead of a second fetch per
+    // asset once the queue finishes.
+    const pass = result.criteria.filter((c) => c.verdict === "pass").length;
+    const partial = result.criteria.filter((c) => c.verdict === "partial").length;
+    const fail = result.criteria.filter((c) => c.verdict === "fail").length;
+    return NextResponse.json({
+      assetId,
+      score: result.score,
+      failedChecks: result.failedChecks,
+      counts: { pass, partial, fail },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed.";
     await admin.from("signal_assets").update({ status: "failed", error: message }).eq("id", assetId);

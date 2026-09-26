@@ -187,9 +187,13 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
                 <div className="mt-[10px] flex flex-col gap-[9px]">
                   {patterns.hookTags.map((tag) => (
                     <div key={tag.label} className="flex items-center gap-[9px]">
-                      <span className="min-w-0 flex-1 truncate text-[12px]" style={{ color: "var(--ws-ink)" }}>
+                      <Link
+                        href={`/outlier/tags/${encodeURIComponent(tag.label)}`}
+                        className="min-w-0 flex-1 truncate text-[12px] hover:underline"
+                        style={{ color: "var(--ws-ink)" }}
+                      >
                         {tag.label}
-                      </span>
+                      </Link>
                       <div className="h-[6px] w-[60px] shrink-0 overflow-hidden rounded-full" style={{ background: "var(--ws-surface-header)" }}>
                         <div
                           className="h-full rounded-full"

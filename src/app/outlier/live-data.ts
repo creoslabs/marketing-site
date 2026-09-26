@@ -209,6 +209,7 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
     thin,
     favourite: row.favourited,
     analysisStatus: row.analysis_status,
+    hookTags: row.hook_tags ?? [],
   };
 }
 
@@ -296,6 +297,18 @@ export const getPosts = cache(async (): Promise<Post[]> => {
 export const getFavouritePosts = cache(async (): Promise<Post[]> => {
   const posts = await getPosts();
   return posts.filter((post) => post.favourite);
+});
+
+// Every post across the whole watchlist sharing a hook tag, ranked by
+// score — the "click a tag, see everyone else doing this" view. Same
+// trimmed/lowercased exact-match convention as computePatterns() above, so
+// a click from either the creator page's ranked list or a post's own tag
+// pills lands on the same set.
+export const getPostsByHookTag = cache(async (tag: string): Promise<Post[]> => {
+  const key = tag.trim().toLowerCase();
+  if (!key) return [];
+  const posts = await getPosts();
+  return posts.filter((post) => post.hookTags.some((t) => t.trim().toLowerCase() === key));
 });
 
 export const getCreatorDetail = cache(

@@ -268,13 +268,14 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
               <p className="ws-eyebrow">HOOK STYLE</p>
               <div className="mt-[10px] flex flex-wrap gap-[6px]">
                 {hookTags.map((tag) => (
-                  <span
+                  <Link
                     key={tag}
-                    className="rounded-[20px] text-[11px] font-medium"
+                    href={`/outlier/tags/${encodeURIComponent(tag)}`}
+                    className="rounded-[20px] text-[11px] font-medium transition-opacity hover:opacity-80"
                     style={{ padding: "5px 10px", background: "var(--ws-accent-tint)", color: "var(--ws-accent-tint-ink)" }}
                   >
                     {tag}
-                  </span>
+                  </Link>
                 ))}
               </div>
             </div>

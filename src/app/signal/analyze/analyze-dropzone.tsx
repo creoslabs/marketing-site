@@ -14,6 +14,8 @@ type QueueItem = {
   status: "queued" | "uploading" | "analyzing" | "done" | "error";
   assetId?: string;
   error?: string;
+  score?: number;
+  counts?: { pass: number; partial: number; fail: number };
 };
 
 // The server does this work in one request with no granular progress
@@ -81,11 +83,126 @@ function QueueRow({ item }: { item: QueueItem }) {
   );
 }
 
+function Dot({ color }: { color: string }) {
+  return <span aria-hidden style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block" }} />;
+}
+
+type ScorecardSort = "score" | "order";
+
+// A live, sortable leaderboard for a batch upload (2+ files) — replaces the
+// plain queue list once there's more than one item, so scoring 3-5 variants
+// stays one working session instead of upload → wait → view → repeat for
+// each one individually. Rows still in progress just sink to the bottom
+// (no score yet) until they land.
+function Scorecard({
+  items,
+  sort,
+  onSortChange,
+}: {
+  items: QueueItem[];
+  sort: ScorecardSort;
+  onSortChange: (sort: ScorecardSort) => void;
+}) {
+  const anyDone = items.some((i) => i.status === "done");
+  const sorted =
+    sort === "score"
+      ? [...items].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+      : items;
+
+  return (
+    <div className="mt-[18px]">
+      <div className="flex items-center justify-between px-[2px]">
+        <p className="ws-eyebrow">SCORECARD</p>
+        {anyDone && (
+          <div className="inline-flex rounded-[7px] p-[2px]" style={{ border: "1px solid var(--ws-hairline)" }}>
+            {([
+              { value: "score", label: "Highest score" },
+              { value: "order", label: "Upload order" },
+            ] as const).map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => onSortChange(o.value)}
+                className="rounded-[5px] px-[10px] py-[5px] text-[11px] font-medium"
+                style={sort === o.value ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" } : { color: "var(--ws-ink-60)" }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="ws-stack mt-[10px]">
+        {sorted.map((item, i) => (
+          <ScorecardRow key={item.id} item={item} rank={sort === "score" && item.status === "done" ? i + 1 : undefined} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScorecardRow({ item, rank }: { item: QueueItem; rank?: number }) {
+  const isVideo = item.file.type.startsWith("video/");
+  const stage = useCyclingStage(item.status === "analyzing", isVideo ? VIDEO_STAGES : STATIC_STAGES);
+
+  return (
+    <div className="flex items-center gap-[12px]" style={{ padding: "11px 14px" }}>
+      <span
+        className="ws-tabular flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+        style={{ background: "var(--ws-surface-header)", color: "var(--ws-ink-45)" }}
+      >
+        {rank ?? "–"}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+        {item.file.name}
+      </span>
+      {item.status === "done" && item.counts ? (
+        <>
+          <span className="hidden items-center gap-[8px] sm:inline-flex">
+            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
+              <Dot color="var(--ws-accent-text)" />
+              {item.counts.pass}
+            </span>
+            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
+              <Dot color="var(--ws-ink-45)" />
+              {item.counts.partial}
+            </span>
+            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
+              <Dot color="var(--ws-warn-text)" />
+              {item.counts.fail}
+            </span>
+          </span>
+          <span className="ws-tabular shrink-0 text-[20px] font-bold" style={{ letterSpacing: "-0.03em", color: "var(--ws-ink)" }}>
+            {item.score}
+          </span>
+          <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
+            View →
+          </Link>
+        </>
+      ) : item.status === "error" ? (
+        <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
+          Failed
+        </span>
+      ) : item.status === "analyzing" ? (
+        <span className="inline-flex shrink-0 items-center gap-[6px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
+          <Spinner />
+          {stage}
+        </span>
+      ) : (
+        <span className="inline-flex shrink-0 items-center gap-[6px] text-[11px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
+          {item.status === "uploading" && <Spinner />}
+          {item.status}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export async function analyzeOne(
   file: File,
   revisionOf?: string,
   platforms: Platform[] = ["Meta"]
-): Promise<{ assetId: string }> {
+): Promise<{ assetId: string; score: number; counts: { pass: number; partial: number; fail: number } }> {
   const format = file.type.startsWith("video/") ? "video" : "static";
 
   const urlRes = await fetch("/api/signal/upload-url", {
@@ -110,7 +227,7 @@ export async function analyzeOne(
   const analyzeData = await analyzeRes.json();
   if (!analyzeRes.ok) throw new Error(analyzeData.error ?? "Analysis failed.");
 
-  return { assetId: analyzeData.assetId };
+  return { assetId: analyzeData.assetId, score: analyzeData.score, counts: analyzeData.counts };
 }
 
 export function AnalyzeDropzone() {
@@ -119,7 +236,9 @@ export function AnalyzeDropzone() {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>(["Meta"]);
+  const [scorecardSort, setScorecardSort] = useState<ScorecardSort>("score");
   const inputRef = useRef<HTMLInputElement>(null);
+  const isBatch = queue.length > 1;
 
   const activeItem = queue.find((q) => q.status === "analyzing") ?? queue.find((q) => q.status === "uploading");
   const activeIsVideo = activeItem?.file.type.startsWith("video/") ?? true;
@@ -162,9 +281,9 @@ export function AnalyzeDropzone() {
       setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "uploading" } : q)));
       try {
         setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "analyzing" } : q)));
-        const { assetId } = await analyzeOne(item.file, undefined, platforms);
+        const { assetId, score, counts } = await analyzeOne(item.file, undefined, platforms);
         lastAssetId = assetId;
-        setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "done", assetId } : q)));
+        setQueue((prev) => prev.map((q) => (q.id === item.id ? { ...q, status: "done", assetId, score, counts } : q)));
       } catch (err) {
         setQueue((prev) =>
           prev.map((q) =>
@@ -193,7 +312,7 @@ export function AnalyzeDropzone() {
   }
 
   return (
-    <div className="mx-auto max-w-[520px]">
+    <div className={isBatch ? "mx-auto max-w-[640px]" : "mx-auto max-w-[520px]"}>
       {idle && (
         <div className="mb-[14px] flex items-center justify-center gap-[8px]">
           <span className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-45)" }}>
@@ -304,12 +423,16 @@ export function AnalyzeDropzone() {
         )}
       </div>
 
-      {queue.length > 0 && (
-        <div className="ws-stack mt-[18px]">
-          {queue.map((item) => (
-            <QueueRow key={item.id} item={item} />
-          ))}
-        </div>
+      {isBatch ? (
+        <Scorecard items={queue} sort={scorecardSort} onSortChange={setScorecardSort} />
+      ) : (
+        queue.length > 0 && (
+          <div className="ws-stack mt-[18px]">
+            {queue.map((item) => (
+              <QueueRow key={item.id} item={item} />
+            ))}
+          </div>
+        )
       )}
 
       {finished && (

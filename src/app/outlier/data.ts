@@ -59,6 +59,10 @@ export type Post = {
   thin: boolean;
   favourite: boolean;
   analysisStatus: "none" | "analyzing" | "done" | "failed";
+  // Empty until analyzed — free-text per analysis (Claude names them fresh
+  // each time), so matching across posts is exact trimmed/lowercased text,
+  // not semantic clustering. See computePatterns() in live-data.ts.
+  hookTags: string[];
 };
 
 export type TranscriptLine = { t: string; text: string; isHook: boolean };
