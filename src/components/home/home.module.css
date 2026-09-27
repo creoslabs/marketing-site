@@ -1,41 +1,26 @@
-/* Scoped to .creosHome so this bold "paper" editorial system (distinct from
-   the rest of the site's dark-first theme) never leaks into other pages —
-   the rest of the marketing site keeps its existing Nav/Footer untouched. */
+/* Scoped to .creosHome so this bold editorial system (distinct from the
+   rest of the site's dark-first theme) never leaks into other pages — the
+   rest of the marketing site keeps its existing Nav/Footer untouched.
+   One fixed black palette throughout — no light/paper variant, and no grey
+   panel fills (--surface, --deep-panel are pure black too; separation comes
+   from the 1px rule/border only, never a lighter fill). */
 .creosHome {
-  --paper: #ECEBE7;
-  --surface: #F6F5F2;
-  --ink: #000;
-  --graphite: #5C5B57;
-  --fog: #A3A29D;
-  --rule: rgba(0, 0, 0, .14);
+  --paper: #000;
+  --surface: #000;
+  --ink: #ECEBE7;
+  --graphite: #8C8B86;
+  --fog: #6F6E6A;
+  --rule: rgba(255, 255, 255, .14);
   --deep: #000;
   --deep-ink: #ECEBE7;
   --deep-muted: #8C8B86;
   --deep-rule: rgba(255, 255, 255, .13);
-  --deep-panel: #161615;
+  --deep-panel: #000;
   background: var(--paper);
   color: var(--ink);
   font-family: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-@media (prefers-color-scheme: dark) {
-  .creosHome:not([data-theme="light"]) {
-    --paper: #131312;
-    --surface: #1C1C1B;
-    --ink: #ECEBE7;
-    --graphite: #A6A5A0;
-    --fog: #6F6E6A;
-    --rule: rgba(255, 255, 255, .14);
-  }
-}
-.creosHome[data-theme="dark"] {
-  --paper: #131312;
-  --surface: #1C1C1B;
-  --ink: #ECEBE7;
-  --graphite: #A6A5A0;
-  --fog: #6F6E6A;
-  --rule: rgba(255, 255, 255, .14);
 }
 
 .creosHome h1, .creosHome h2, .creosHome h3, .creosHome p, .creosHome ul {
