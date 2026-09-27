@@ -66,6 +66,21 @@ export function resolveDashboardHref(host: string, protocol: string, product: "o
   return `${protocol}//${product}.${rootHost}/app`;
 }
 
+// A nav link to "the Outlier/Signal product itself" (as opposed to a
+// specific path within it) should always land on marketing content — the
+// subdomain root once active, or /products/<product> as the same-domain
+// fallback. Plain resolveProductHref("outlier", "/") would fall back to
+// "/outlier" instead, which is the authenticated dashboard route, not the
+// marketing page — wrong for a header link on a page unauthenticated
+// visitors are looking at.
+export function resolveLandingHref(host: string, protocol: string, product: "outlier" | "signal"): string {
+  if (!subdomainsActive(host)) return `/products/${product}`;
+  const active = currentProduct(host);
+  if (active === product) return "/";
+  const rootHost = active ? host.slice(`${active}.`.length) : host;
+  return `${protocol}//${product}.${rootHost}/`;
+}
+
 // Backend jobs that write notifications have no request to read a host
 // from, so they store product-prefixed paths ("/outlier/creators/123")
 // instead. Resolve one of those for wherever it's clicked from — the

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { resolveProductHref, resolveDashboardHref, pathFallback, type ProductTarget } from "./product-links";
+import { resolveProductHref, resolveDashboardHref, resolveLandingHref, pathFallback, type ProductTarget } from "./product-links";
 
 function subscribeNoop() {
   return () => {};
@@ -32,4 +32,14 @@ export function useDashboardHref(product: "outlier" | "signal"): string {
   );
   if (host === null) return `/${product}`;
   return resolveDashboardHref(host, window.location.protocol, product);
+}
+
+export function useLandingHref(product: "outlier" | "signal"): string {
+  const host = useSyncExternalStore(
+    subscribeNoop,
+    () => window.location.host,
+    () => null
+  );
+  if (host === null) return `/products/${product}`;
+  return resolveLandingHref(host, window.location.protocol, product);
 }

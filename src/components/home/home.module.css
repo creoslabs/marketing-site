@@ -226,3 +226,29 @@ a:hover .arrow { transform: translate(2px, -2px); }
   .creosHome * { animation: none !important; transition: none !important; }
   .chain div::after { transform: scaleX(1); }
 }
+
+/* Product page (outlier./signal.<host> subdomain root / /products/<x>) —
+   a simpler centered hero (no live-feed sidebar) plus a few sections not
+   needed on the homepage: numbered steps, use-case tags, FAQ. */
+.productHero { padding: clamp(64px, 9vw, 120px) 0 clamp(48px, 6vw, 80px); text-align: center; }
+.productHero .wrap { max-width: 760px; }
+.productHero h1 { margin: 24px 0 20px; font-size: clamp(44px, 8vw, 96px); }
+.productHero p { font-size: 18px; line-height: 1.5; color: var(--graphite); max-width: 52ch; margin: 0 auto; }
+.productHero .prod { justify-content: center; margin-top: 36px; }
+.productHero .label { justify-content: center; display: flex; }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 40px; border-top: 1px solid var(--rule); padding-top: 28px; }
+.steps b { display: block; font-size: 17px; font-weight: 500; margin-bottom: 8px; }
+.steps p { font-size: 14px; line-height: 1.5; color: var(--graphite); }
+.steps span { font-size: 12px; color: var(--graphite); }
+@media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
+
+.tags { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.tags span { display: inline-block; font-size: 13.5px; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 16px; color: var(--graphite); }
+
+.faq { margin-top: 20px; border-top: 1px solid var(--rule); }
+.faqRow { padding: 24px 0; border-bottom: 1px solid var(--rule); }
+.faqRow p:first-child { font-size: 16px; font-weight: 500; }
+.faqRow p:last-child { margin-top: 8px; font-size: 14px; color: var(--graphite); line-height: 1.5; }
+
+.demo { padding-top: clamp(64px, 8vw, 110px); }
