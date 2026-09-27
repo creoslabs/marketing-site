@@ -38,18 +38,32 @@ export function resolveProductHref(host: string, protocol: string, target: Produ
   return `${protocol}//${target}.${rootHost}${path}`;
 }
 
-// Server-side convenience wrapper — production custom domains are always
-// https, and every environment where subdomains aren't active (localhost,
-// Vercel previews) ignores the protocol entirely and falls back to a plain
-// path, so there's no case that needs the real request protocol.
-export function serverProductHref(host: string, target: ProductTarget, path: string): string {
-  return resolveProductHref(host, "https:", target, path);
+// Server-side convenience wrapper. Vercel always sets x-forwarded-proto to
+// https, but a locally-tested subdomain (outlier.localhost:3000) is real
+// http — defaulting to https there would produce a link the local dev
+// server can't actually serve.
+export function serverProductHref(headers: Headers, target: ProductTarget, path: string): string {
+  const host = headers.get("host") ?? "";
+  const protocol = `${headers.get("x-forwarded-proto") ?? "http"}:`;
+  return resolveProductHref(host, protocol, target, path);
 }
 
 // Client-side convenience wrapper (browser only).
 export function productHref(target: ProductTarget, path: string): string {
   if (typeof window === "undefined") return pathFallback(target, path);
   return resolveProductHref(window.location.host, window.location.protocol, target, path);
+}
+
+// The dashboard's external "/app" alias (see proxy.ts) only exists on the
+// subdomain — falling back to it verbatim when subdomains aren't active
+// (local dev on plain localhost, a Vercel preview) would 404, since there's
+// no "/outlier/app" route; the real dashboard there is just "/outlier".
+export function resolveDashboardHref(host: string, protocol: string, product: "outlier" | "signal"): string {
+  if (!subdomainsActive(host)) return `/${product}`;
+  const active = currentProduct(host);
+  if (active === product) return "/app";
+  const rootHost = active ? host.slice(`${active}.`.length) : host;
+  return `${protocol}//${product}.${rootHost}/app`;
 }
 
 // Backend jobs that write notifications have no request to read a host

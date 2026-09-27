@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LiquidButton } from "@/components/ui/button";
-
-const PRODUCTS = [
-  { name: "Outlier", tagline: "Find what's outperforming.", href: "/products/outlier" },
-  { name: "Signal", tagline: "Analyse creative before launch.", href: "/products/signal" },
-];
+import { useProductHref } from "@/lib/use-product-href";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -15,6 +11,22 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+
+  // This nav also renders on /products/outlier and /products/signal when
+  // they're served directly at the outlier./signal.<host> subdomain root
+  // (the signed-out landing page) — every one of these is a root-app-only
+  // path, so it needs to leave the current subdomain to resolve there.
+  const topHref = useProductHref("root", "/#top");
+  const pricingHref = useProductHref("root", "/#pricing");
+  const aboutHref = useProductHref("root", "/about");
+  const insightsHref = useProductHref("root", "/insights");
+  const loginHref = useProductHref("root", "/login");
+  const outlierHref = useProductHref("root", "/products/outlier");
+  const signalHref = useProductHref("root", "/products/signal");
+  const PRODUCTS = [
+    { name: "Outlier", tagline: "Find what's outperforming.", href: outlierHref },
+    { name: "Signal", tagline: "Analyse creative before launch.", href: signalHref },
+  ];
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -43,7 +55,7 @@ export default function Nav() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <div className="flex items-center gap-8">
-          <Link href="/#top" className="text-[15px] font-semibold tracking-tight">
+          <Link href={topHref} className="text-[15px] font-semibold tracking-tight">
             Creos Labs
           </Link>
 
@@ -73,13 +85,13 @@ export default function Nav() {
                 </div>
               )}
             </div>
-            <Link href="/#pricing" className="link-underline transition hover:text-foreground">
+            <Link href={pricingHref} className="link-underline transition hover:text-foreground">
               Pricing
             </Link>
-            <Link href="/about" className="link-underline transition hover:text-foreground">
+            <Link href={aboutHref} className="link-underline transition hover:text-foreground">
               About
             </Link>
-            <Link href="/insights" className="link-underline transition hover:text-foreground">
+            <Link href={insightsHref} className="link-underline transition hover:text-foreground">
               Insights
             </Link>
           </nav>
@@ -87,13 +99,13 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/login"
+            href={loginHref}
             className="link-underline hidden text-[13.5px] text-muted transition hover:text-foreground sm:block"
           >
             Sign in
           </Link>
           <LiquidButton asChild variant="secondary" size="sm" className="rounded-full text-[13px]">
-            <Link href="/#pricing">Get Creos</Link>
+            <Link href={pricingHref}>Get Creos</Link>
           </LiquidButton>
           <button
             type="button"
@@ -123,17 +135,17 @@ export default function Nav() {
             </Link>
           ))}
           <div className="my-2 h-px bg-white/10" />
-          <Link href="/#pricing" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+          <Link href={pricingHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
             Pricing
           </Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+          <Link href={aboutHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
             About
           </Link>
-          <Link href="/insights" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+          <Link href={insightsHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
             Insights
           </Link>
           <div className="my-2 h-px bg-white/10" />
-          <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+          <Link href={loginHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
             Sign in
           </Link>
         </nav>

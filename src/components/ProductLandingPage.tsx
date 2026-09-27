@@ -1,15 +1,19 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { ProductShowcase, type ProductData } from "@/components/ProductShowcase";
 import { LiquidButton } from "@/components/ui/button";
 import { LiveDot } from "@/components/LiveDot";
+import { LandingSignIn } from "@/components/LandingSignIn";
+import { serverProductHref } from "@/lib/product-links";
+import { getUser } from "@/lib/supabase/data";
 
 export type HowItWorksStep = { title: string; body: string };
 export type Faq = { q: string; a: string };
 
-export function ProductLandingPage({
+export async function ProductLandingPage({
   product,
   heroDescription,
   howItWorks,
@@ -22,6 +26,15 @@ export function ProductLandingPage({
   useCases: string[];
   faqs: Faq[];
 }) {
+  // This page also serves as the signed-out landing page at the product's
+  // own subdomain root (outlier./signal.<host>/) — "/#pricing" only exists
+  // on the root marketing homepage.
+  const headerList = await headers();
+  const pricingHref = serverProductHref(headerList, "root", "/#pricing");
+  const loginHref = serverProductHref(headerList, "root", "/login");
+  const productKey = product.name.toLowerCase() as "outlier" | "signal";
+  const isLoggedIn = Boolean(await getUser());
+
   return (
     <>
       <Nav />
@@ -38,7 +51,7 @@ export function ProductLandingPage({
               <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted">{heroDescription}</p>
               <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-                  <Link href="/#pricing">
+                  <Link href={pricingHref}>
                     Get Creos <span className="cta-arrow">→</span>
                   </Link>
                 </LiquidButton>
@@ -48,6 +61,12 @@ export function ProductLandingPage({
               </div>
             </Reveal>
           </div>
+        </section>
+
+        <section className="relative px-6">
+          <Reveal>
+            <LandingSignIn productName={product.name} product={productKey} isLoggedIn={isLoggedIn} />
+          </Reveal>
         </section>
 
         <section className="relative py-16">
@@ -121,7 +140,7 @@ export function ProductLandingPage({
             <p className="mt-4 text-muted">One Creos subscription. Every tool, including {product.name}.</p>
             <div className="mt-8 flex justify-center">
               <LiquidButton asChild size="xl" className="rounded-full">
-                <Link href="/#pricing">
+                <Link href={pricingHref}>
                   Get Creos <span className="cta-arrow">→</span>
                 </Link>
               </LiquidButton>
@@ -129,7 +148,7 @@ export function ProductLandingPage({
           </Reveal>
         </section>
       </main>
-      <Footer />
+      <Footer loginHref={loginHref} />
     </>
   );
 }

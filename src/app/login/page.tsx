@@ -1,46 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { LiquidButton } from "@/components/ui/button";
+import { LoginForm } from "@/components/LoginForm";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    let supabase;
-    try {
-      supabase = createClient();
-    } catch {
-      setError("Supabase isn't configured yet — add your project URL and anon key to .env.local.");
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push("/workspace");
-    router.refresh();
-  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
@@ -56,37 +21,14 @@ export default function LoginPage() {
         </h1>
         <p className="mt-2 text-sm text-muted">Internal access only.</p>
 
-        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@email.com"
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-muted focus-visible:border-accent-blue"
+        <div className="mt-8">
+          <LoginForm
+            onSuccess={() => {
+              router.push("/workspace");
+              router.refresh();
+            }}
           />
-          <input
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-[15px] text-foreground outline-none placeholder:text-muted focus-visible:border-accent-blue"
-          />
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <LiquidButton
-            type="submit"
-            size="lg"
-            disabled={loading}
-            className="mt-2 w-full rounded-full"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </LiquidButton>
-        </form>
+        </div>
       </div>
     </main>
   );

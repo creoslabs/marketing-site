@@ -25,9 +25,9 @@ function sevenDaysAgoIso() {
 }
 
 export default async function OverviewPage() {
-  const host = (await headers()).get("host") ?? "";
-  const outlierHref = (path: string) => serverProductHref(host, "outlier", path);
-  const signalHref = (path: string) => serverProductHref(host, "signal", path);
+  const headerList = await headers();
+  const outlierHref = (path: string) => serverProductHref(headerList, "outlier", path);
+  const signalHref = (path: string) => serverProductHref(headerList, "signal", path);
 
   const [creators, posts, { jobs, finished }, library, lastVisit, recentRepurposes] = await Promise.all([
     getCreators(),
