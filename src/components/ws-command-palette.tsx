@@ -3,21 +3,22 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { productHref, navigateTo, type ProductTarget } from "@/lib/product-links";
 
-type Destination = { label: string; href: string; group: string };
+type Destination = { label: string; target: ProductTarget; path: string; group: string };
 
 const DESTINATIONS: Destination[] = [
-  { label: "Overview", href: "/workspace", group: "Workspace" },
-  { label: "Account", href: "/workspace/account", group: "Workspace" },
-  { label: "Billing", href: "/workspace/billing", group: "Workspace" },
-  { label: "Home", href: "/outlier", group: "Outlier" },
-  { label: "Feed", href: "/outlier/feed", group: "Outlier" },
-  { label: "Favourites", href: "/outlier/favourites", group: "Outlier" },
-  { label: "Creators", href: "/outlier/creators", group: "Outlier" },
-  { label: "Progress", href: "/outlier/progress", group: "Outlier" },
-  { label: "Library", href: "/signal", group: "Signal" },
-  { label: "Analyze", href: "/signal/analyze", group: "Signal" },
-  { label: "Benchmarks", href: "/signal/benchmarks", group: "Signal" },
+  { label: "Overview", target: "root", path: "/workspace", group: "Workspace" },
+  { label: "Account", target: "root", path: "/workspace/account", group: "Workspace" },
+  { label: "Billing", target: "root", path: "/workspace/billing", group: "Workspace" },
+  { label: "Home", target: "outlier", path: "/", group: "Outlier" },
+  { label: "Feed", target: "outlier", path: "/feed", group: "Outlier" },
+  { label: "Favourites", target: "outlier", path: "/favourites", group: "Outlier" },
+  { label: "Creators", target: "outlier", path: "/creators", group: "Outlier" },
+  { label: "Progress", target: "outlier", path: "/progress", group: "Outlier" },
+  { label: "Library", target: "signal", path: "/", group: "Signal" },
+  { label: "Analyze", target: "signal", path: "/analyze", group: "Signal" },
+  { label: "Benchmarks", target: "signal", path: "/benchmarks", group: "Signal" },
 ];
 
 type Item = { key: string; label: string; sublabel: string; run: () => void };
@@ -59,19 +60,19 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
           key: `creator-${c.id}`,
           label: c.label,
           sublabel: "Creator",
-          run: () => router.push(`/outlier/creators/${c.id}`),
+          run: () => navigateTo(router, productHref("outlier", `/creators/${c.id}`)),
         })),
         ...data.posts.map((p: { id: string; label: string }) => ({
           key: `post-${p.id}`,
           label: p.label,
           sublabel: "Post",
-          run: () => router.push(`/outlier/video/${p.id}`),
+          run: () => navigateTo(router, productHref("outlier", `/video/${p.id}`)),
         })),
         ...data.assets.map((a: { id: string; label: string }) => ({
           key: `asset-${a.id}`,
           label: a.label,
           sublabel: "Signal asset",
-          run: () => router.push(`/signal/report/${a.id}`),
+          run: () => navigateTo(router, productHref("signal", `/report/${a.id}`)),
         })),
       ];
       if (!cancelled) {
@@ -87,10 +88,10 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
 
   const items = useMemo<Item[]>(() => {
     const navItems: Item[] = DESTINATIONS.map((d) => ({
-      key: d.href,
+      key: `${d.target}:${d.path}`,
       label: d.label,
       sublabel: d.group,
-      run: () => router.push(d.href),
+      run: () => navigateTo(router, productHref(d.target, d.path)),
     }));
     const actionItems: Item[] = [
       {
@@ -100,7 +101,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         run: async () => {
           const supabase = createClient();
           await supabase.auth.signOut();
-          router.push("/login");
+          navigateTo(router, productHref("root", "/login"));
           router.refresh();
         },
       },

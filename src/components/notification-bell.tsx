@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { relativeTime } from "@/lib/relative-time";
+import { resolveStoredHref, navigateTo } from "@/lib/product-links";
 
 type Notification = {
   id: string;
@@ -115,7 +116,7 @@ export function NotificationBell() {
       });
     }
     setOpen(false);
-    if (n.href) router.push(n.href);
+    if (n.href) navigateTo(router, resolveStoredHref(n.href));
   }
 
   return (

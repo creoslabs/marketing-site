@@ -3,17 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { OutlierMark, SignalMark } from "@/components/product-icons";
-
-// A flat list of {label, href, icon} — adding a future Creos product's
-// quick action means adding one entry here, not restructuring the menu.
-const QUICK_ACTIONS = [
-  { label: "Track creator", description: "Add a creator to Outlier", href: "/outlier/creators", icon: <OutlierMark size={16} /> },
-  { label: "Analyse creative", description: "Upload an asset to Signal", href: "/signal/analyze", icon: <SignalMark size={16} /> },
-];
+import { useProductHref } from "@/lib/use-product-href";
 
 export function NewMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Workspace always renders at the root domain, so these are always
+  // cross-subdomain links once Outlier/Signal move to their own.
+  const QUICK_ACTIONS = [
+    {
+      label: "Track creator",
+      description: "Add a creator to Outlier",
+      href: useProductHref("outlier", "/creators"),
+      icon: <OutlierMark size={16} />,
+    },
+    {
+      label: "Analyse creative",
+      description: "Upload an asset to Signal",
+      href: useProductHref("signal", "/analyze"),
+      icon: <SignalMark size={16} />,
+    },
+  ];
 
   useEffect(() => {
     function onClick(e: MouseEvent) {

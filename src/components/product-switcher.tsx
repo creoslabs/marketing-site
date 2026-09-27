@@ -3,16 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { OutlierMark, SignalMark } from "./product-icons";
+import { useProductHref } from "@/lib/use-product-href";
 
 const PRODUCTS = [
-  { key: "outlier", href: "/outlier", label: "Outlier", Mark: OutlierMark },
-  { key: "signal", href: "/signal", label: "Signal", Mark: SignalMark },
+  { key: "outlier", label: "Outlier", Mark: OutlierMark },
+  { key: "signal", label: "Signal", Mark: SignalMark },
 ] as const;
 
 export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const active = PRODUCTS.find((p) => p.key === current)!;
+
+  // Outlier and Signal each live on their own subdomain — a plain relative
+  // href would resolve against the CURRENT subdomain and 404.
+  const workspaceHref = useProductHref("root", "/workspace");
+  const outlierHref = useProductHref("outlier", "/");
+  const signalHref = useProductHref("signal", "/");
+  const hrefs = { workspace: workspaceHref, outlier: outlierHref, signal: signalHref };
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -24,7 +32,7 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
 
   return (
     <div className="flex items-center gap-[8px]">
-      <Link href="/workspace" className="hidden text-[13px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
+      <Link href={hrefs.workspace} className="hidden text-[13px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
         Creos Labs
       </Link>
       <span className="hidden sm:inline" style={{ color: "var(--ws-ink-45)" }}>
@@ -51,7 +59,7 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
             {PRODUCTS.map((p) => (
               <Link
                 key={p.key}
-                href={p.href}
+                href={hrefs[p.key]}
                 onClick={() => setOpen(false)}
                 className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[8px] text-[12.5px] font-medium"
                 style={{ color: p.key === current ? "var(--ws-ink)" : "var(--ws-ink-60)" }}
@@ -65,7 +73,7 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
             ))}
             <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
             <Link
-              href="/workspace"
+              href={hrefs.workspace}
               onClick={() => setOpen(false)}
               className="ws-row-hover block rounded-[6px] px-[10px] py-[8px] text-[12.5px] font-medium"
               style={{ color: "var(--ws-ink-60)" }}

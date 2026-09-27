@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getCreators, getPosts, getJobs, getRecentRepurposes } from "@/app/outlier/live-data";
 import { getLibrary } from "@/app/signal/live-data";
 import { getAndRecordLastVisit } from "@/lib/workspace-activity";
@@ -7,6 +8,7 @@ import { relativeTime } from "@/lib/relative-time";
 import { AddCreatorButton } from "@/app/outlier/creator-actions";
 import { EmptyState } from "@/components/ws-empty-state";
 import { OutlierMark, SignalMark } from "@/components/product-icons";
+import { serverProductHref } from "@/lib/product-links";
 import { TodayPanel, type TodayInsight } from "./today-panel";
 import { ProductCardFrame, OutlierSpikeChart, SignalSplitBar } from "./product-card";
 import { RecentActivity, type ActivityItem } from "./recent-activity";
@@ -23,6 +25,10 @@ function sevenDaysAgoIso() {
 }
 
 export default async function OverviewPage() {
+  const host = (await headers()).get("host") ?? "";
+  const outlierHref = (path: string) => serverProductHref(host, "outlier", path);
+  const signalHref = (path: string) => serverProductHref(host, "signal", path);
+
   const [creators, posts, { jobs, finished }, library, lastVisit, recentRepurposes] = await Promise.all([
     getCreators(),
     getPosts(),
@@ -71,7 +77,7 @@ export default async function OverviewPage() {
       id: "outlier-new",
       text: `${recentOutliers.length} new outlier${recentOutliers.length === 1 ? "" : "s"} ${sincePhrase}`,
       meta: highestScore !== null ? `Highest: ${highestScore.toFixed(1)}× baseline` : undefined,
-      href: "/outlier/feed",
+      href: outlierHref("/feed"),
     });
   }
   if (assetsFailing > 0) {
@@ -79,7 +85,7 @@ export default async function OverviewPage() {
       id: "signal-attention",
       text: `${assetsFailing} creative${assetsFailing === 1 ? "" : "s"} need attention`,
       meta: `${assets.length} analysed total`,
-      href: "/signal",
+      href: signalHref("/"),
     });
   }
   const recentPulls = finished.filter((f) => isSince(f.finishedAtIso));
@@ -88,25 +94,25 @@ export default async function OverviewPage() {
     insights.push({
       id: "outlier-pulled",
       text: `${recentPulledPosts} new post${recentPulledPosts === 1 ? "" : "s"} pulled ${sincePhrase}`,
-      href: "/outlier/feed",
+      href: outlierHref("/feed"),
     });
   }
   if (recentAssets.length > 0) {
     insights.push({
       id: "signal-new",
       text: `${recentAssets.length} creative${recentAssets.length === 1 ? "" : "s"} analysed ${sincePhrase}`,
-      href: "/signal",
+      href: signalHref("/"),
     });
   }
   if (recentRepurposeCount > 0) {
     insights.push({
       id: "outlier-repurposed",
       text: `${recentRepurposeCount} script${recentRepurposeCount === 1 ? "" : "s"} repurposed ${sincePhrase}`,
-      href: "/outlier",
+      href: outlierHref("/"),
     });
   }
 
-  const viewAllHref = recentOutliers.length > 0 || recentPulledPosts > 0 ? "/outlier/feed" : "/signal";
+  const viewAllHref = recentOutliers.length > 0 || recentPulledPosts > 0 ? outlierHref("/feed") : signalHref("/");
 
   // ---- Recent activity: merged from real, already-timestamped events. ----
   const activity: ActivityItem[] = [];
@@ -121,7 +127,7 @@ export default async function OverviewPage() {
       text: `New ${post.score.toFixed(1)}× outlier detected`,
       meta: handle ? `@${handle}` : "Outlier",
       timestampIso: post.createdAtIso,
-      href: `/outlier/video/${post.id}`,
+      href: outlierHref(`/video/${post.id}`),
     });
   }
 
@@ -133,7 +139,7 @@ export default async function OverviewPage() {
       text: `${job.newPostsCount} new post${job.newPostsCount === 1 ? "" : "s"} pulled`,
       meta: `@${job.handle}`,
       timestampIso: job.finishedAtIso,
-      href: job.creatorId ? `/outlier/creators/${job.creatorId}` : "/outlier/creators",
+      href: job.creatorId ? outlierHref(`/creators/${job.creatorId}`) : outlierHref("/creators"),
     });
   }
 
@@ -145,7 +151,7 @@ export default async function OverviewPage() {
       text: asset.failedChecks > 0 ? `${asset.filename} flagged ${asset.failedChecks} issue${asset.failedChecks === 1 ? "" : "s"}` : `${asset.filename} scored ${Math.round(asset.score)}`,
       meta: asset.platforms.join(" + "),
       timestampIso: asset.createdAtIso,
-      href: `/signal/report/${asset.id}`,
+      href: signalHref(`/report/${asset.id}`),
     });
   }
 
@@ -161,7 +167,7 @@ export default async function OverviewPage() {
   );
   const primarySignalAction = (
     <Link
-      href="/signal/analyze"
+      href={signalHref("/analyze")}
       className="ws-btn-ghost rounded-[7px] text-[12px] font-semibold"
       style={{ padding: "8px 12px" }}
     >
@@ -169,7 +175,7 @@ export default async function OverviewPage() {
     </Link>
   );
   const emptySignalAction = (
-    <Link href="/signal/analyze" className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 14px" }}>
+    <Link href={signalHref("/analyze")} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 14px" }}>
       Upload creative →
     </Link>
   );
@@ -202,7 +208,7 @@ export default async function OverviewPage() {
               eyebrow="Content intelligence"
               accentColor="var(--ws-accent)"
               status={{ label: "Live", color: "var(--ws-accent-text)" }}
-              openHref="/outlier"
+              openHref={outlierHref("/")}
               primaryAction={creators.length === 0 ? null : primaryOutlierAction}
             >
               {creators.length === 0 ? (
@@ -246,7 +252,7 @@ export default async function OverviewPage() {
               eyebrow="Creative analysis"
               accentColor="#8b5cf6"
               status={{ label: "Live", color: "var(--ws-accent-text)" }}
-              openHref="/signal"
+              openHref={signalHref("/")}
               primaryAction={assets.length === 0 ? null : primarySignalAction}
             >
               {assets.length === 0 ? (
