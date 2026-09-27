@@ -167,7 +167,7 @@ export async function SignalHomePage() {
           </div>
         </section>
 
-        <section className={styles.demo} id="demo">
+        <section className={`${styles.sec} ${styles.demo}`} id="demo">
           <div className={`${styles.wrap} ${styles.secHead}`}>
             <span className={styles.label}>See it in action</span>
             <h2 className={styles.display}>

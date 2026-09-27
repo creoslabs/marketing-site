@@ -3,13 +3,19 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LiquidButton } from "@/components/ui/button";
+import homeStyles from "@/components/home/home.module.css";
 
 export function LoginForm({
   onSuccess,
   submitLabel = "Sign in",
+  variant = "default",
 }: {
   onSuccess: () => void;
   submitLabel?: string;
+  // "flat" matches the monochrome editorial design system (home.module.css)
+  // used by the homepage and product pages; "default" keeps the original
+  // rounded/glassy Tailwind styling the standalone /login page still uses.
+  variant?: "default" | "flat";
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +48,33 @@ export function LoginForm({
     }
 
     onSuccess();
+  }
+
+  if (variant === "flat") {
+    return (
+      <form onSubmit={handleSubmit} className={homeStyles.signInForm}>
+        <input
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@email.com"
+        />
+        <input
+          type="password"
+          required
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        {error && <p className={homeStyles.signInError}>{error}</p>}
+        <button type="submit" disabled={loading} className={homeStyles.btn} style={{ justifyContent: "center" }}>
+          {loading ? "Signing in…" : submitLabel}
+        </button>
+      </form>
+    );
   }
 
   return (

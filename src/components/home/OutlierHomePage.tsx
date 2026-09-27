@@ -154,7 +154,7 @@ export async function OutlierHomePage() {
           </div>
         </section>
 
-        <section className={styles.demo}>
+        <section className={`${styles.sec} ${styles.demo}`}>
           <div className={`${styles.wrap} ${styles.secHead}`}>
             <span className={styles.label}>See it in action</span>
             <h2 className={styles.display}>
