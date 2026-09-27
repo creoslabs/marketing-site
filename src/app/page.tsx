@@ -1,31 +1,28 @@
-import Nav from "@/components/Nav";
-import Hero from "@/components/Hero";
-import WhatWereBuilding from "@/components/WhatWereBuilding";
-import Philosophy from "@/components/Philosophy";
-import BigMoments from "@/components/BigMoments";
-import BloatStory from "@/components/BloatStory";
-import WhoItsFor from "@/components/WhoItsFor";
-import Pricing from "@/components/Pricing";
-import TheLab from "@/components/TheLab";
-import Waitlist from "@/components/Waitlist";
-import Footer from "@/components/Footer";
+import styles from "@/components/home/home.module.css";
+import { HomeHeader } from "@/components/home/HomeHeader";
+import { HomeHero } from "@/components/home/HomeHero";
+import { HomeLoop } from "@/components/home/HomeLoop";
+import { HomeOutlierSection } from "@/components/home/HomeOutlierSection";
+import { HomeSignalSection } from "@/components/home/HomeSignalSection";
+import { HomePricing } from "@/components/home/HomePricing";
+import { HomeCustomSection } from "@/components/home/HomeCustomSection";
+import { HomeClose } from "@/components/home/HomeClose";
+import { HomeFooter } from "@/components/home/HomeFooter";
 
 export default function Home() {
   return (
-    <>
-      <Nav />
-      <main className="flex-1">
-        <Hero />
-        <WhatWereBuilding />
-        <Philosophy />
-        <BigMoments />
-        <BloatStory />
-        <WhoItsFor />
-        <Pricing />
-        <TheLab />
-        <Waitlist />
+    <div className={styles.creosHome}>
+      <HomeHeader />
+      <main>
+        <HomeHero />
+        <HomeLoop />
+        <HomeOutlierSection />
+        <HomeSignalSection />
+        <HomePricing />
+        <HomeCustomSection />
+        <HomeClose />
       </main>
-      <Footer />
-    </>
+      <HomeFooter />
+    </div>
   );
 }

@@ -6,7 +6,7 @@ const GA_MEASUREMENT_ID = "G-LGPZFW0S3G";
 
 const TITLE = "Creos Labs — Marketing technology, built by marketers";
 const DESCRIPTION =
-  "Creos Labs is building Outlier and Signal, marketing intelligence tools for creators and advertisers — coming soon. Join the waitlist to get early access.";
+  "Outlier tracks competitive content, Signal analyses ad creative before you spend — live now, plus custom marketing technology built to order.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.creos-labs.com"),
