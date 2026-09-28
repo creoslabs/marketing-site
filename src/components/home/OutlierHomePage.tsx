@@ -5,9 +5,8 @@ import { OutlierHeader } from "./OutlierHeader";
 import { OutlierDemoPanel } from "./OutlierDemoPanel";
 import { ProductPageFooter } from "./ProductPageFooter";
 import { GetCreosForm } from "@/components/GetCreosForm";
-import { LandingSignIn } from "@/components/LandingSignIn";
 import { Reveal } from "@/components/Reveal";
-import { serverProductHref } from "@/lib/product-links";
+import { serverProductHref, serverDashboardHref } from "@/lib/product-links";
 import { getUser } from "@/lib/supabase/data";
 
 const STEPS = [
@@ -51,11 +50,12 @@ const FAQS = [
 export async function OutlierHomePage() {
   const headerList = await headers();
   const loginHref = serverProductHref(headerList, "root", "/login");
+  const dashboardHref = serverDashboardHref(headerList, "outlier");
   const isLoggedIn = Boolean(await getUser());
 
   return (
     <div className={styles.creosHome}>
-      <OutlierHeader />
+      <OutlierHeader isLoggedIn={isLoggedIn} />
       <main>
         <section className={styles.hero}>
           <div className={`${styles.wrap} ${styles.heroGrid}`}>
@@ -122,14 +122,6 @@ export async function OutlierHomePage() {
                 </div>
               </div>
             </aside>
-          </div>
-        </section>
-
-        <section>
-          <div className={styles.wrap}>
-            <Reveal>
-              <LandingSignIn productName="Outlier" product="outlier" isLoggedIn={isLoggedIn} />
-            </Reveal>
           </div>
         </section>
 
@@ -330,10 +322,21 @@ export async function OutlierHomePage() {
                 </Reveal>
               ))}
               <div className={styles.faqRow}>
-                <h3>Already using Outlier?</h3>
-                <p>
-                  Sign in with your Creos Labs account. <Link href={loginHref}>Log in</Link>
-                </p>
+                {isLoggedIn ? (
+                  <>
+                    <h3>Already using Outlier?</h3>
+                    <p>
+                      You&rsquo;re signed in. <Link href={dashboardHref}>Go to Dashboard</Link>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3>Already using Outlier?</h3>
+                    <p>
+                      Sign in with your Creos Labs account. <Link href={loginHref}>Log in</Link>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

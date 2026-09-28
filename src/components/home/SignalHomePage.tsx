@@ -5,9 +5,8 @@ import { SignalHeader } from "./SignalHeader";
 import { SignalDemoPanel } from "./SignalDemoPanel";
 import { ProductPageFooter } from "./ProductPageFooter";
 import { GetCreosForm } from "@/components/GetCreosForm";
-import { LandingSignIn } from "@/components/LandingSignIn";
 import { Reveal } from "@/components/Reveal";
-import { serverProductHref } from "@/lib/product-links";
+import { serverProductHref, serverDashboardHref } from "@/lib/product-links";
 import { getUser } from "@/lib/supabase/data";
 
 const STEPS = [
@@ -59,11 +58,12 @@ const TABLE_GRID = "60px minmax(0,1.6fr) minmax(0,0.8fr) minmax(0,1.4fr) 140px";
 export async function SignalHomePage() {
   const headerList = await headers();
   const loginHref = serverProductHref(headerList, "root", "/login");
+  const dashboardHref = serverDashboardHref(headerList, "signal");
   const isLoggedIn = Boolean(await getUser());
 
   return (
     <div className={styles.creosHome}>
-      <SignalHeader />
+      <SignalHeader isLoggedIn={isLoggedIn} />
       <main>
         <section className={styles.hero}>
           <div className={`${styles.wrap} ${styles.heroGrid}`}>
@@ -135,14 +135,6 @@ export async function SignalHomePage() {
                 </div>
               </div>
             </aside>
-          </div>
-        </section>
-
-        <section>
-          <div className={styles.wrap}>
-            <Reveal>
-              <LandingSignIn productName="Signal" product="signal" isLoggedIn={isLoggedIn} />
-            </Reveal>
           </div>
         </section>
 
@@ -305,10 +297,21 @@ export async function SignalHomePage() {
                 </Reveal>
               ))}
               <div className={styles.faqRow}>
-                <h3>Already using Signal?</h3>
-                <p>
-                  Sign in with your Creos Labs account. <Link href={loginHref}>Log in</Link>
-                </p>
+                {isLoggedIn ? (
+                  <>
+                    <h3>Already using Signal?</h3>
+                    <p>
+                      You&rsquo;re signed in. <Link href={dashboardHref}>Go to Dashboard</Link>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3>Already using Signal?</h3>
+                    <p>
+                      Sign in with your Creos Labs account. <Link href={loginHref}>Log in</Link>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

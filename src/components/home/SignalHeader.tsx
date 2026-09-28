@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import styles from "./home.module.css";
-import { useProductHref } from "@/lib/use-product-href";
+import { useProductHref, useDashboardHref } from "@/lib/use-product-href";
 
 // Signal's own dedicated header — see OutlierHeader for why the logo and
-// "Log in" need cross-subdomain resolution while the nav items don't.
-export function SignalHeader() {
+// "Log in"/"Dashboard" need cross-subdomain resolution while the nav items
+// don't.
+export function SignalHeader({ isLoggedIn }: { isLoggedIn: boolean }) {
   const rootHref = useProductHref("root", "/");
   const loginHref = useProductHref("root", "/login");
+  const dashboardHref = useDashboardHref("signal");
 
   return (
     <header className={`${styles.wrap} ${styles.top}`}>
@@ -27,9 +29,15 @@ export function SignalHeader() {
         <a href="#faq">FAQ</a>
       </nav>
       <div className={styles.actions}>
-        <Link href={loginHref} className={styles.login}>
-          Log in
-        </Link>
+        {isLoggedIn ? (
+          <Link href={dashboardHref} className={styles.login}>
+            Dashboard
+          </Link>
+        ) : (
+          <Link href={loginHref} className={styles.login}>
+            Log in
+          </Link>
+        )}
         <a className={styles.btn} href="#pricing">
           Get Signal
         </a>

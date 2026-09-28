@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import styles from "./home.module.css";
-import { useProductHref } from "@/lib/use-product-href";
+import { useProductHref, useDashboardHref } from "@/lib/use-product-href";
 
 // Outlier's own dedicated header — nav items are in-page anchors (this is a
-// single long page), but the logo and "Log in" leave the current origin
-// entirely, so those two still need cross-subdomain resolution.
-export function OutlierHeader() {
+// single long page), but the logo and "Log in"/"Dashboard" leave the current
+// origin entirely, so those two still need cross-subdomain resolution.
+export function OutlierHeader({ isLoggedIn }: { isLoggedIn: boolean }) {
   const rootHref = useProductHref("root", "/");
   const loginHref = useProductHref("root", "/login");
+  const dashboardHref = useDashboardHref("outlier");
 
   return (
     <header className={`${styles.wrap} ${styles.top}`}>
@@ -28,9 +29,15 @@ export function OutlierHeader() {
         <a href="#faq">FAQ</a>
       </nav>
       <div className={styles.actions}>
-        <Link href={loginHref} className={styles.login}>
-          Log in
-        </Link>
+        {isLoggedIn ? (
+          <Link href={dashboardHref} className={styles.login}>
+            Dashboard
+          </Link>
+        ) : (
+          <Link href={loginHref} className={styles.login}>
+            Log in
+          </Link>
+        )}
         <a className={styles.btn} href="#pricing">
           Get Outlier
         </a>

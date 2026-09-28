@@ -66,6 +66,13 @@ export function resolveDashboardHref(host: string, protocol: string, product: "o
   return `${protocol}//${product}.${rootHost}/app`;
 }
 
+// Server-side convenience wrapper, mirroring serverProductHref.
+export function serverDashboardHref(headers: Headers, product: "outlier" | "signal"): string {
+  const host = headers.get("host") ?? "";
+  const protocol = `${headers.get("x-forwarded-proto") ?? "http"}:`;
+  return resolveDashboardHref(host, protocol, product);
+}
+
 // A nav link to "the Outlier/Signal product itself" (as opposed to a
 // specific path within it) should always land on marketing content — the
 // subdomain root once active, or /products/<product> as the same-domain
