@@ -1,18 +1,14 @@
 "use client";
 
 import { useToast } from "@/components/ws-toast";
+import { WsButton } from "@/components/ws-button";
 
 export function ChoosePlanButton() {
   const toast = useToast();
   return (
-    <button
-      type="button"
-      onClick={() => toast("Plans aren't available yet.")}
-      className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-      style={{ padding: "10px 14px" }}
-    >
-      Choose a plan
-    </button>
+    <WsButton variant="primary" onClick={() => toast("Founding access isn't open yet — join the waitlist from the homepage.")}>
+      Get founding access
+    </WsButton>
   );
 }
 
@@ -26,5 +22,16 @@ export function AddPaymentButton() {
     >
       Add
     </button>
+  );
+}
+
+export function TalkToUsForTeamsLink() {
+  return (
+    <a
+      href="mailto:hello@creos-labs.com?subject=Creos%20for%20teams"
+      style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ws-accent-text)", whiteSpace: "nowrap" }}
+    >
+      Talk to us ↗
+    </a>
   );
 }

@@ -16,6 +16,8 @@ const TABS = [
   { href: "/workspace/billing", label: "Billing" },
 ];
 
+const CHROME_HEIGHT = 58;
+
 export function WorkspaceChrome({
   name,
   email,
@@ -49,120 +51,105 @@ export function WorkspaceChrome({
   }
 
   return (
-    <>
-      <header
-        className="flex items-center gap-[10px] px-4 sm:gap-[22px] sm:px-6"
-        style={{ height: 57, borderBottom: "1px solid var(--ws-hairline)" }}
+    <header
+      className="flex items-center px-4 sm:px-[28px]"
+      style={{ height: CHROME_HEIGHT, gap: 20, borderBottom: "1px solid var(--ws-hairline)" }}
+    >
+      <Link
+        href="/workspace"
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          color: "var(--ws-wordmark-ink)",
+          whiteSpace: "nowrap",
+        }}
       >
-        <Link
-          href="/workspace"
-          className="text-[17px] font-bold tracking-[-0.02em]"
-          style={{ color: "var(--ws-ink)" }}
-        >
-          Creos Labs
-        </Link>
+        CREOS LABS
+        <sup style={{ fontSize: 8, marginLeft: 1 }}>®</sup>
+      </Link>
 
-        <div className="flex-1" />
+      <div className="hidden sm:block" style={{ height: CHROME_HEIGHT }}>
+        <WsTabNav tabs={TABS} variant="underline" />
+      </div>
 
-        <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
-          Docs
-        </span>
-        <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
-          Support
-        </span>
+      <div className="flex-1" />
 
-        <NotificationBell />
+      <Link href="/insights" className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
+        Insights ↗
+      </Link>
+      <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
+        Support
+      </span>
 
-        <NewMenu />
+      <NotificationBell />
 
-        <button
-          type="button"
-          onClick={openPalette}
-          className="hidden items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95 sm:flex"
-          style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
-        >
-          ⌘K
+      <NewMenu />
+
+      <button
+        type="button"
+        onClick={openPalette}
+        className="hidden items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95 sm:flex"
+        style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
+      >
+        ⌘K
+      </button>
+
+      <div
+        ref={menuRef}
+        className="relative flex items-center pl-[10px] sm:pl-[20px]"
+        style={{ borderLeft: "1px solid var(--ws-hairline)" }}
+      >
+        <button type="button" onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-[9px]">
+          <span
+            className="ws-placeholder flex h-[26px] w-[26px] items-center justify-center rounded-full text-[9.5px] font-semibold"
+            style={{ color: "var(--ws-ink-60)" }}
+          >
+            {initials}
+          </span>
+          <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink)" }}>
+            {name}
+          </span>
         </button>
 
-        <div
-          ref={menuRef}
-          className="relative flex items-center pl-[10px] sm:pl-[18px]"
-          style={{ borderLeft: "1px solid var(--ws-hairline)" }}
-        >
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-[9px]"
-          >
-            <span
-              className="ws-placeholder flex h-[26px] w-[26px] items-center justify-center rounded-full text-[9.5px] font-semibold"
-              style={{ color: "var(--ws-ink-60)", border: "1px solid var(--ws-hairline)" }}
-            >
-              {initials}
-            </span>
-            <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink)" }}>
-              {name}
-            </span>
-            <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-              ▾
-            </span>
-          </button>
+        {menuOpen && (
+          <div className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+8px)] z-20 w-[220px] p-[6px]">
+            <p className="truncate px-[10px] py-[8px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+              {email}
+            </p>
+            <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
 
-          {menuOpen && (
-            <div
-              className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+8px)] z-20 w-[220px] p-[6px]"
-            >
-              <p
-                className="truncate px-[10px] py-[8px] text-[11.5px]"
-                style={{ color: "var(--ws-ink-45)" }}
-              >
-                {email}
-              </p>
-              <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
-
-              <p
-                className="ws-eyebrow px-[10px] pb-[6px] pt-[8px]"
-              >
-                Appearance
-              </p>
-              <div
-                className="mx-[10px] mb-[8px] flex rounded-[7px] p-[2px]"
-                style={{ border: "1px solid var(--ws-hairline)" }}
-              >
-                {(["dark", "light"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setTheme(mode)}
-                    className="flex-1 rounded-[5px] px-[8px] py-[5px] text-[11.5px] font-medium capitalize"
-                    style={
-                      theme === mode
-                        ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                        : { color: "var(--ws-ink-60)" }
-                    }
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-
-              <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
-                style={{ color: "var(--ws-ink)" }}
-              >
-                Sign out
-              </button>
+            <p className="ws-eyebrow px-[10px] pb-[6px] pt-[8px]">Appearance</p>
+            <div className="mx-[10px] mb-[8px] flex rounded-[7px] p-[2px]" style={{ border: "1px solid var(--ws-hairline)" }}>
+              {(["dark", "light"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setTheme(mode)}
+                  className="flex-1 rounded-[5px] px-[8px] py-[5px] text-[11.5px] font-medium capitalize"
+                  style={
+                    theme === mode
+                      ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
+                      : { color: "var(--ws-ink-60)" }
+                  }
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
-      </header>
 
-      <nav className="overflow-x-auto px-4 sm:px-6" style={{ height: 44, borderBottom: "1px solid var(--ws-hairline)" }}>
-        <WsTabNav tabs={TABS} variant="underline" />
-      </nav>
-    </>
+            <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
+              style={{ color: "var(--ws-ink)" }}
+            >
+              Sign out
+            </button>
+          </div>
+        )}
+      </div>
+    </header>
   );
 }

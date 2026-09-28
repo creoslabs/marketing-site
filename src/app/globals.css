@@ -344,10 +344,13 @@ button:hover .cta-arrow {
   --ws-accent-tint-border: rgba(10, 132, 255, 0.3);
   --ws-accent-tint-ink: #d3e6ff;
   --ws-eyebrow: #4da2ff;
+  --ws-headline-grey: #6f6f71;
+  --ws-wordmark-ink: #ffffff;
   --ws-warn: #ff6b4a;
   --ws-warn-ink: #2b0b03;
   --ws-warn-text: #ff8f75;
   --ws-warn-tint: #210d07;
+  --ws-warn-tint-border: rgba(255, 107, 74, 0.3);
   --ws-warn-tint-ink: #ffdbd0;
 
   /* Product brand accents (OutlierMark/SignalMark in product-icons.tsx) —
@@ -384,10 +387,13 @@ button:hover .cta-arrow {
   --ws-accent-tint-border: rgba(10, 108, 240, 0.3);
   --ws-accent-tint-ink: #0b2a52;
   --ws-eyebrow: rgba(0, 0, 0, 0.45);
+  --ws-headline-grey: #8b8a87;
+  --ws-wordmark-ink: #111111;
   --ws-warn: #d14424;
   --ws-warn-ink: #ffffff;
   --ws-warn-text: #d14424;
   --ws-warn-tint: #ffeee9;
+  --ws-warn-tint-border: rgba(209, 68, 36, 0.3);
   --ws-warn-tint-ink: #5c1f0c;
   --outlier-accent: #3b82f6;
 }

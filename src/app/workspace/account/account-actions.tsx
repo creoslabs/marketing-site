@@ -2,6 +2,7 @@
 
 import { useConfirm } from "@/components/ws-confirm";
 import { useToast } from "@/components/ws-toast";
+import { WsButton } from "@/components/ws-button";
 
 export function ConnectButton({ label = "Connect" }: { label?: string }) {
   const toast = useToast();
@@ -12,6 +13,19 @@ export function ConnectButton({ label = "Connect" }: { label?: string }) {
       className="ws-link-accent whitespace-nowrap text-[11.5px] font-medium"
     >
       {label}
+    </button>
+  );
+}
+
+export function AddTimezoneButton() {
+  const toast = useToast();
+  return (
+    <button
+      type="button"
+      onClick={() => toast("Setting a time zone isn't available yet.")}
+      className="ws-link-accent whitespace-nowrap text-[11.5px] font-medium"
+    >
+      Add
     </button>
   );
 }
@@ -33,18 +47,8 @@ export function DeleteAccountButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleDelete}
-      className="rounded-[8px] text-[12.5px] font-medium"
-      style={{
-        padding: "10px 14px",
-        background: "transparent",
-        color: "var(--ws-warn-text)",
-        border: "1px solid var(--ws-hairline-strong)",
-      }}
-    >
+    <WsButton variant="danger" onClick={handleDelete}>
       Delete account
-    </button>
+    </WsButton>
   );
 }

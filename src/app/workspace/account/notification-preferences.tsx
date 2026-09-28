@@ -57,7 +57,6 @@ export function NotificationPreferences({ initialDisabled }: { initialDisabled: 
                 borderRadius: 10,
                 background: isOn ? "var(--ws-accent)" : "var(--ws-hairline-strong)",
                 opacity: pending === cat.key ? 0.6 : 1,
-                transition: "background-color 0.15s ease",
               }}
             >
               <span
