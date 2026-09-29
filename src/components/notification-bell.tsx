@@ -53,7 +53,10 @@ function groupNotifications(notifications: Notification[]): (Notification | Grou
   return result.map((item) => ("items" in item && item.items.length === 1 ? item.items[0] : item));
 }
 
-export function NotificationBell() {
+// `bare` drops the button's own border/corners so it can sit flush as one
+// segment of a shared hairline-divided pill (see ws-stack-row usage in the
+// product chromes) instead of floating as its own separate box.
+export function NotificationBell({ bare = false }: { bare?: boolean } = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -125,8 +128,12 @@ export function NotificationBell() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="relative flex h-[28px] w-[28px] items-center justify-center rounded-[7px] text-[13px] transition-transform active:scale-95"
-        style={{ border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
+        className={
+          bare
+            ? "relative flex h-[34px] w-[40px] items-center justify-center text-[13px] transition-transform active:scale-95"
+            : "relative flex h-[28px] w-[28px] items-center justify-center rounded-[7px] text-[13px] transition-transform active:scale-95"
+        }
+        style={bare ? { color: "var(--ws-ink-60)" } : { border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
       >
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -140,7 +147,11 @@ export function NotificationBell() {
         {unreadCount > 0 && (
           <span
             className="ws-tabular absolute flex h-[15px] min-w-[15px] items-center justify-center rounded-full text-[9px] font-semibold"
-            style={{ top: -5, right: -5, background: "var(--ws-accent)", color: "var(--ws-accent-ink)", padding: "0 3px" }}
+            style={
+              bare
+                ? { top: 2, right: 6, background: "var(--ws-accent)", color: "var(--ws-accent-ink)", padding: "0 3px" }
+                : { top: -5, right: -5, background: "var(--ws-accent)", color: "var(--ws-accent-ink)", padding: "0 3px" }
+            }
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>

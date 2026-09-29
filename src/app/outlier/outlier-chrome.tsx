@@ -60,22 +60,24 @@ export function OutlierChrome({
 
       <div className="flex-1" />
 
-      {lastPulledLabel && (
-        <span className="hidden text-[13px] sm:inline" style={{ color: "var(--ws-ink-45)" }}>
-          Pulled {lastPulledLabel}
-        </span>
-      )}
+      <div className="ws-stack-row hidden sm:flex" style={{ height: 34, borderRadius: 8 }}>
+        {lastPulledLabel && (
+          <span className="flex items-center text-[13px]" style={{ padding: "0 14px", color: "var(--ws-ink-45)" }}>
+            Pulled {lastPulledLabel}
+          </span>
+        )}
 
-      <NotificationBell />
+        <NotificationBell bare />
 
-      <button
-        type="button"
-        onClick={openPalette}
-        className="hidden items-center gap-[4px] rounded-[7px] text-[13px] transition-transform active:scale-95 sm:flex"
-        style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
-      >
-        ⌘K
-      </button>
+        <button
+          type="button"
+          onClick={openPalette}
+          className="flex items-center text-[13px] transition-transform active:scale-95"
+          style={{ padding: "0 14px", color: "var(--ws-ink-45)" }}
+        >
+          ⌘K
+        </button>
+      </div>
 
       <WsAvatarMenu name={name} email={email} initials={initials} />
     </header>

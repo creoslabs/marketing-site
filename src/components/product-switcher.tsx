@@ -39,8 +39,10 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center whitespace-nowrap"
-        style={{ gap: 14, fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="ws-row-hover flex items-center whitespace-nowrap"
+        style={{ gap: 14, fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", padding: "6px 8px", margin: "-6px -8px", borderRadius: 8 }}
       >
         <span style={{ color: "var(--ws-wordmark-ink)" }}>
           CREOS LABS<sup style={{ fontSize: 9, marginLeft: 1, fontWeight: 500 }}>®</sup>
@@ -50,17 +52,27 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
           <active.Mark size={16} />
           {active.label}
         </span>
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 16 16"
+          fill="none"
+          style={{ color: "var(--ws-ink-45)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }}
+        >
+          <path d="M4 6.5 8 10l4-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       {open && (
-        <div className="ws-card ws-dropdown-in absolute left-0 top-[calc(100%+8px)] z-20 w-[180px] p-[6px]">
+        <div className="ws-card ws-dropdown-in absolute left-0 top-[calc(100%+8px)] z-20 w-[190px] p-[6px]">
+          <p className="ws-eyebrow px-[10px] pb-[6px] pt-[4px]">Switch app</p>
           {PRODUCTS.map((p) => (
             <Link
               key={p.key}
               href={hrefs[p.key]}
               onClick={() => setOpen(false)}
-              className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[8px] text-[12.5px] font-medium"
-              style={{ color: p.key === current ? "var(--ws-ink)" : "var(--ws-ink-60)" }}
+              className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[8px] text-[12.5px]"
+              style={{ color: p.key === current ? "var(--ws-ink)" : "var(--ws-ink-60)", fontWeight: p.key === current ? 600 : 500 }}
             >
               <span className="flex items-center gap-[8px]">
                 <p.Mark size={15} />
