@@ -1,15 +1,27 @@
 import styles from "./home.module.css";
 
 // Same accurate brand-colored badge treatment as Outlier's own PlatformBadge
-// (src/app/outlier/components.tsx) — real logos, not line-art abstractions,
-// so this reads as actual platform support rather than a generic icon set.
+// (src/app/outlier/components.tsx) — real logos, not line-art abstractions.
 const BADGES: { key: string; label: string; bg: string; icon: React.ReactNode }[] = [
+  {
+    key: "meta",
+    label: "Meta",
+    bg: "linear-gradient(45deg, #0064E0, #0082FB)",
+    icon: (
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          d="M8.6 7.6C6 7.6 4 10.4 4 13.7C4 16.3 5.3 18.4 7.1 18.4C8.4 18.4 9.4 17.1 10.5 15.2C11.1 14.1 11.6 12.9 12 12.9C12.4 12.9 12.9 14.1 13.5 15.2C14.6 17.1 15.6 18.4 16.9 18.4C18.7 18.4 20 16.3 20 13.7C20 10.4 18 7.6 15.4 7.6C13.6 7.6 12.5 9.1 12 9.9C11.5 9.1 10.4 7.6 8.6 7.6Z"
+          fill="#fff"
+        />
+      </svg>
+    ),
+  },
   {
     key: "instagram",
     label: "Instagram",
     bg: "linear-gradient(45deg, #f9ce34, #ee2a7b, #6228d7)",
     icon: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <rect x="3" y="3" width="18" height="18" rx="5" stroke="#fff" strokeWidth="2" />
         <circle cx="12" cy="12" r="4" stroke="#fff" strokeWidth="2" />
         <circle cx="17.2" cy="6.8" r="1.2" fill="#fff" />
@@ -55,18 +67,20 @@ const BADGES: { key: string; label: string; bg: string; icon: React.ReactNode }[
 ];
 
 const GROUPS = [
-  { label: "Meta", badgeKeys: ["instagram", "facebook"] },
+  { label: "Meta", badgeKeys: ["meta", "instagram", "facebook"] },
   { label: "TikTok", badgeKeys: ["tiktok"] },
   { label: "YouTube", badgeKeys: ["youtube"] },
 ];
 
+// A quiet trust-bar, not a competing section — a thin hairline-bordered
+// strip (same device as .loop) so it reads as a transition between the hero
+// and the product loop, not another headline demanding its own attention.
 export function HomePlatforms() {
   return (
     <section className={styles.platforms}>
-      <div className={styles.wrap}>
-        <span className={styles.label}>Already where you work</span>
-        <h2 className={styles.platformsHeadline}>We already support the platforms you use.</h2>
-        <div className={styles.platformsRow}>
+      <div className={`${styles.wrap} ${styles.platformsRow}`}>
+        <span className={styles.label}>Where you already post</span>
+        <div className={styles.platformsLogos}>
           {GROUPS.map((group) => (
             <div key={group.label} className={styles.platformGroup}>
               <div className={styles.platformIcons}>
