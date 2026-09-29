@@ -22,6 +22,21 @@ export function pathFallback(target: ProductTarget, path: string): string {
   return target === "root" ? path : `/${target}${path === "/" ? "" : path}`;
 }
 
+// A product subdomain always hangs off the bare apex (outlier.creos-labs.com)
+// — there is no such host as outlier.www.creos-labs.com. rootHost is "www."
+// only when the current page IS the root app (Workspace lives there), which
+// happens whenever `active` is null; strip it before grafting a product
+// label on, or linking from Workspace to Outlier/Signal builds a bad host.
+function apexHost(host: string): string {
+  return host === "www.creos-labs.com" ? "creos-labs.com" : host;
+}
+
+// Mirrors proxy.ts's own toRootHost: the bare apex 308s on to www at the
+// DNS/Vercel level, so linking straight to www avoids a redundant redirect.
+function canonicalRootHost(host: string): string {
+  return host === "creos-labs.com" ? "www.creos-labs.com" : host;
+}
+
 // Pure, host-explicit core so both a Server Component (host from
 // next/headers) and a Client Component (host from window.location) resolve
 // the exact same way. `path` is relative to the TARGET product's own root
@@ -32,10 +47,10 @@ export function resolveProductHref(host: string, protocol: string, target: Produ
   const active = currentProduct(host);
   const rootHost = active ? host.slice(`${active}.`.length) : host;
   if (target === "root") {
-    return active ? `${protocol}//${rootHost}${path}` : path;
+    return active ? `${protocol}//${canonicalRootHost(rootHost)}${path}` : path;
   }
   if (active === target) return path;
-  return `${protocol}//${target}.${rootHost}${path}`;
+  return `${protocol}//${target}.${apexHost(rootHost)}${path}`;
 }
 
 // Server-side convenience wrapper. Vercel always sets x-forwarded-proto to
@@ -63,7 +78,7 @@ export function resolveDashboardHref(host: string, protocol: string, product: "o
   const active = currentProduct(host);
   if (active === product) return "/app";
   const rootHost = active ? host.slice(`${active}.`.length) : host;
-  return `${protocol}//${product}.${rootHost}/app`;
+  return `${protocol}//${product}.${apexHost(rootHost)}/app`;
 }
 
 // Server-side convenience wrapper, mirroring serverProductHref.
@@ -85,7 +100,7 @@ export function resolveLandingHref(host: string, protocol: string, product: "out
   const active = currentProduct(host);
   if (active === product) return "/";
   const rootHost = active ? host.slice(`${active}.`.length) : host;
-  return `${protocol}//${product}.${rootHost}/`;
+  return `${protocol}//${product}.${apexHost(rootHost)}/`;
 }
 
 // Backend jobs that write notifications have no request to read a host
