@@ -93,7 +93,7 @@ export function SignalDemoPanel() {
     <div className={styles.bleedL}>
       <div className={styles.sPanel}>
         <div className={styles.frame}>
-          <Image src="/home/signal-demo-frame.png" alt="" fill sizes="(max-width: 900px) 220px, 300px" />
+          <Image src="/home/signal-demo-frame.webp" alt="" fill sizes="(max-width: 900px) 220px, 300px" />
           <span className={styles.tc}>{timecode}</span>
           <p className={styles.cap}>{seg.caption}</p>
           <button

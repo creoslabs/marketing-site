@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "./home.module.css";
 import { HomeThemeToggle } from "./HomeThemeToggle";
+import { HomeProductNavLinks } from "./HomeProductNavLinks";
 
 export function HomeHeader() {
   return (
@@ -9,8 +10,7 @@ export function HomeHeader() {
         CREOS LABS<sup>®</sup>
       </Link>
       <nav className={styles.nav} aria-label="Main">
-        <a href="#outlier">Outlier</a>
-        <a href="#signal">Signal</a>
+        <HomeProductNavLinks />
         <a href="#pricing">Pricing</a>
         <a href="#custom">Custom</a>
         <Link href="/insights">Insights</Link>

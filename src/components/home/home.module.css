@@ -116,12 +116,16 @@ a:hover .arrow { transform: translate(2px, -2px); }
 .platforms { border-top: 1px solid var(--rule); }
 .platforms .label { color: var(--graphite); }
 .platformsRow { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 48px; padding: 26px 0; }
-.platformsLogos { display: flex; flex-wrap: wrap; align-items: center; gap: clamp(28px, 4vw, 48px); }
-.platformGroup { display: flex; align-items: center; gap: 10px; }
+.platformsRow .label { flex: none; }
+.platformsLogos { display: flex; flex-wrap: wrap; align-items: center; gap: clamp(20px, 4vw, 48px); min-width: 0; }
+.platformGroup { display: flex; align-items: center; gap: 10px; flex: none; }
 .platformIcons { display: flex; align-items: center; gap: 5px; }
 .platformBadge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 7px; flex: none; }
-.platformLabel { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--graphite); }
-@media (max-width: 640px) { .platformsLogos { gap: 22px; } }
+.platformLabel { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--graphite); white-space: nowrap; }
+@media (max-width: 700px) {
+  .platformsRow { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .platformsLogos { gap: 20px; }
+}
 
 /* Loop band */
 .loop { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
