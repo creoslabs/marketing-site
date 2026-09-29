@@ -39,7 +39,7 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
     <div
       ref={containerRef}
       className="relative flex items-center"
-      style={{ gap: variant === "pill" ? 4 : 26, height: variant === "underline" ? "100%" : undefined }}
+      style={{ gap: variant === "pill" ? 4 : 34, height: variant === "underline" ? "100%" : undefined }}
     >
       {indicator && (
         <div
@@ -75,7 +75,7 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
             ref={(el) => {
               tabRefs.current[tab.href] = el;
             }}
-            className="relative flex items-center whitespace-nowrap text-[11.5px] uppercase tracking-[0.14em] transition-colors duration-150"
+            className="relative flex items-center whitespace-nowrap text-[14px] uppercase tracking-[0.02em] transition-colors duration-150"
             style={
               variant === "pill"
                 ? {
@@ -89,7 +89,7 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
                 : {
                     height: "100%",
                     gap: 6,
-                    fontWeight: active ? 600 : 500,
+                    fontWeight: active ? 600 : 400,
                     color: active ? "var(--ws-ink)" : "var(--ws-ink-60)",
                     zIndex: 1,
                   }

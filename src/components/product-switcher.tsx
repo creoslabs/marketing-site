@@ -40,14 +40,14 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center whitespace-nowrap"
-        style={{ gap: 14, fontSize: 13, fontWeight: 700, letterSpacing: "0.14em" }}
+        style={{ gap: 14, fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em" }}
       >
         <span style={{ color: "var(--ws-wordmark-ink)" }}>
-          CREOS LABS<sup style={{ fontSize: 8, marginLeft: 1 }}>®</sup>
+          CREOS LABS<sup style={{ fontSize: 9, marginLeft: 1, fontWeight: 500 }}>®</sup>
         </span>
         <span style={{ fontWeight: 400, color: "var(--ws-ink-45)" }}>/</span>
-        <span className="flex items-center gap-[7px]" style={{ color: "var(--ws-wordmark-ink)", textTransform: "uppercase" }}>
-          <active.Mark size={14} />
+        <span className="flex items-center gap-[8px]" style={{ color: "var(--ws-wordmark-ink)", textTransform: "uppercase" }}>
+          <active.Mark size={16} />
           {active.label}
         </span>
       </button>

@@ -58,15 +58,15 @@ export function WorkspaceChrome({
       <Link
         href="/workspace"
         style={{
-          fontSize: 13,
+          fontSize: 18,
           fontWeight: 700,
-          letterSpacing: "0.14em",
+          letterSpacing: "-0.02em",
           color: "var(--ws-wordmark-ink)",
           whiteSpace: "nowrap",
         }}
       >
         CREOS LABS
-        <sup style={{ fontSize: 8, marginLeft: 1 }}>®</sup>
+        <sup style={{ fontSize: 9, marginLeft: 1, fontWeight: 500 }}>®</sup>
       </Link>
 
       <div className="hidden sm:block" style={{ height: CHROME_HEIGHT }}>
@@ -77,12 +77,12 @@ export function WorkspaceChrome({
 
       <Link
         href="/insights"
-        className="hidden text-[11.5px] font-medium uppercase tracking-[0.14em] sm:inline"
+        className="hidden text-[14px] uppercase tracking-[0.02em] sm:inline"
         style={{ color: "var(--ws-ink-60)" }}
       >
         Insights ↗
       </Link>
-      <span className="hidden text-[11.5px] font-medium uppercase tracking-[0.14em] sm:inline" style={{ color: "var(--ws-ink-60)" }}>
+      <span className="hidden text-[14px] uppercase tracking-[0.02em] sm:inline" style={{ color: "var(--ws-ink-60)" }}>
         Support
       </span>
 
