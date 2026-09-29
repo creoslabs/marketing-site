@@ -75,7 +75,7 @@ export function WsTabNav({ tabs, variant }: { tabs: WsTab[]; variant: "pill" | "
             ref={(el) => {
               tabRefs.current[tab.href] = el;
             }}
-            className="relative flex items-center text-[12.5px] transition-colors duration-150"
+            className="relative flex items-center whitespace-nowrap text-[11.5px] uppercase tracking-[0.14em] transition-colors duration-150"
             style={
               variant === "pill"
                 ? {

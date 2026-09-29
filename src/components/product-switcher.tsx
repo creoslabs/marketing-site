@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { OutlierMark, SignalMark } from "./product-icons";
-import { useProductHref } from "@/lib/use-product-href";
+import { useProductHref, useDashboardHref } from "@/lib/use-product-href";
 
 const PRODUCTS = [
   { key: "outlier", label: "Outlier", Mark: OutlierMark },
@@ -15,11 +15,15 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
   const ref = useRef<HTMLDivElement>(null);
   const active = PRODUCTS.find((p) => p.key === current)!;
 
-  // Outlier and Signal each live on their own subdomain — a plain relative
-  // href would resolve against the CURRENT subdomain and 404.
+  // This switcher only ever renders for a signed-in user already inside a
+  // product, so every entry should land straight on that product's app —
+  // useProductHref(target, "/") would resolve to the subdomain's bare root,
+  // which proxy.ts always treats as the public marketing landing page
+  // regardless of auth. useDashboardHref goes to "/app" instead, which the
+  // proxy maps to the real dashboard tree.
   const workspaceHref = useProductHref("root", "/workspace");
-  const outlierHref = useProductHref("outlier", "/");
-  const signalHref = useProductHref("signal", "/");
+  const outlierHref = useDashboardHref("outlier");
+  const signalHref = useDashboardHref("signal");
   const hrefs = { workspace: workspaceHref, outlier: outlierHref, signal: signalHref };
 
   useEffect(() => {

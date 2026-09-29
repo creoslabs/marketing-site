@@ -75,10 +75,14 @@ export function WorkspaceChrome({
 
       <div className="flex-1" />
 
-      <Link href="/insights" className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
+      <Link
+        href="/insights"
+        className="hidden text-[11.5px] font-medium uppercase tracking-[0.14em] sm:inline"
+        style={{ color: "var(--ws-ink-60)" }}
+      >
         Insights ↗
       </Link>
-      <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink-60)" }}>
+      <span className="hidden text-[11.5px] font-medium uppercase tracking-[0.14em] sm:inline" style={{ color: "var(--ws-ink-60)" }}>
         Support
       </span>
 

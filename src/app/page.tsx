@@ -1,6 +1,7 @@
 import styles from "@/components/home/home.module.css";
 import { HomeHeader } from "@/components/home/HomeHeader";
 import { HomeHero } from "@/components/home/HomeHero";
+import { HomePlatforms } from "@/components/home/HomePlatforms";
 import { HomeLoop } from "@/components/home/HomeLoop";
 import { HomeOutlierSection } from "@/components/home/HomeOutlierSection";
 import { HomeSignalSection } from "@/components/home/HomeSignalSection";
@@ -24,6 +25,7 @@ export default function Home() {
       <HomeHeader />
       <main>
         <HomeHero />
+        <HomePlatforms />
         <HomeLoop />
         <HomeOutlierSection />
         <HomeSignalSection />
