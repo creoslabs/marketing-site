@@ -34,7 +34,7 @@ export function HomeThemeToggle() {
           />
         </svg>
       )}
-      {isDark ? "Light" : "Dark"}
+      <span className={styles.themeToggleLabel}>{isDark ? "Light" : "Dark"}</span>
     </button>
   );
 }

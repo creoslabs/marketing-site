@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Creator, Platform, Post } from "../data";
-import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb } from "../components";
+import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../components";
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
 import { SortDropdown, type SortValue } from "./feed-controls";
 import { useToast } from "@/components/ws-toast";
@@ -260,6 +260,10 @@ export function FeedGrid({
                       }
                     >
                       {isSelected ? "✓" : ""}
+                    </div>
+                  ) : post.thin ? (
+                    <div className="absolute right-[8px] top-[8px]" style={{ zIndex: 2 }}>
+                      <ThinHistoryPill />
                     </div>
                   ) : (
                     isFreshlyPulled(post) && (

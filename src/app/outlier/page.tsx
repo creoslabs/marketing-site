@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
-import { getCreators, getPosts, getJobs, getRecentRepurposes, getFavouritePosts, getCollections } from "./live-data";
+import {
+  getCreators,
+  getPosts,
+  getJobs,
+  getRecentRepurposes,
+  getFavouritePosts,
+  getCollections,
+  getHookStylePatterns,
+  getPostsByHookTag,
+} from "./live-data";
 import { relativeTime } from "@/lib/relative-time";
 import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
-import { AddCreatorButton, PullHandlesButton } from "./creator-actions";
+import { AddCreatorButton, PullHandlesButton, BatchRepurposeButton } from "./creator-actions";
 import { OnboardingChecklist } from "./onboarding-checklist";
 import { NextStepSuggestion, type Suggestion } from "./next-step-suggestion";
 import { WhatsNewCard } from "@/components/whats-new-card";
@@ -58,7 +67,7 @@ function greeting() {
 }
 
 export default async function OutlierHomePage() {
-  const [user, creators, posts, { jobs }, recentRepurposes, favouritePosts, collections] = await Promise.all([
+  const [user, creators, posts, { jobs }, recentRepurposes, favouritePosts, collections, hookPatterns] = await Promise.all([
     getUser(),
     getCreators(),
     getPosts(),
@@ -66,7 +75,10 @@ export default async function OutlierHomePage() {
     getRecentRepurposes(),
     getFavouritePosts(),
     getCollections(),
+    getHookStylePatterns(),
   ]);
+  const topPattern = hookPatterns.find((p) => p.creatorCount >= 3) ?? null;
+  const topPatternPosts = topPattern ? await getPostsByHookTag(topPattern.tag) : [];
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
@@ -236,6 +248,35 @@ export default async function OutlierHomePage() {
 
         {/* Right column */}
         <div className="flex flex-col gap-[14px]">
+          {topPattern && (
+            <div
+              className="rounded-[10px]"
+              style={{ padding: "18px 20px 20px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
+            >
+              <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
+                PATTERN WORTH TAKING
+              </p>
+              <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
+                &ldquo;{topPattern.tag}&rdquo; beat the median for all {topPattern.creatorCount} creators who used
+                it, averaging {topPattern.avgScore.toFixed(1)}×.
+              </p>
+              <div className="mt-[14px] flex items-center gap-[9px]">
+                <BatchRepurposeButton
+                  posts={topPatternPosts}
+                  className="ws-btn-primary rounded-[7px] text-[11.5px] font-semibold"
+                  style={{ padding: "8px 12px" }}
+                />
+                <Link
+                  href="/outlier/trends"
+                  className="rounded-[7px] text-[11.5px] font-medium"
+                  style={{ padding: "8px 12px", color: "var(--ws-accent-tint-ink)" }}
+                >
+                  See in Trends
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
             <div className="flex items-center">
               <p className="ws-eyebrow">PROCESSING NOW</p>

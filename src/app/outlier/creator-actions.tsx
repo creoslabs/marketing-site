@@ -27,56 +27,107 @@ function PlatformPicker({ platform, onChange }: { platform: Platform; onChange: 
   );
 }
 
+type HandleRow = { key: number; platform: Platform; handle: string };
+
+let nextRowKey = 1;
+function makeRow(platform: Platform = "TT", handle = ""): HandleRow {
+  return { key: nextRowKey++, platform, handle };
+}
+
+// One creator, many platform handles — matches how a creator page actually
+// reads (one profile, several platforms rolled up under it), rather than
+// creating a separate "creator" per platform. The first row's platform+
+// handle creates the creator (POST /api/outlier/creators, which also sets
+// its display name); every row after that attaches to that new creator via
+// the same endpoint AddPlatformButton already uses.
 export function AddCreatorButton({ className, style, children }: { className: string; style: React.CSSProperties; children: React.ReactNode }) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState<Platform>("TT");
-  const [handleText, setHandleText] = useState("");
+  const [name, setName] = useState("");
+  const [rows, setRows] = useState<HandleRow[]>(() => [makeRow()]);
+  const [newHandle, setNewHandle] = useState("");
+  const [newPlatform, setNewPlatform] = useState<Platform>("TT");
+  const [postLimit, setPostLimit] = useState(30);
   const [saving, setSaving] = useState(false);
 
-  // One line, one entry — a bare handle falls back to the platform picker
-  // above, but a pasted profile URL detects its own platform regardless of
-  // what's selected there. This is the same input for adding one creator or
-  // twenty; there's no separate "bulk" mode to find.
-  const lines = handleText
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const filledRows = rows.filter((r) => r.handle.trim());
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (lines.length === 0) return;
+  function updateRow(key: number, patch: Partial<HandleRow>) {
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  function removeRow(key: number) {
+    setRows((prev) => prev.filter((r) => r.key !== key));
+  }
+
+  function addHandleRow() {
+    const parsed = parseHandleInput(newHandle);
+    const handle = parsed.handle.replace(/^@/, "");
+    if (!handle) return;
+    setRows((prev) => [...prev, makeRow(parsed.platform ?? newPlatform, handle)]);
+    setNewHandle("");
+  }
+
+  function reset() {
+    setName("");
+    setRows([makeRow()]);
+    setNewHandle("");
+    setPostLimit(30);
+  }
+
+  async function handleSubmit(pullAfter: boolean) {
+    if (filledRows.length === 0) return;
     setSaving(true);
-    let successCount = 0;
-    let failCount = 0;
-    let firstHandle = "";
-    for (const line of lines) {
-      const parsed = parseHandleInput(line);
-      const entryPlatform = parsed.platform ?? platform;
-      const entryHandle = parsed.handle.replace(/^@/, "");
-      if (!entryHandle) continue;
-      if (!firstHandle) firstHandle = entryHandle;
-      const res = await fetch("/api/outlier/creators", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform: entryPlatform, handle: entryHandle }),
-      });
-      if (res.ok) successCount += 1;
-      else failCount += 1;
-    }
-    setSaving(false);
-    if (successCount === 0) {
-      toast("Couldn't add any of those.", "error");
+    const [first, ...rest] = filledRows;
+    const createRes = await fetch("/api/outlier/creators", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform: first.platform, handle: first.handle.trim(), displayName: name.trim() }),
+    });
+    const createData = await createRes.json().catch(() => null);
+    if (!createRes.ok || !createData?.creatorId) {
+      setSaving(false);
+      toast(createData?.error ?? "Couldn't add that creator.", "error");
       return;
     }
-    if (failCount === 0) {
-      toast(successCount === 1 ? `Tracking @${firstHandle}.` : `Tracking ${successCount} creators.`, "success");
-    } else {
-      toast(`Tracking ${successCount} — ${failCount} couldn't be added (probably already tracked).`, "error");
+    const creatorId = createData.creatorId as string;
+    const handleIds: string[] = [];
+    let attachFailures = 0;
+    for (const row of rest) {
+      const res = await fetch(`/api/outlier/creators/${creatorId}/handles`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform: row.platform, handle: row.handle.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.handleId) handleIds.push(data.handleId);
+      else attachFailures += 1;
     }
+
+    if (pullAfter) {
+      await fetch("/api/outlier/pull", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handleId: createData.handleId, postLimit }),
+      }).catch(() => null);
+      for (const handleId of handleIds) {
+        await fetch("/api/outlier/pull", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ handleId, postLimit }),
+        }).catch(() => null);
+      }
+    }
+
+    setSaving(false);
     setOpen(false);
-    setHandleText("");
+    reset();
+    if (attachFailures > 0) {
+      toast(`Added ${name.trim() || first.handle} — ${attachFailures} platform${attachFailures === 1 ? "" : "s"} couldn't be attached.`, "error");
+    } else {
+      toast(`Now tracking ${name.trim() || first.handle}${pullAfter ? " — pulling now." : "."}`, "success");
+    }
     router.refresh();
   }
 
@@ -89,52 +140,200 @@ export function AddCreatorButton({ className, style, children }: { className: st
         <div
           className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
           style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => setOpen(false)}
+          onClick={() => !saving && setOpen(false)}
         >
-          <div className="ws-card ws-modal-in" style={{ width: 360, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Add creators
-            </p>
-            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
-              <PlatformPicker platform={platform} onChange={setPlatform} />
-              <textarea
-                autoFocus
-                rows={3}
-                value={handleText}
-                onChange={(e) => setHandleText(e.target.value)}
-                placeholder="handle or profile URL — one per line for multiple"
-                className="text-[12.5px] outline-none"
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 7,
-                  border: "1px solid var(--ws-hairline-strong)",
-                  background: "var(--ws-surface)",
-                  color: "var(--ws-ink)",
-                  resize: "none",
-                }}
-              />
-              <p className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-                Platform above applies to bare handles — a pasted profile URL detects its own.
+          <div
+            className="ws-card ws-modal-in flex max-h-[85vh] flex-col"
+            style={{ width: 480, padding: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center" style={{ padding: "18px 22px", borderBottom: "1px solid var(--ws-hairline)" }}>
+              <p className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
+                Add creator
               </p>
-              <div className="mt-[4px] flex justify-end gap-[8px]">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-                  style={{ padding: "9px 14px" }}
+              <div className="flex-1" />
+              <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ color: "var(--ws-ink-45)" }}>
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto" style={{ padding: "18px 22px" }}>
+              <p className="ws-eyebrow">CREATOR</p>
+              <div className="mt-[10px] flex items-center gap-[10px]">
+                <span
+                  className="ws-placeholder flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
+                  style={{ color: "var(--ws-ink-60)" }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || lines.length === 0}
-                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-                  style={{ padding: "9px 14px", opacity: saving ? 0.6 : 1 }}
-                >
-                  {saving ? "Adding…" : lines.length > 1 ? `Add ${lines.length} creators` : "Add creator"}
-                </button>
+                  {(name || filledRows[0]?.handle || "?").slice(0, 2).toUpperCase()}
+                </span>
+                <input
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={filledRows[0]?.handle || "Name"}
+                  className="flex-1 text-[13px] outline-none"
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 7,
+                    border: "1px solid var(--ws-hairline-strong)",
+                    background: "var(--ws-surface)",
+                    color: "var(--ws-ink)",
+                  }}
+                />
               </div>
-            </form>
+
+              <p className="mt-[18px] ws-eyebrow">HANDLES</p>
+              <div className="mt-[10px] flex flex-col gap-[8px]">
+                {rows.map((row) => (
+                  <div key={row.key} className="flex items-center gap-[8px]">
+                    <select
+                      value={row.platform}
+                      onChange={(e) => updateRow(row.key, { platform: e.target.value as Platform })}
+                      className="text-[12.5px] outline-none"
+                      style={{
+                        padding: "9px 8px",
+                        borderRadius: 7,
+                        border: "1px solid var(--ws-hairline-strong)",
+                        background: "var(--ws-surface)",
+                        color: "var(--ws-ink)",
+                      }}
+                    >
+                      {(["TT", "IG", "YT"] as const).map((p) => (
+                        <option key={p} value={p}>
+                          {PLATFORM_LABEL[p]}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={row.handle}
+                      onChange={(e) => updateRow(row.key, { handle: e.target.value.replace(/^@/, "") })}
+                      placeholder="@handle"
+                      className="flex-1 text-[12.5px] outline-none"
+                      style={{
+                        padding: "9px 12px",
+                        borderRadius: 7,
+                        border: "1px solid var(--ws-hairline-strong)",
+                        background: "var(--ws-surface)",
+                        color: "var(--ws-ink)",
+                      }}
+                    />
+                    {rows.length > 1 && (
+                      <button type="button" onClick={() => removeRow(row.key)} aria-label="Remove platform" style={{ color: "var(--ws-ink-45)" }}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <div className="flex items-center gap-[8px]">
+                  <select
+                    value={newPlatform}
+                    onChange={(e) => setNewPlatform(e.target.value as Platform)}
+                    className="text-[12.5px] outline-none"
+                    style={{
+                      padding: "9px 8px",
+                      borderRadius: 7,
+                      border: "1px dashed var(--ws-hairline-strong)",
+                      background: "transparent",
+                      color: "var(--ws-ink)",
+                    }}
+                  >
+                    {(["TT", "IG", "YT"] as const).map((p) => (
+                      <option key={p} value={p}>
+                        {PLATFORM_LABEL[p]}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={newHandle}
+                    onChange={(e) => setNewHandle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addHandleRow();
+                      }
+                    }}
+                    placeholder="@handle or profile URL"
+                    className="flex-1 text-[12.5px] outline-none"
+                    style={{
+                      padding: "9px 12px",
+                      borderRadius: 7,
+                      border: "1px dashed var(--ws-hairline-strong)",
+                      background: "transparent",
+                      color: "var(--ws-ink)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={addHandleRow}
+                    className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
+                    style={{ padding: "9px 12px" }}
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+              <p className="mt-[10px] text-[11px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
+                Each platform is scored against its own median, so 4× on TikTok means the same as 4× on Instagram.
+                Handles roll up into one creator page.
+              </p>
+
+              <div className="mt-[18px] grid grid-cols-2 gap-[18px]">
+                <div>
+                  <p className="ws-eyebrow">PULL RANGE</p>
+                  <div className="mt-[10px] flex items-center gap-[8px]">
+                    <input
+                      type="number"
+                      min={5}
+                      max={100}
+                      value={postLimit}
+                      onChange={(e) => setPostLimit(Math.min(100, Math.max(5, Number(e.target.value) || 30)))}
+                      aria-label="Posts to pull per platform"
+                      className="text-[12.5px] outline-none"
+                      style={{
+                        width: 64,
+                        padding: "9px 10px",
+                        borderRadius: 7,
+                        border: "1px solid var(--ws-hairline-strong)",
+                        background: "var(--ws-surface)",
+                        color: "var(--ws-ink)",
+                      }}
+                    />
+                    <span className="text-[12px]" style={{ color: "var(--ws-ink-60)" }}>posts per platform</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="ws-eyebrow">MEDIAN BASELINE</p>
+                  <p className="mt-[10px] text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                    Trailing 20 posts
+                  </p>
+                </div>
+              </div>
+              <p className="mt-[10px] text-[11px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
+                Under 12 posts, a platform is marked <span style={{ color: "var(--ws-warn-text)" }}>thin history</span> and
+                left out of Trends.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-[9px]" style={{ padding: "16px 22px", borderTop: "1px solid var(--ws-hairline)" }}>
+              <button
+                type="button"
+                disabled={saving || filledRows.length === 0}
+                onClick={() => handleSubmit(true)}
+                className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
+                style={{ padding: "10px 14px", opacity: saving || filledRows.length === 0 ? 0.6 : 1 }}
+              >
+                {saving ? "Adding…" : "Add and pull now"}
+              </button>
+              <button
+                type="button"
+                disabled={saving || filledRows.length === 0}
+                onClick={() => handleSubmit(false)}
+                className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
+                style={{ padding: "10px 14px", opacity: saving || filledRows.length === 0 ? 0.6 : 1 }}
+              >
+                Add without pulling
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -431,7 +630,15 @@ export function RemoveHandleButton({ handleId, handle }: { handleId: string; han
 // targets" rather than needing a separate batch API. Repurposing requires
 // a post's transcript/beats to already exist, so only analyzed posts are
 // eligible; unanalyzed ones (however high-scoring) are skipped.
-export function BatchRepurposeButton({ posts }: { posts: Post[] }) {
+export function BatchRepurposeButton({
+  posts,
+  className = "ws-btn-ghost shrink-0 rounded-[8px] text-[12px] font-medium",
+  style,
+}: {
+  posts: Post[];
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -487,8 +694,8 @@ export function BatchRepurposeButton({ posts }: { posts: Post[] }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="ws-btn-ghost shrink-0 rounded-[8px] text-[12px] font-medium"
-        style={{ padding: "8px 12px", opacity: eligible.length > 0 ? 1 : 0.6 }}
+        className={className}
+        style={{ padding: "8px 12px", opacity: eligible.length > 0 ? 1 : 0.6, ...style }}
       >
         Repurpose top {eligible.length > 0 ? eligible.length : 3} →
       </button>

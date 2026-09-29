@@ -27,11 +27,15 @@ export async function POST(request: Request, ctx: RouteContext<"/api/outlier/cre
     return NextResponse.json({ error: "Creator not found." }, { status: 404 });
   }
 
-  const { error } = await supabase.from("outlier_handles").insert({ creator_id: creatorId, user_id: user.id, platform, handle });
-  if (error) {
-    const message = error.code === "23505" ? "You're already tracking that handle." : error.message;
-    return NextResponse.json({ error: message }, { status: 400 });
+  const { data: handleRow, error } = await supabase
+    .from("outlier_handles")
+    .insert({ creator_id: creatorId, user_id: user.id, platform, handle })
+    .select("id")
+    .single();
+  if (error || !handleRow) {
+    const message = error?.code === "23505" ? "You're already tracking that handle." : error?.message;
+    return NextResponse.json({ error: message ?? "Could not add handle." }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, handleId: handleRow.id });
 }

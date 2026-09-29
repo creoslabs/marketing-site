@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRepurposeDetail, getCreators } from "../../live-data";
+import { getRepurposeDetail, getCreators, getPostDetail } from "../../live-data";
 import { Avatar } from "../../components";
 import { CopyScriptButton } from "../copy-script-button";
 import { ShareToggle } from "../share-toggle";
@@ -22,6 +22,11 @@ export default async function RepurposeDetailPage(props: PageProps<"/outlier/rep
 
   const creator = creators.find((c) => c.id === detail.creatorId);
   const handle = creator?.handles[0]?.handle;
+  const sourceDetail = await getPostDetail(detail.postId);
+  const sourceBeats = sourceDetail?.row.beats ?? [];
+  const sourceWordCount =
+    sourceDetail?.row.transcript?.reduce((sum, line) => sum + line.text.split(/\s+/).filter(Boolean).length, 0) ?? null;
+  const reworkedWordCount = detail.beats.reduce((sum, beat) => sum + beat.script.split(/\s+/).filter(Boolean).length, 0);
 
   return (
     <div className="ws-page-in px-6 py-[22px]" style={{ maxWidth: 720 }}>
@@ -71,23 +76,73 @@ export default async function RepurposeDetailPage(props: PageProps<"/outlier/rep
         </div>
       </div>
 
-      <div className="mt-[20px]">
-        <p className="ws-eyebrow">SCRIPT</p>
-        <div className="mt-[10px] flex flex-col gap-[10px]">
-          {detail.beats.map((beat, i) => (
-            <div key={`${beat.name}-${i}`} className="ws-card" style={{ padding: "14px 16px" }}>
-              <span
-                className="font-semibold uppercase"
-                style={{ fontSize: 9.5, letterSpacing: "0.07em", color: "var(--ws-accent-text)" }}
-              >
-                {beat.name}
-              </span>
-              <p className="mt-[6px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-ink)" }}>
-                {beat.script}
+      <div className="mt-[20px] grid grid-cols-1 gap-[18px] sm:grid-cols-2">
+        <div>
+          <p className="ws-eyebrow">ORIGINAL · TECHNIQUE</p>
+          <div className="mt-[10px] flex flex-col gap-[10px]">
+            {sourceBeats.length > 0 ? (
+              sourceBeats.map((beat, i) => (
+                <div key={`${beat.name}-${i}`} className="ws-card" style={{ padding: "14px 16px" }}>
+                  <div className="flex items-baseline gap-[8px]">
+                    <span
+                      className="font-semibold uppercase"
+                      style={{ fontSize: 9.5, letterSpacing: "0.07em", color: "var(--ws-ink-45)" }}
+                    >
+                      {beat.name}
+                    </span>
+                    <span className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                      {beat.timecode}
+                    </span>
+                  </div>
+                  <p className="mt-[6px] text-[12.5px] leading-[1.5]" style={{ color: "var(--ws-ink-60)" }}>
+                    {beat.analysis}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-[12.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                Original structure no longer available.
               </p>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
+
+        <div>
+          <p className="ws-eyebrow">REWORKED · YOUR TOPIC</p>
+          <div className="mt-[10px] flex flex-col gap-[10px]">
+            {detail.beats.map((beat, i) => (
+              <div
+                key={`${beat.name}-${i}`}
+                className="ws-card"
+                style={{ padding: "14px 16px", background: "var(--ws-accent-tint)", borderColor: "var(--ws-accent-tint-border)" }}
+              >
+                <span
+                  className="font-semibold uppercase"
+                  style={{ fontSize: 9.5, letterSpacing: "0.07em", color: "var(--ws-accent-tint-ink)", opacity: 0.75 }}
+                >
+                  {beat.name}
+                </span>
+                <p className="mt-[6px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
+                  {beat.script}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="mt-[18px] flex flex-wrap items-center gap-[18px]"
+        style={{ paddingTop: 16, borderTop: "1px solid var(--ws-hairline)" }}
+      >
+        <span className="text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
+          Beats {detail.beats.length} / {sourceBeats.length || detail.beats.length}
+        </span>
+        {sourceWordCount !== null && (
+          <span className="text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
+            {reworkedWordCount} words vs {sourceWordCount} original
+          </span>
+        )}
       </div>
     </div>
   );

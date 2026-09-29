@@ -218,7 +218,7 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
 
           <div>
             <div className="flex items-center">
-              <p className="ws-eyebrow">STRUCTURE</p>
+              <p className="ws-eyebrow">STRUCTURE{beats.length > 0 ? ` · ${beats.length} BEATS` : ""}</p>
               <div className="flex-1" />
               {row.analysis_status !== "none" && row.analysis_status !== "done" && (
                 <span className="text-[11px]" style={{ color: row.analysis_status === "failed" ? "var(--ws-warn-text)" : "var(--ws-ink-45)" }}>

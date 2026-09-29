@@ -311,6 +311,45 @@ export const getPostsByHookTag = cache(async (tag: string): Promise<Post[]> => {
   return posts.filter((post) => post.hookTags.some((t) => t.trim().toLowerCase() === key));
 });
 
+export type HookStylePattern = {
+  tag: string;
+  avgScore: number;
+  postCount: number;
+  creatorCount: number;
+};
+
+// Cross-creator hook-tag performance — the only real "what's working
+// regardless of topic" signal the data supports today (there's no topic/theme
+// field to cluster captions by, so this covers just the hook-style half of
+// the Trends page). A tag only counts once it's shared by at least two
+// creators, matching the "topic-agnostic" framing: one creator doing well
+// with a style tells you nothing about whether the style itself works.
+export const getHookStylePatterns = cache(async (): Promise<HookStylePattern[]> => {
+  const posts = await getPosts();
+  const byTag = new Map<string, { label: string; scores: number[]; creatorIds: Set<string> }>();
+  for (const post of posts) {
+    if (post.analysisStatus !== "done" || post.thin) continue;
+    for (const rawTag of post.hookTags) {
+      const label = rawTag.trim();
+      if (!label) continue;
+      const key = label.toLowerCase();
+      const entry = byTag.get(key) ?? { label, scores: [], creatorIds: new Set() };
+      entry.scores.push(post.score);
+      entry.creatorIds.add(post.creatorId);
+      byTag.set(key, entry);
+    }
+  }
+  return Array.from(byTag.values())
+    .filter((entry) => entry.creatorIds.size >= 2)
+    .map((entry) => ({
+      tag: entry.label,
+      avgScore: entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length,
+      postCount: entry.scores.length,
+      creatorCount: entry.creatorIds.size,
+    }))
+    .sort((a, b) => b.avgScore - a.avgScore);
+});
+
 export const getCreatorDetail = cache(
   async (id: string): Promise<{ creator: Creator; posts: Post[]; patterns: CreatorPatterns } | null> => {
     if (!isSupabaseConfigured()) return null;

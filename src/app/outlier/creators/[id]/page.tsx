@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
+import { getPlatformLabel } from "../../data";
 import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../../components";
 import { AddPlatformButton, BatchRepurposeButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
@@ -19,6 +20,8 @@ export async function generateMetadata(props: PageProps<"/outlier/creators/[id]"
 
 export default async function CreatorDetailPage(props: PageProps<"/outlier/creators/[id]">) {
   const { id } = await props.params;
+  const { platform: platformParam } = await props.searchParams;
+  const platformParamValue = Array.isArray(platformParam) ? platformParam[0] : platformParam;
   const detail = await getCreatorDetail(id);
   if (!detail) notFound();
 
@@ -26,14 +29,25 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   const totalPosts = posts.length;
   const isThin = creator.handles.some((h) => h.thin);
 
+  // Each platform is scored against its own median, so the chart and post
+  // list below only ever show one platform at a time — blending TikTok and
+  // Instagram posts into one bar chart would compare two different
+  // baselines as if they were the same scale.
+  const activePlatform =
+    creator.platformStats.find((s) => s.platform === platformParamValue)?.platform ??
+    creator.platformStats[0]?.platform ??
+    null;
+  const platformPosts = activePlatform ? posts.filter((p) => p.platform === activePlatform) : posts;
+  const activeMedian = creator.platformStats.find((s) => s.platform === activePlatform)?.median ?? creator.median;
+
   // Views-per-post, most recent first, for the bar chart below.
-  const history = posts.slice(0, 12).map((post, index) => ({
+  const history = platformPosts.slice(0, 20).map((post, index) => ({
     index,
     views: post.views,
     isOutlier: post.score >= 2,
   }));
   const maxViews = history.length > 0 ? Math.max(...history.map((h) => h.views), 1) : 1;
-  const medianPct = (creator.median / maxViews) * 100;
+  const medianPct = (activeMedian / maxViews) * 100;
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
@@ -127,7 +141,31 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
         </div>
       )}
 
-      {totalPosts === 0 ? (
+      {creator.platformStats.length > 1 && (
+        <div className="mt-[18px] flex items-center gap-[10px]">
+          <div className="ws-stack-row" style={{ display: "inline-flex", width: "auto" }}>
+            {creator.platformStats.map((stat) => (
+              <Link
+                key={stat.platform}
+                href={`/outlier/creators/${creator.id}?platform=${stat.platform}`}
+                className="text-[12.5px] font-medium"
+                style={{
+                  padding: "10px 16px",
+                  background: stat.platform === activePlatform ? "var(--ws-ink)" : "var(--ws-surface)",
+                  color: stat.platform === activePlatform ? "var(--ws-ground)" : "var(--ws-ink-60)",
+                }}
+              >
+                {getPlatformLabel(stat.platform)} <span className="ws-tabular">{stat.postCount} posts</span>
+              </Link>
+            ))}
+          </div>
+          <p className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+            Each platform is scored against its own median — scores stay comparable across them.
+          </p>
+        </div>
+      )}
+
+      {platformPosts.length === 0 ? (
         <div className="ws-card mt-[14px]">
           <EmptyState
             title="No posts pulled yet"
@@ -137,10 +175,12 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
       ) : (
         <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
           <div className="flex items-center">
-            <p className="ws-eyebrow">VIEWS PER POST · MOST RECENT</p>
+            <p className="ws-eyebrow">
+              VIEWS PER POST{activePlatform ? ` · ${getPlatformLabel(activePlatform).toUpperCase()}` : ""}
+            </p>
             <div className="flex-1" />
             <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-              median {formatCompact(creator.median)}
+              Running median {formatCompact(activeMedian)}
             </span>
           </div>
           <div className="relative mt-[18px] flex items-end gap-[10px]" style={{ height: 140 }}>
@@ -230,15 +270,15 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
 
       <div className="mt-[18px]">
         <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-          Posts
+          Posts · newest first
         </h2>
-        {posts.length === 0 ? (
+        {platformPosts.length === 0 ? (
           <div className="ws-card mt-[14px]">
             <EmptyState title="No posts pulled yet" />
           </div>
         ) : (
           <div className="mt-[14px] grid grid-cols-2 gap-[16px] sm:grid-cols-3 lg:grid-cols-6">
-            {posts.map((post) => (
+            {platformPosts.map((post) => (
               <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
                 <Thumb aspectRatio="9/13" radius={10}>
                   {post.thumbnailUrl && (

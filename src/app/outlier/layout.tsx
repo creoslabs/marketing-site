@@ -1,8 +1,20 @@
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/supabase/data";
+import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { OutlierChrome } from "./outlier-chrome";
 import { WsUIProvider } from "@/components/ws-ui-provider";
 import { getJobs } from "./live-data";
+
+function deriveInitials(name: string) {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?"
+  );
+}
 
 export default async function OutlierLayout({ children }: { children: React.ReactNode }) {
   const [user, { jobs, finished }] = await Promise.all([getUser(), getJobs()]);
@@ -12,6 +24,9 @@ export default async function OutlierLayout({ children }: { children: React.Reac
 
   const runningCount = jobs.filter((j) => j.state === "running").length;
   const lastPulledLabel = finished[0]?.relativeTime ?? null;
+  const name = getDisplayName(user);
+  const email = user?.email ?? "";
+  const initials = deriveInitials(name);
 
   return (
     <div className="ws" data-theme="dark" suppressHydrationWarning>
@@ -22,7 +37,7 @@ export default async function OutlierLayout({ children }: { children: React.Reac
         }}
       />
       <WsUIProvider>
-        <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} />
+        <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} name={name} email={email} initials={initials} />
         {children}
       </WsUIProvider>
     </div>

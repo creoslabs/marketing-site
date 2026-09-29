@@ -62,12 +62,23 @@ a:hover .arrow { transform: translate(2px, -2px); }
    base reset above — a bare ".btn" alone loses that specificity fight and
    the text inherits the surrounding color instead of using --paper,
    becoming invisible against its own --ink background. */
-.creosHome .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--paper); border-radius: 999px; padding: 12px 22px; font-size: 14px; font-weight: 500; border: 0; cursor: pointer; transition: opacity .15s; }
+.creosHome .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--paper); border-radius: 999px; padding: 12px 22px; font-size: 14px; font-weight: 500; border: 0; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
 .btn:hover { opacity: .82; }
-.creosHome .themeToggle { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--graphite); cursor: pointer; }
+.creosHome .themeToggle { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--graphite); cursor: pointer; white-space: nowrap; flex: none; }
 .themeToggle:hover { color: var(--ink); border-color: currentColor; }
 .themeToggle svg { width: 13px; height: 13px; flex: none; }
 @media (max-width: 860px) { .nav, .login { display: none; } }
+/* Below this width the logo + toggle + CTA no longer fit on one line at
+   full size — drop the toggle's text label (icon + aria-label stays) and
+   tighten the header's gaps and side gutter before anything wraps. */
+@media (max-width: 480px) {
+  .top { gap: 12px; height: 68px; }
+  .actions { gap: 10px; }
+  .themeToggleLabel { display: none; }
+  .themeToggle { padding: 11px; }
+  .creosHome .btn { padding: 11px 16px; }
+  .logo { font-size: 16px; }
+}
 
 /* Hero */
 .hero .heroGrid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: clamp(32px, 5vw, 80px); padding-top: clamp(40px, 6vw, 88px); padding-bottom: clamp(72px, 9vw, 128px); }

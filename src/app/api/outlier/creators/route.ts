@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const platform = body?.platform === "TT" || body?.platform === "IG" || body?.platform === "YT" ? body.platform : null;
   const handle = typeof body?.handle === "string" ? body.handle.trim().replace(/^@/, "") : "";
+  const displayName = typeof body?.displayName === "string" ? body.displayName.trim() : "";
 
   if (!platform || !handle) {
     return NextResponse.json({ error: "Choose a platform and enter a handle." }, { status: 400 });
@@ -20,21 +21,23 @@ export async function POST(request: Request) {
 
   const { data: creator, error: creatorError } = await supabase
     .from("outlier_creators")
-    .insert({ user_id: user.id, display_name: handle })
+    .insert({ user_id: user.id, display_name: displayName || handle })
     .select("id")
     .single();
   if (creatorError || !creator) {
     return NextResponse.json({ error: creatorError?.message ?? "Could not create creator." }, { status: 500 });
   }
 
-  const { error: handleError } = await supabase
+  const { data: handleRow, error: handleError } = await supabase
     .from("outlier_handles")
-    .insert({ creator_id: creator.id, user_id: user.id, platform, handle });
-  if (handleError) {
+    .insert({ creator_id: creator.id, user_id: user.id, platform, handle })
+    .select("id")
+    .single();
+  if (handleError || !handleRow) {
     await supabase.from("outlier_creators").delete().eq("id", creator.id);
-    const message = handleError.code === "23505" ? "You're already tracking that handle." : handleError.message;
-    return NextResponse.json({ error: message }, { status: 400 });
+    const message = handleError?.code === "23505" ? "You're already tracking that handle." : handleError?.message;
+    return NextResponse.json({ error: message ?? "Could not add handle." }, { status: 400 });
   }
 
-  return NextResponse.json({ creatorId: creator.id });
+  return NextResponse.json({ creatorId: creator.id, handleId: handleRow.id });
 }

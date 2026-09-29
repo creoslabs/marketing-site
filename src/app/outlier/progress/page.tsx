@@ -40,8 +40,26 @@ export default async function ProgressPage() {
         </div>
       </div>
 
+      <div className="ws-card mt-[18px] flex flex-wrap items-center gap-[10px]" style={{ padding: "12px 16px" }}>
+        <p className="ws-eyebrow" style={{ marginRight: 4 }}>PIPELINE</p>
+        {["Pull metadata", "Download", "Transcribe", "Score", "Trend match"].map((stage, i, arr) => (
+          <div key={stage} className="flex items-center gap-[10px]">
+            <span
+              className="rounded-[20px] text-[11.5px] font-medium"
+              style={{ padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
+            >
+              {stage}
+            </span>
+            {i < arr.length - 1 && (
+              <span style={{ color: "var(--ws-ink-45)" }}>→</span>
+            )}
+          </div>
+        ))}
+      </div>
+
       <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_352px]">
         <div className="flex flex-col gap-[14px]">
+          <p className="ws-eyebrow">RUNNING</p>
           {running.length === 0 && (
             <div className="ws-card">
               <EmptyState title="Nothing running right now" />
@@ -71,6 +89,35 @@ export default async function ProgressPage() {
               );
             })}
           </div>
+
+          {queued.length > 0 && (
+            <div className="ws-card mt-[4px]" style={{ padding: "14px 16px 16px" }}>
+              <p className="ws-eyebrow">QUEUE</p>
+              <div className="ws-stack mt-[10px]" style={{ border: "none", borderRadius: 0 }}>
+                {queued.map((job, i) => {
+                  const creator = creatorById.get(job.creatorId);
+                  return (
+                    <div key={job.id} className="flex items-center gap-[10px]" style={{ padding: "10px 6px" }}>
+                      <span className="ws-tabular text-[11.5px] font-semibold" style={{ width: 16, color: "var(--ws-ink-45)" }}>
+                        {i + 1}
+                      </span>
+                      {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={22} />}
+                      <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                        @{job.handle}
+                      </span>
+                      <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
+                        {job.scope}
+                      </span>
+                      <div className="flex-1" />
+                      <span className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                        {job.waitReason || "queued"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-[14px]">
