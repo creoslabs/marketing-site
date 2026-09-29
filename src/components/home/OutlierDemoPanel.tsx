@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, type PointerEvent } from "react";
+import Image from "next/image";
 import styles from "./home.module.css";
 
 const N = 29;
@@ -61,7 +62,9 @@ export function OutlierDemoPanel() {
       <div className={styles.oPanel}>
         <div className={styles.oTop}>
           <div className={styles.post}>
-            <div className={styles.thumb} aria-hidden="true" />
+            <div className={styles.thumb} aria-hidden="true">
+              <Image src="/home/outlier-demo-thumb.jpg" alt="" fill sizes="62px" />
+            </div>
             <div>
               <b>Competitor reel</b>
               <small>Instagram, posted 7 days ago</small>

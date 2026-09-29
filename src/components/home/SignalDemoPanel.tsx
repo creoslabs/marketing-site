@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import styles from "./home.module.css";
 
 type CheckState = "pass" | "partial" | "fail";
@@ -87,12 +88,12 @@ export function SignalDemoPanel() {
 
   const seg = SEGMENTS[activeSeg];
   const timecode = `0:${String(Math.floor(time)).padStart(2, "0")}`;
-  const frameClass = [styles.frameSeg0, styles.frameSeg1, styles.frameSeg2][activeSeg];
 
   return (
     <div className={styles.bleedL}>
       <div className={styles.sPanel}>
-        <div className={`${styles.frame} ${frameClass}`}>
+        <div className={styles.frame}>
+          <Image src="/home/signal-demo-frame.png" alt="" fill sizes="(max-width: 900px) 220px, 300px" />
           <span className={styles.tc}>{timecode}</span>
           <p className={styles.cap}>{seg.caption}</p>
           <button
