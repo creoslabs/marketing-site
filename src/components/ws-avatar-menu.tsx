@@ -38,7 +38,7 @@ export function WsAvatarMenu({ name, email, initials }: { name: string; email: s
         >
           {initials}
         </span>
-        <span className="hidden text-[12.5px] font-medium sm:inline" style={{ color: "var(--ws-ink)" }}>
+        <span className="hidden text-[14px] font-medium sm:inline" style={{ color: "var(--ws-ink)" }}>
           {name}
         </span>
       </button>

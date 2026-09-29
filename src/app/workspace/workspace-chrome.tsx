@@ -93,7 +93,7 @@ export function WorkspaceChrome({
       <button
         type="button"
         onClick={openPalette}
-        className="hidden items-center gap-[4px] rounded-[7px] text-[12px] transition-transform active:scale-95 sm:flex"
+        className="hidden items-center gap-[4px] rounded-[7px] text-[13px] transition-transform active:scale-95 sm:flex"
         style={{ padding: "5px 8px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-45)" }}
       >
         ⌘K
