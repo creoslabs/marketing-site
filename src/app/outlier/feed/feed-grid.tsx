@@ -8,6 +8,7 @@ import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHisto
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
 import { SortDropdown, type SortValue } from "./feed-controls";
 import { useToast } from "@/components/ws-toast";
+import { WsPageHeader } from "@/components/ws-page-header";
 
 const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 const OUTLIER_THRESHOLD = 2;
@@ -20,6 +21,7 @@ function isFreshlyPulled(post: Post) {
 export function FeedGrid({
   creators,
   posts: allPosts,
+  eyebrow,
   title = "Top outliers",
   backLink,
   emptyTitle,
@@ -27,6 +29,7 @@ export function FeedGrid({
 }: {
   creators: Creator[];
   posts: Post[];
+  eyebrow?: string;
   title?: string;
   backLink?: { href: string; label: string };
   emptyTitle?: string;
@@ -127,18 +130,12 @@ export function FeedGrid({
           ← {backLink.label}
         </Link>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-[16px]">
-        <div>
-          <h1 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-            {title}
-          </h1>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {noOutliersYet
-              ? "No posts have crossed 2× yet — showing everything pulled."
-              : `${above2x} posts above 2×`}
-          </p>
-        </div>
-        <div className="flex items-center gap-[9px]">
+      <WsPageHeader
+        eyebrow={eyebrow}
+        title={title}
+        sub={noOutliersYet ? "No posts have crossed 2× yet — showing everything pulled." : `${above2x} posts above 2×`}
+        action={
+          <>
           {!noOutliersYet && hiddenCount > 0 && (
             <button
               type="button"
@@ -194,8 +191,9 @@ export function FeedGrid({
           <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
             + Add creator
           </AddCreatorButton>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {allPosts.length === 0 ? (
         <div className="mt-[18px]">

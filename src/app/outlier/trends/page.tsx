@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getHookStylePatterns, getPostsByHookTag } from "../live-data";
 import { BatchRepurposeButton } from "../creator-actions";
+import { WsPageHeader } from "@/components/ws-page-header";
 
 export const metadata: Metadata = {
   title: "Trends — Outlier",
@@ -15,14 +16,11 @@ export default async function TrendsPage() {
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
-      <p className="ws-eyebrow">03 / TRENDS</p>
-      <h1 className="mt-[10px] text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-        What&rsquo;s working across the watchlist.
-      </h1>
-      <p className="mt-2 max-w-[64ch] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-        Hook styles that beat the median regardless of topic, shared by at least two creators. Thin-history handles
-        are excluded.
-      </p>
+      <WsPageHeader
+        eyebrow="03 / TRENDS"
+        title="What's working across the watchlist."
+        sub="Hook styles that beat the median regardless of topic, shared by at least two creators. Thin-history handles are excluded."
+      />
 
       <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_352px]">
         <div className="ws-card" style={{ padding: "18px 20px 20px" }}>

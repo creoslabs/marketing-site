@@ -36,7 +36,19 @@ export default async function RepurposeDetailPage(props: PageProps<"/outlier/rep
 
       <div className="mt-[16px] flex items-start justify-between gap-[16px]">
         <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
+          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>
+            REPURPOSED{handle ? ` · FROM @${handle.toUpperCase()}` : ""} · {detail.sourceScore.toFixed(1)}×
+          </p>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              textTransform: "uppercase",
+              color: "var(--ws-ink)",
+            }}
+          >
             {detail.title}
           </h1>
           <div className="mt-[8px] flex flex-wrap items-center gap-[8px]">

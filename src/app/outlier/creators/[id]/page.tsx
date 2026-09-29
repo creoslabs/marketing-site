@@ -55,11 +55,24 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
         ← Creators
       </Link>
 
-      <div className="mt-[16px] flex flex-wrap items-center gap-[16px]">
+      <p className="ws-eyebrow" style={{ marginTop: 16 }}>
+        04 / CREATORS · {creator.displayName.toUpperCase()}
+      </p>
+
+      <div className="mt-[12px] flex flex-wrap items-center gap-[16px]">
         <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={48} />
         <div>
           <div className="flex items-center gap-[8px]">
-            <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 28,
+                fontWeight: 700,
+                letterSpacing: "-0.03em",
+                textTransform: "uppercase",
+                color: "var(--ws-ink)",
+              }}
+            >
               {creator.displayName}
             </h1>
             {isThin && <ThinHistoryPill />}

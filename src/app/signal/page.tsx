@@ -68,12 +68,28 @@ export default async function LibraryPage() {
     <div className="ws-page-in" style={{ padding: "26px 22px 0" }}>
       <p className="ws-eyebrow">02 / LIBRARY</p>
       <h1
-        className="mt-[10px]"
-        style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ws-ink)" }}
+        style={{
+          margin: 0,
+          marginTop: 22,
+          fontSize: 46,
+          fontWeight: 700,
+          letterSpacing: "-0.03em",
+          lineHeight: 1.02,
+          textTransform: "uppercase",
+          color: "var(--ws-ink)",
+        }}
       >
         {assets.length} asset{assets.length === 1 ? "" : "s"} scored.
+        {topTheme && (
+          <>
+            <br />
+            <span style={{ color: "var(--ws-headline-grey)" }}>
+              {topTheme.count} fail &ldquo;{topTheme.name}.&rdquo;
+            </span>
+          </>
+        )}
       </h1>
-      <p className="mt-2 max-w-[64ch] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
+      <p className="mt-[14px] max-w-[64ch] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
         Statics median {medians.static} · videos median {medians.video}. Scores are only comparable within a format.
       </p>
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { createClient } from "@/lib/supabase/server";
-import { WorkspaceHero } from "../workspace-hero";
+import { WsHero as WorkspaceHero } from "@/components/ws-hero";
 import { WsRow } from "@/components/ws-row";
 import { ConnectButton, DeleteAccountButton, AddTimezoneButton } from "./account-actions";
 import { SignOutOthersButton } from "./sign-out-others-button";

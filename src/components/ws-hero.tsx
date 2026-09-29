@@ -1,4 +1,11 @@
-export function WorkspaceHero({
+// Shared 46px two-line "landing" hero — used by Workspace's Overview/
+// Billing/Account, and by Outlier Home / Signal Library (the "landing
+// screens" per the design handoff, which get this treatment instead of the
+// smaller WsPageHeader every other inner page uses). Uppercase to match the
+// nav/wordmark treatment elsewhere in the chrome — same principle the
+// marketing homepage already uses on its own big display headlines
+// (uppercase + tight negative tracking), just at app scale.
+export function WsHero({
   eyebrow,
   line1,
   line2,
@@ -21,6 +28,7 @@ export function WorkspaceHero({
           fontWeight: 700,
           letterSpacing: "-0.03em",
           lineHeight: 1.02,
+          textTransform: "uppercase",
           color: "var(--ws-ink)",
         }}
       >

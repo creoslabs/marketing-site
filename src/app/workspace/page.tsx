@@ -4,7 +4,7 @@ import { getCreators, getPosts } from "@/app/outlier/live-data";
 import { getLibrary, getAssetDetail, percentileWithin } from "@/app/signal/live-data";
 import { serverProductHref } from "@/lib/product-links";
 import Link from "next/link";
-import { WorkspaceHero } from "./workspace-hero";
+import { WsHero as WorkspaceHero } from "@/components/ws-hero";
 import { OverviewProductCard } from "./overview-product-card";
 import { OutlierMedianChart, SignalCriteriaStrip } from "./overview-charts";
 

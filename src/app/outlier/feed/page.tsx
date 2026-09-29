@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 
 export default async function FeedPage() {
   const [creators, posts] = await Promise.all([getCreators(), getPosts()]);
-  return <FeedGrid creators={creators} posts={posts} />;
+  return <FeedGrid creators={creators} posts={posts} eyebrow="02 / FEED" />;
 }

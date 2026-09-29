@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { EmptyState } from "@/components/ws-empty-state";
-import { WorkspaceHero } from "../workspace-hero";
+import { WsHero as WorkspaceHero } from "@/components/ws-hero";
 import { ChoosePlanButton, AddPaymentButton, TalkToUsForTeamsLink } from "../billing-actions";
 
 export const metadata: Metadata = {

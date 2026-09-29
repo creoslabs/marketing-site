@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getJobs, getCreators } from "../live-data";
 import { Avatar, EmptyState, ProgressBar } from "../components";
+import { WsPageHeader } from "@/components/ws-page-header";
 
 export const metadata: Metadata = {
   title: "Progress — Outlier",
@@ -29,16 +30,11 @@ export default async function ProgressPage() {
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
-      <div className="flex flex-wrap items-center justify-between gap-[16px]">
-        <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-            Progress
-          </h1>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {running.length} running · {queued.length} queued · {failed.length} failed
-          </p>
-        </div>
-      </div>
+      <WsPageHeader
+        eyebrow="05 / PROGRESS"
+        title={`${running.length} running${failed.length > 0 ? `. ${failed.length} failed.` : "."}`}
+        sub={`${running.length} running · ${queued.length} queued · ${failed.length} failed`}
+      />
 
       <div className="ws-card mt-[18px] flex flex-wrap items-center gap-[10px]" style={{ padding: "12px 16px" }}>
         <p className="ws-eyebrow" style={{ marginRight: 4 }}>PIPELINE</p>

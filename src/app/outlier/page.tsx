@@ -117,11 +117,24 @@ export default async function OutlierHomePage() {
       <NextStepSuggestion suggestion={nextStepSuggestion} />
       <div className="flex flex-wrap items-start justify-between gap-[16px]">
         <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-            {greeting()}, {firstName}
+          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>01 / HOME · {today.toUpperCase()}</p>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 46,
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.02,
+              textTransform: "uppercase",
+              color: "var(--ws-ink)",
+            }}
+          >
+            {greeting()},
+            <br />
+            <span style={{ color: "var(--ws-headline-grey)" }}>{firstName}.</span>
           </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {hasPosts ? `${today} · ${outlierPosts.length} outliers across ${posts.length} posts` : `${today} · nothing pulled yet`}
+          <p className="mt-[14px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
+            {hasPosts ? `${outlierPosts.length} outliers across ${posts.length} posts.` : "Nothing pulled yet."}
           </p>
         </div>
         <div className="flex items-center gap-[9px]">

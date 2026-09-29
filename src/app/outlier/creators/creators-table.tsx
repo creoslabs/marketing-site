@@ -9,6 +9,7 @@ const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram"
 import { Avatar, EmptyState, Sparkline, ThinHistoryPill } from "../components";
 import { AddCreatorButton, RemoveCreatorButton } from "../creator-actions";
 import { formatCompact } from "../format";
+import { WsPageHeader } from "@/components/ws-page-header";
 
 const COLUMNS = "1fr 96px 82px 74px 74px 92px 84px 64px";
 
@@ -119,35 +120,32 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
 
   return (
     <div className="ws-page-in px-6 py-[22px]">
-      <div className="flex flex-wrap items-center justify-between gap-[16px]">
-        <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-            Creators
-          </h1>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {allCreators.length} tracked · {handleCount} handles · {thinCount} with thin history
-          </p>
-        </div>
-        <div className="flex items-center gap-[9px]">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search creators…"
-            className="rounded-[8px] text-[12.5px] outline-none"
-            style={{
-              width: 220,
-              padding: "9px 12px",
-              background: "var(--ws-surface)",
-              border: "1px solid var(--ws-hairline)",
-              color: "var(--ws-ink)",
-            }}
-          />
-          <SortDropdown current={sort} onChange={setSort} />
-          <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
-            + Add creator
-          </AddCreatorButton>
-        </div>
-      </div>
+      <WsPageHeader
+        eyebrow="04 / CREATORS"
+        title="Who you're watching."
+        sub={`${allCreators.length} tracked · ${handleCount} handles · ${thinCount} with thin history`}
+        action={
+          <>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search creators…"
+              className="rounded-[8px] text-[12.5px] outline-none"
+              style={{
+                width: 220,
+                padding: "9px 12px",
+                background: "var(--ws-surface)",
+                border: "1px solid var(--ws-hairline)",
+                color: "var(--ws-ink)",
+              }}
+            />
+            <SortDropdown current={sort} onChange={setSort} />
+            <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
+              + Add creator
+            </AddCreatorButton>
+          </>
+        }
+      />
 
       {allCreators.length > 0 && (platformsPresent.length > 1 || thinCount > 0) && (
         <div className="mt-[12px] flex flex-wrap items-center gap-[8px]">
