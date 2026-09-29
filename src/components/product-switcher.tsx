@@ -71,11 +71,11 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
               key={p.key}
               href={hrefs[p.key]}
               onClick={() => setOpen(false)}
-              className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[8px] text-[12.5px]"
+              className="ws-row-hover flex items-center justify-between rounded-[6px] px-[10px] py-[9px] text-[14px]"
               style={{ color: p.key === current ? "var(--ws-ink)" : "var(--ws-ink-60)", fontWeight: p.key === current ? 600 : 500 }}
             >
-              <span className="flex items-center gap-[8px]">
-                <p.Mark size={15} />
+              <span className="flex items-center gap-[9px]">
+                <p.Mark size={16} />
                 {p.label}
               </span>
               {p.key === current && <span style={{ color: "var(--ws-accent-text)" }}>•</span>}
@@ -85,7 +85,7 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
           <Link
             href={hrefs.workspace}
             onClick={() => setOpen(false)}
-            className="ws-row-hover block rounded-[6px] px-[10px] py-[8px] text-[12.5px] font-medium"
+            className="ws-row-hover block rounded-[6px] px-[10px] py-[9px] text-[14px] font-medium"
             style={{ color: "var(--ws-ink-60)" }}
           >
             Workspace
