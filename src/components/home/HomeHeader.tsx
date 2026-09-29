@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styles from "./home.module.css";
+import { HomeThemeToggle } from "./HomeThemeToggle";
 
 export function HomeHeader() {
   return (
@@ -15,6 +16,7 @@ export function HomeHeader() {
         <Link href="/insights">Insights</Link>
       </nav>
       <div className={styles.actions}>
+        <HomeThemeToggle />
         <Link href="/login" className={styles.login}>
           Log in
         </Link>

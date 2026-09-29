@@ -11,7 +11,16 @@ import { HomeFooter } from "@/components/home/HomeFooter";
 
 export default function Home() {
   return (
-    <div className={styles.creosHome}>
+    <div className={styles.creosHome} data-creos-home data-theme="dark" suppressHydrationWarning>
+      {/* Applies a saved theme choice before paint so there's no flash. This
+          div is server-rendered and never re-diffed by React, so mutating
+          the attribute imperatively here is safe. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{var t=localStorage.getItem('home-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
+        }}
+      />
       <HomeHeader />
       <main>
         <HomeHero />

@@ -1,9 +1,13 @@
 /* Scoped to .creosHome so this bold editorial system (distinct from the
    rest of the site's dark-first theme) never leaks into other pages — the
    rest of the marketing site keeps its existing Nav/Footer untouched.
-   One fixed black palette throughout — no light/paper variant, and no grey
-   panel fills (--surface, --deep-panel are pure black too; separation comes
-   from the 1px rule/border only, never a lighter fill). */
+   Dark is the default and has no grey panel fills (--surface, --deep-panel
+   are pure black too; separation comes from the 1px rule/border only, never
+   a lighter fill). The --deep-* tokens are intentionally NOT overridden by
+   [data-theme="light"] below — Outlier, Pricing and Custom stay black
+   editorial bands in both themes, while Hero/Loop/Signal/Close/Footer swap
+   to the paper palette. That split is what makes light mode read as an
+   alternating black/white editorial layout instead of a flat inverted page. */
 .creosHome {
   --paper: #000;
   --surface: #000;
@@ -21,6 +25,15 @@
   font-family: "Helvetica Neue", Helvetica, Arial, "Nimbus Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+.creosHome[data-theme="light"] {
+  --paper: #F6F5F1;
+  --surface: #F6F5F1;
+  --ink: #141310;
+  --graphite: #6B6A65;
+  --fog: #A6A59F;
+  --rule: rgba(20, 19, 16, .13);
 }
 
 .creosHome h1, .creosHome h2, .creosHome h3, .creosHome p, .creosHome ul {
@@ -42,7 +55,7 @@ a:hover .arrow { transform: translate(2px, -2px); }
 .top { display: flex; align-items: center; justify-content: space-between; height: 76px; gap: 24px; }
 .logo { font-weight: 700; font-size: 18px; letter-spacing: -.02em; white-space: nowrap; }
 .logo sup { font-size: .5em; margin-left: 1px; font-weight: 500; }
-.nav { display: flex; gap: 34px; font-size: 14px; color: var(--graphite); }
+.nav { display: flex; gap: 34px; font-size: 14px; letter-spacing: .02em; text-transform: uppercase; color: var(--graphite); }
 .nav a:hover { color: var(--ink); }
 .actions { display: flex; align-items: center; gap: 22px; font-size: 14px; }
 /* ".creosHome .btn" (two classes) outranks the ".creosHome a{color:inherit}"
@@ -51,6 +64,9 @@ a:hover .arrow { transform: translate(2px, -2px); }
    becoming invisible against its own --ink background. */
 .creosHome .btn { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--paper); border-radius: 999px; padding: 12px 22px; font-size: 14px; font-weight: 500; border: 0; cursor: pointer; transition: opacity .15s; }
 .btn:hover { opacity: .82; }
+.creosHome .themeToggle { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--graphite); cursor: pointer; }
+.themeToggle:hover { color: var(--ink); border-color: currentColor; }
+.themeToggle svg { width: 13px; height: 13px; flex: none; }
 @media (max-width: 860px) { .nav, .login { display: none; } }
 
 /* Hero */
