@@ -14,7 +14,11 @@ function countAnalysedThisWeek(assets: { createdAtIso: string }[]) {
 }
 
 export default async function LibraryPage() {
-  const live = await getLibrary();
+  // Independent reads — fetched together instead of one after another. The
+  // extra failureThemes query is wasted in the rare empty-library case below,
+  // but that's cheaper than making every normal page load wait for two
+  // sequential round-trips.
+  const [live, failureThemes] = await Promise.all([getLibrary(), getFailureThemes()]);
   const assets = live.assets;
   const isLive = live.isLive;
 
@@ -59,7 +63,6 @@ export default async function LibraryPage() {
   }
 
   const rows = assets.map((asset) => ({ asset, percentile: percentileWithin(asset.score, asset.format, assets) }));
-  const failureThemes = await getFailureThemes();
   const topTheme = failureThemes[0] ?? null;
 
   const analysedThisWeek = countAnalysedThisWeek(assets);

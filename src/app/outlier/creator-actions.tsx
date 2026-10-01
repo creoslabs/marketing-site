@@ -9,6 +9,23 @@ import type { Platform, Post } from "./data";
 
 const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 
+// Runs `fn` over `items` with at most `limit` in flight at once — faster
+// than one-at-a-time for a handful of items, but still bounded so pulling an
+// entire watchlist (potentially dozens of handles) doesn't fire that many
+// concurrent Apify scrapes at once.
+async function mapWithConcurrencyLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 function PlatformPicker({ platform, onChange }: { platform: Platform; onChange: (p: Platform) => void }) {
   return (
     <div className="flex rounded-[7px] p-[2px]" style={{ border: "1px solid var(--ws-hairline)" }}>
@@ -92,32 +109,30 @@ export function AddCreatorButton({ className, style, children }: { className: st
       return;
     }
     const creatorId = createData.creatorId as string;
-    const handleIds: string[] = [];
-    let attachFailures = 0;
-    for (const row of rest) {
-      const res = await fetch(`/api/outlier/creators/${creatorId}/handles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform: row.platform, handle: row.handle.trim() }),
-      });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data?.handleId) handleIds.push(data.handleId);
-      else attachFailures += 1;
-    }
-
-    if (pullAfter) {
-      await fetch("/api/outlier/pull", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ handleId: createData.handleId, postLimit }),
-      }).catch(() => null);
-      for (const handleId of handleIds) {
-        await fetch("/api/outlier/pull", {
+    const attachResults = await Promise.all(
+      rest.map(async (row) => {
+        const res = await fetch(`/api/outlier/creators/${creatorId}/handles`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ handleId, postLimit }),
-        }).catch(() => null);
-      }
+          body: JSON.stringify({ platform: row.platform, handle: row.handle.trim() }),
+        });
+        const data = await res.json().catch(() => null);
+        return res.ok && data?.handleId ? { ok: true as const, handleId: data.handleId as string } : { ok: false as const };
+      })
+    );
+    const handleIds = attachResults.filter((r) => r.ok).map((r) => r.handleId);
+    const attachFailures = attachResults.length - handleIds.length;
+
+    if (pullAfter) {
+      await Promise.all(
+        [createData.handleId, ...handleIds].map((handleId) =>
+          fetch("/api/outlier/pull", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ handleId, postLimit }),
+          }).catch(() => null)
+        )
+      );
     }
 
     setSaving(false);
@@ -468,23 +483,21 @@ export function PullHandlesButton({
       return;
     }
     setPulling(true);
-    let totalNew = 0;
-    let failures = 0;
-    let autoAnalyzedCount = 0;
-    for (const h of handles) {
+    // Up to 4 pulls in flight at once — each is a real Apify scrape, so this
+    // stays bounded instead of firing dozens of concurrent requests at once
+    // for a large watchlist, while still beating a fully one-at-a-time pull.
+    const results = await mapWithConcurrencyLimit(handles, 4, async (h) => {
       const res = await fetch("/api/outlier/pull", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ handleId: h.id, postLimit }),
       });
       const data = await res.json().catch(() => null);
-      if (res.ok) {
-        totalNew += data.newCount ?? 0;
-        if (data.autoAnalyzed) autoAnalyzedCount += 1;
-      } else {
-        failures += 1;
-      }
-    }
+      return res.ok ? { ok: true as const, newCount: data.newCount ?? 0, autoAnalyzed: Boolean(data.autoAnalyzed) } : { ok: false as const };
+    });
+    const totalNew = results.reduce((sum, r) => sum + (r.ok ? r.newCount : 0), 0);
+    const autoAnalyzedCount = results.filter((r) => r.ok && r.autoAnalyzed).length;
+    const failures = results.filter((r) => !r.ok).length;
     setPulling(false);
     const analyzedSuffix = autoAnalyzedCount > 0 ? ` · top outlier${autoAnalyzedCount === 1 ? "" : "s"} analyzed automatically` : "";
     if (handles.length === 1) {
@@ -662,17 +675,19 @@ export function BatchRepurposeButton({
     e.preventDefault();
     if (!topic.trim()) return;
     setGenerating(true);
-    let successCount = 0;
-    let failCount = 0;
-    for (const post of eligible) {
-      const res = await fetch(`/api/outlier/posts/${post.id}/repurpose`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topic.trim() }),
-      });
-      if (res.ok) successCount += 1;
-      else failCount += 1;
-    }
+    // eligible is already capped at 3 (see above), so firing these together
+    // is a bounded handful of Claude calls, not an open-ended burst.
+    const results = await Promise.all(
+      eligible.map((post) =>
+        fetch(`/api/outlier/posts/${post.id}/repurpose`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: topic.trim() }),
+        }).then((res) => res.ok)
+      )
+    );
+    const successCount = results.filter(Boolean).length;
+    const failCount = results.length - successCount;
     setGenerating(false);
     setOpen(false);
     setTopic("");

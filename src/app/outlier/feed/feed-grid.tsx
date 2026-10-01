@@ -76,15 +76,18 @@ export function FeedGrid({
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     setFavouriting(true);
-    let successCount = 0;
-    for (const id of ids) {
-      const res = await fetch(`/api/outlier/posts/${id}/favourite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ favourited: true }),
-      });
-      if (res.ok) successCount += 1;
-    }
+    // A favourite is a single cheap row write, not an external API call, so
+    // there's no rate-limit reason to do these one at a time.
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/outlier/posts/${id}/favourite`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ favourited: true }),
+        }).then((res) => res.ok)
+      )
+    );
+    const successCount = results.filter(Boolean).length;
     setFavouriting(false);
     if (successCount > 0) {
       toast(`Favourited ${successCount} post${successCount === 1 ? "" : "s"}.`, "success");

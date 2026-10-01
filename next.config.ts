@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/signal/report-pdf": ["./node_modules/@sparticuz/chromium/bin/**"],
   },
+  // puppeteer-core ships both its compiled lib/*.js (what actually runs)
+  // and its original src/*.ts plus *.d.ts type declarations — Node never
+  // requires either of those at runtime, so excluding them trims dead
+  // weight from every deployed function that carries this package.
+  outputFileTracingExcludes: {
+    "/api/signal/report-pdf": ["./node_modules/puppeteer-core/src/**", "./node_modules/puppeteer-core/**/*.d.ts"],
+  },
 };
 
 export default nextConfig;
