@@ -96,14 +96,14 @@ export function OutlierDemoPanel() {
           <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="outlierAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ECEBE7" stopOpacity=".16" />
-                <stop offset="1" stopColor="#ECEBE7" stopOpacity="0" />
+                <stop offset="0" style={{ stopColor: "var(--deep-ink)" }} stopOpacity=".16" />
+                <stop offset="1" style={{ stopColor: "var(--deep-ink)" }} stopOpacity="0" />
               </linearGradient>
             </defs>
             <path d={areaPath} fill="url(#outlierAreaGradient)" />
-            <line x1={0} x2={W} y1={baseY} y2={baseY} stroke="#8C8B86" strokeDasharray="4 6" vectorEffect="non-scaling-stroke" />
-            <path d={linePath} fill="none" stroke="#ECEBE7" strokeWidth={2} vectorEffect="non-scaling-stroke" />
-            <line x1={xFor(i)} x2={xFor(i)} y1={0} y2={H} stroke="rgba(236,235,231,.35)" vectorEffect="non-scaling-stroke" />
+            <line x1={0} x2={W} y1={baseY} y2={baseY} style={{ stroke: "var(--deep-muted)" }} strokeDasharray="4 6" vectorEffect="non-scaling-stroke" />
+            <path d={linePath} fill="none" style={{ stroke: "var(--deep-ink)" }} strokeWidth={2} vectorEffect="non-scaling-stroke" />
+            <line x1={xFor(i)} x2={xFor(i)} y1={0} y2={H} style={{ stroke: "color-mix(in srgb, var(--deep-ink) 35%, transparent)" }} vectorEffect="non-scaling-stroke" />
           </svg>
           <span className={styles.baseL} style={{ top: `${baseTopPct}%` }}>
             Their running median

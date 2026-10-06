@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { LiquidButton } from "@/components/ui/button";
+import styles from "@/components/home/home.module.css";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -43,7 +43,7 @@ export function GetCreosForm() {
 
   if (status === "success") {
     return (
-      <p className="w-full rounded-full border border-white/15 bg-white/5 px-6 py-3.5 text-center text-sm font-medium text-foreground">
+      <p className={styles.signupDone}>
         You&apos;re on the list — we&apos;ll be in touch.
       </p>
     );
@@ -51,7 +51,7 @@ export function GetCreosForm() {
 
   return (
     <div className="w-full">
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <form onSubmit={handleSubmit} className={styles.signup}>
         <input
           type="email"
           required
@@ -59,9 +59,9 @@ export function GetCreosForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
           disabled={status === "loading"}
-          className="w-full rounded-full border border-white/15 bg-white/5 px-5 py-3.5 text-[15px] text-foreground outline-none placeholder:text-muted focus-visible:border-accent-blue disabled:opacity-60 sm:w-64"
+          className={styles.signupInput}
         />
-        <LiquidButton type="submit" size="xl" disabled={status === "loading"} className="w-full rounded-full sm:w-auto">
+        <button type="submit" disabled={status === "loading"} className={styles.btn}>
           {status === "loading" ? (
             "Joining…"
           ) : (
@@ -69,9 +69,9 @@ export function GetCreosForm() {
               Get Creos <span className="cta-arrow">→</span>
             </>
           )}
-        </LiquidButton>
+        </button>
       </form>
-      {status === "error" && <p className="mt-3 text-center text-sm text-destructive">{message}</p>}
+      {status === "error" && <p className={styles.signupErr}>{message}</p>}
     </div>
   );
 }

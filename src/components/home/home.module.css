@@ -3,11 +3,9 @@
    rest of the marketing site keeps its existing Nav/Footer untouched.
    Dark is the default and has no grey panel fills (--surface, --deep-panel
    are pure black too; separation comes from the 1px rule/border only, never
-   a lighter fill). The --deep-* tokens are intentionally NOT overridden by
-   [data-theme="light"] below — Outlier, Pricing and Custom stay black
-   editorial bands in both themes, while Hero/Loop/Signal/Close/Footer swap
-   to the paper palette. That split is what makes light mode read as an
-   alternating black/white editorial layout instead of a flat inverted page. */
+   a lighter fill). The --deep-* tokens drive the Outlier, Pricing and Custom
+   bands; they follow the theme like everything else, so light mode is light
+   throughout. */
 .creosHome {
   --paper: #000;
   --surface: #000;
@@ -34,6 +32,11 @@
   --graphite: #6B6A65;
   --fog: #A6A59F;
   --rule: rgba(20, 19, 16, .13);
+  --deep: #F6F5F1;
+  --deep-ink: #141310;
+  --deep-muted: #6B6A65;
+  --deep-rule: rgba(20, 19, 16, .13);
+  --deep-panel: #F6F5F1;
 }
 
 .creosHome h1, .creosHome h2, .creosHome h3, .creosHome p, .creosHome ul {
@@ -82,7 +85,8 @@ a:hover .arrow { transform: translate(2px, -2px); }
 
 /* Hero */
 .hero .heroGrid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: clamp(32px, 5vw, 80px); padding-top: clamp(40px, 6vw, 88px); padding-bottom: clamp(72px, 9vw, 128px); }
-.hero .heroSingle { max-width: 840px; padding-top: clamp(40px, 6vw, 88px); padding-bottom: clamp(72px, 9vw, 128px); }
+.hero .heroSingle { padding-top: clamp(40px, 6vw, 88px); padding-bottom: clamp(72px, 9vw, 128px); }
+.hero .heroSingle h1 { font-size: clamp(56px, 12vw, 200px); }
 .hero .label { color: var(--graphite); }
 .hero h1 { font-size: clamp(52px, 9.4vw, 152px); margin: 28px 0 44px; }
 .lede { font-size: 17px; line-height: 1.5; color: var(--graphite); }
@@ -169,11 +173,11 @@ a:hover .arrow { transform: translate(2px, -2px); }
 .chart { position: relative; margin-top: 36px; height: clamp(200px, 24vw, 300px); touch-action: pan-y; cursor: crosshair; }
 .chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .baseL { position: absolute; left: 0; font-size: 12px; color: var(--deep-muted); transform: translateY(-130%); }
-.dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--deep-ink); box-shadow: 0 0 0 6px rgba(236, 235, 231, .14); transform: translate(-50%, -50%); pointer-events: none; }
+.dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--deep-ink); box-shadow: 0 0 0 6px color-mix(in srgb, var(--deep-ink) 14%, transparent); transform: translate(-50%, -50%); pointer-events: none; }
 .axis { display: flex; justify-content: space-between; padding-right: 4%; margin-top: 14px; font-size: 12px; color: var(--deep-muted); font-variant-numeric: tabular-nums; }
 .scrub { display: flex; align-items: center; gap: 18px; margin-top: 22px; padding-right: 32px; }
 .scrub output { font-size: 14px; min-width: 15ch; font-variant-numeric: tabular-nums; }
-.range { flex: 1; max-width: 560px; accent-color: #ECEBE7; height: 28px; cursor: pointer; }
+.range { flex: 1; max-width: 560px; accent-color: var(--deep-ink); height: 28px; cursor: pointer; }
 .why { display: grid; grid-template-columns: 1fr 1.4fr 1.6fr; gap: 28px; margin-top: 34px; padding: 26px 32px 0 0; border-top: 1px solid var(--deep-rule); }
 .why small { display: block; font-size: 12px; color: var(--deep-muted); margin-bottom: 8px; }
 .why p { font-size: 16px; line-height: 1.45; }
@@ -251,7 +255,7 @@ a:hover .arrow { transform: translate(2px, -2px); }
 .caps p { font-size: 14px; line-height: 1.5; color: var(--deep-muted); max-width: 30ch; }
 .cta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; margin-top: clamp(64px, 8vw, 110px); }
 .cta p { font-size: clamp(20px, 2vw, 26px); max-width: 32ch; line-height: 1.3; letter-spacing: -.015em; }
-.deep .btn { background: var(--deep-ink); color: #000; padding: 16px 28px; font-size: 15px; }
+.deep .btn { background: var(--deep-ink); color: var(--deep); padding: 16px 28px; font-size: 15px; }
 @media (max-width: 900px) { .caps { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 560px) { .caps { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .ln > span { transform: none; } }
@@ -336,3 +340,13 @@ a:hover .arrow { transform: translate(2px, -2px); }
 
 .tableHead { display: grid; gap: 20px; margin-top: 64px; padding-bottom: 12px; border-bottom: 2px solid var(--ink); font-size: 11.5px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--graphite); }
 .tableHead .right { text-align: right; }
+
+/* Waitlist signup (pricing card) — token-driven so it follows the theme. */
+.signup { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+.signupInput { width: 100%; border-radius: 999px; border: 1px solid var(--deep-rule); background: transparent; padding: 14px 20px; font-size: 15px; color: var(--deep-ink); outline: none; }
+.signupInput::placeholder { color: var(--deep-muted); }
+.signupInput:focus-visible { border-color: var(--deep-ink); }
+.signupInput:disabled { opacity: .6; }
+.signupDone { border: 1px solid var(--deep-rule); border-radius: 999px; padding: 14px 24px; text-align: center; font-size: 14px; font-weight: 500; color: var(--deep-ink); }
+.signupErr { margin-top: 12px; font-size: 14px; color: #ff6b4a; }
+@media (min-width: 640px) { .signup { flex-direction: row; align-items: center; } .signupInput { width: 256px; } }
