@@ -325,41 +325,44 @@ button:hover .cta-arrow {
 /* ---------------------------------------------------------------------- */
 
 .ws {
-  --ws-ground: #000000;
-  --ws-surface: #0b0b0d;
-  --ws-surface-header: #131316;
-  --ws-placeholder-a: #1e1e21;
-  --ws-placeholder-b: #171719;
-  --ws-ink: #f5f5f7;
-  --ws-ink-60: rgba(245, 245, 247, 0.6);
-  --ws-ink-45: rgba(245, 245, 247, 0.45);
-  --ws-hairline: rgba(255, 255, 255, 0.1);
-  --ws-hairline-strong: rgba(255, 255, 255, 0.18);
-  --ws-accent: #0a84ff;
-  --ws-accent-hover: #2997ff;
-  --ws-accent-ink: #ffffff;
-  --ws-accent-text: #64a9ff;
-  --ws-accent-text-hover: #8cbfff;
-  --ws-accent-tint: #0a1a2e;
-  --ws-accent-tint-border: rgba(10, 132, 255, 0.3);
-  --ws-accent-tint-ink: #d3e6ff;
-  --ws-eyebrow: #4da2ff;
-  --ws-headline-grey: #6f6f71;
-  --ws-wordmark-ink: #ffffff;
-  --ws-warn: #ff6b4a;
-  --ws-warn-ink: #2b0b03;
-  --ws-warn-text: #ff8f75;
-  --ws-warn-tint: #210d07;
-  --ws-warn-tint-border: rgba(255, 107, 74, 0.3);
-  --ws-warn-tint-ink: #ffdbd0;
+  /* Creos Labs app palette — dark only. Source: creos-labs-app/README.md. */
+  --ws-ground: #0b0b0a;
+  --ws-surface: #151513;
+  --ws-surface-header: #1c1b19;
+  --ws-placeholder-a: #1c1b19;
+  --ws-placeholder-b: #151513;
+  --ws-ink: #f2f0ea;
+  --ws-ink-60: #b9b6ae;
+  --ws-ink-45: #9a978f;
+  --ws-hairline: #2a2925;
+  --ws-hairline-strong: #3a3934;
+  --ws-accent: #ffd60a;
+  --ws-accent-hover: #ffe14d;
+  --ws-accent-ink: #0b0b0a;
+  --ws-accent-text: #ffd60a;
+  --ws-accent-text-hover: #ffe14d;
+  --ws-accent-tint: #1c1b19;
+  --ws-accent-tint-border: rgba(255, 214, 10, 0.4);
+  --ws-accent-tint-ink: #f2f0ea;
+  --ws-eyebrow: #ffd60a;
+  --ws-headline-grey: #5e5c56;
+  --ws-wordmark-ink: #f2f0ea;
+  --ws-warn: #ff7a59;
+  --ws-warn-ink: #0b0b0a;
+  --ws-warn-text: #ff7a59;
+  --ws-warn-tint: #1f1410;
+  --ws-warn-tint-border: #4a2a1f;
+  --ws-warn-tint-ink: #f2f0ea;
+  --ws-fail-soft: #2a1712;
+  --ws-paper: #f2f0ea;
+  --ws-paper-ink: #0b0b0a;
+  --ws-white: #ffffff;
+  --ws-grey: #8c8a84;
 
-  /* Product brand accents (OutlierMark/SignalMark in product-icons.tsx) —
-     fixed per-product identity colors, not part of the general .ws palette.
-     Outlier's ink-colored dots use currentColor and don't need a token; only
-     its accent point swaps for on-dark contrast. Signal's arcs are already
-     legible on both grounds, so one value covers both themes. */
-  --outlier-accent: #60a5fa;
-  --signal-accent: #8b5cf6;
+  /* Per-product marks are retired in the new header (text switcher only);
+     these remain for any leftover glyph usage. */
+  --outlier-accent: #ffd60a;
+  --signal-accent: #f2f0ea;
 
   background: var(--ws-ground);
   color: var(--ws-ink);
@@ -367,35 +370,13 @@ button:hover .cta-arrow {
   min-height: 100vh;
 }
 
-.ws[data-theme="light"] {
-  --ws-ground: #faf9f7;
-  --ws-surface: #ffffff;
-  --ws-surface-header: #f7f6f3;
-  --ws-placeholder-a: #e9e7e1;
-  --ws-placeholder-b: #e3e1da;
-  --ws-ink: #111111;
-  --ws-ink-60: rgba(0, 0, 0, 0.55);
-  --ws-ink-45: rgba(0, 0, 0, 0.45);
-  --ws-hairline: rgba(0, 0, 0, 0.09);
-  --ws-hairline-strong: rgba(0, 0, 0, 0.16);
-  --ws-accent: #0a6cf0;
-  --ws-accent-hover: #0857c4;
-  --ws-accent-ink: #ffffff;
-  --ws-accent-text: #0a6cf0;
-  --ws-accent-text-hover: #0857c4;
-  --ws-accent-tint: #e8f1ff;
-  --ws-accent-tint-border: rgba(10, 108, 240, 0.3);
-  --ws-accent-tint-ink: #0b2a52;
-  --ws-eyebrow: rgba(0, 0, 0, 0.45);
-  --ws-headline-grey: #8b8a87;
-  --ws-wordmark-ink: #111111;
-  --ws-warn: #d14424;
-  --ws-warn-ink: #ffffff;
-  --ws-warn-text: #d14424;
-  --ws-warn-tint: #ffeee9;
-  --ws-warn-tint-border: rgba(209, 68, 36, 0.3);
-  --ws-warn-tint-ink: #5c1f0c;
-  --outlier-accent: #3b82f6;
+:where(.ws) :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ws summary::-webkit-details-marker {
+  display: none;
 }
 
 .ws .ws-placeholder {
@@ -407,9 +388,9 @@ button:hover .cta-arrow {
 }
 
 .ws .ws-eyebrow {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.13em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ws-eyebrow);
 }
@@ -426,7 +407,7 @@ button:hover .cta-arrow {
   gap: 1px;
   background: var(--ws-hairline);
   border: 1px solid var(--ws-hairline);
-  border-radius: 10px;
+  border-radius: 18px;
   overflow: hidden;
 }
 
@@ -440,7 +421,7 @@ button:hover .cta-arrow {
   gap: 1px;
   background: var(--ws-hairline);
   border: 1px solid var(--ws-hairline);
-  border-radius: 10px;
+  border-radius: 999px;
   overflow: hidden;
 }
 
@@ -459,7 +440,7 @@ button:hover .cta-arrow {
 .ws .ws-card {
   background: var(--ws-surface);
   border: 1px solid var(--ws-hairline);
-  border-radius: 10px;
+  border-radius: 22px;
 }
 
 .ws .ws-btn-primary {

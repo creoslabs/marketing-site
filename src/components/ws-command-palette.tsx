@@ -13,12 +13,14 @@ const DESTINATIONS: Destination[] = [
   { label: "Billing", target: "root", path: "/workspace/billing", group: "Workspace" },
   { label: "Home", target: "outlier", path: "/", group: "Outlier" },
   { label: "Feed", target: "outlier", path: "/feed", group: "Outlier" },
+  { label: "Trends", target: "outlier", path: "/trends", group: "Outlier" },
   { label: "Favourites", target: "outlier", path: "/favourites", group: "Outlier" },
   { label: "Creators", target: "outlier", path: "/creators", group: "Outlier" },
   { label: "Progress", target: "outlier", path: "/progress", group: "Outlier" },
   { label: "Library", target: "signal", path: "/", group: "Signal" },
   { label: "Analyze", target: "signal", path: "/analyze", group: "Signal" },
   { label: "Benchmarks", target: "signal", path: "/benchmarks", group: "Signal" },
+  { label: "Compare", target: "signal", path: "/compare", group: "Signal" },
 ];
 
 type Item = { key: string; label: string; sublabel: string; run: () => void };
@@ -187,7 +189,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
         >
           <div
             className="ws-card ws-modal-in"
-            style={{ width: 480, maxHeight: "60vh", display: "flex", flexDirection: "column", overflow: "hidden" }}
+            style={{ width: 520, maxWidth: "100%", maxHeight: "60vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 30px 80px rgba(0,0,0,.6)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <input
@@ -196,16 +198,16 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleInputKeyDown}
               placeholder="Jump to a page, creator, post, or asset…"
-              className="w-full text-[13.5px]"
+              className="w-full text-[15px]"
               style={{
-                padding: "16px 18px",
+                padding: "18px 22px",
                 background: "transparent",
                 borderBottom: "1px solid var(--ws-hairline)",
                 color: "var(--ws-ink)",
                 outline: "none",
               }}
             />
-            <div style={{ overflowY: "auto", padding: 6 }}>
+            <div style={{ overflowY: "auto", padding: 8 }}>
               {filtered.length === 0 ? (
                 <p className="px-[12px] py-[16px] text-[12.5px]" style={{ color: "var(--ws-ink-45)" }}>
                   No matches.
@@ -217,16 +219,16 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
                     type="button"
                     onMouseEnter={() => setActiveIndex(i)}
                     onClick={() => runItem(item)}
-                    className="flex w-full items-center justify-between rounded-[7px] text-left"
+                    className="flex w-full items-center justify-between rounded-[12px] text-left"
                     style={{
-                      padding: "10px 12px",
+                      padding: "11px 14px",
                       background: i === activeIndex ? "var(--ws-surface-header)" : "transparent",
                     }}
                   >
-                    <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
+                    <span className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
                       {item.label}
                     </span>
-                    <span className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
+                    <span className="text-[10px] font-medium uppercase tracking-[0.1em]" style={{ color: "var(--ws-ink-45)" }}>
                       {item.sublabel}
                     </span>
                   </button>

@@ -29,13 +29,7 @@ export default async function OutlierLayout({ children }: { children: React.Reac
   const initials = deriveInitials(name);
 
   return (
-    <div className="ws" data-theme="dark" suppressHydrationWarning>
-      <script
-        dangerouslySetInnerHTML={{
-          __html:
-            "try{var t=localStorage.getItem('ws-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
-        }}
-      />
+    <div className="ws">
       <WsUIProvider>
         <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} name={name} email={email} initials={initials} />
         {children}

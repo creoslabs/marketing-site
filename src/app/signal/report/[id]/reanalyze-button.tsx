@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 import { analyzeOne } from "../../analyze/analyze-dropzone";
 import type { Platform } from "../../data";
+import { Button } from "@/components/app/ui";
 
 export function ReanalyzeButton({ assetId, platforms }: { assetId: string; platforms: Platform[] }) {
   const router = useRouter();
@@ -26,22 +27,10 @@ export function ReanalyzeButton({ assetId, platforms }: { assetId: string; platf
 
   return (
     <>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*,image/*"
-        className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-        style={{ padding: "9px 12px", opacity: uploading ? 0.6 : 1 }}
-      >
-        {uploading ? "Analyzing…" : "Upload revision"}
-      </button>
+      <input ref={inputRef} type="file" accept="video/*,image/*" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files?.[0])} />
+      <Button variant="primary" icon="upload" onClick={() => inputRef.current?.click()} disabled={uploading}>
+        {uploading ? "Analysing…" : "Upload revision"}
+      </Button>
     </>
   );
 }

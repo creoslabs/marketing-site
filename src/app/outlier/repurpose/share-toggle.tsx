@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ws-toast";
+import { Button } from "@/components/app/ui";
 
 export function ShareToggle({ repurposeId, initialPublic }: { repurposeId: string; initialPublic: boolean }) {
   const toast = useToast();
@@ -34,36 +35,15 @@ export function ShareToggle({ repurposeId, initialPublic }: { repurposeId: strin
   }
 
   return (
-    <div className="flex items-center gap-[8px]">
+    <>
       {isPublic && (
-        <button
-          type="button"
-          onClick={copyLink}
-          className="ws-btn-ghost rounded-[8px] text-[12.5px] font-semibold"
-          style={{ padding: "9px 14px" }}
-        >
+        <Button variant="ghost" onClick={copyLink}>
           {copied ? "Copied ✓" : "Copy public link"}
-        </button>
+        </Button>
       )}
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={pending}
-        className="rounded-[8px] text-[12.5px] font-semibold"
-        style={
-          isPublic
-            ? {
-                padding: "9px 14px",
-                background: "var(--ws-accent-tint)",
-                border: "1px solid var(--ws-accent-tint-border)",
-                color: "var(--ws-accent-tint-ink)",
-                opacity: pending ? 0.6 : 1,
-              }
-            : { padding: "9px 14px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)", opacity: pending ? 0.6 : 1 }
-        }
-      >
+      <Button variant={isPublic ? "paper" : "ghost"} onClick={toggle} disabled={pending}>
         {isPublic ? "Public ✓" : "Make public"}
-      </button>
-    </div>
+      </Button>
+    </>
   );
 }

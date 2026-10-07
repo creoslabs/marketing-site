@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { RepurposeBeat } from "../data";
+import { Button } from "@/components/app/ui";
 
 export function CopyScriptButton({ hook, beats }: { hook: string; beats: RepurposeBeat[] }) {
   const [copied, setCopied] = useState(false);
@@ -14,13 +15,8 @@ export function CopyScriptButton({ hook, beats }: { hook: string; beats: Repurpo
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="ws-btn-ghost rounded-[8px] text-[12.5px] font-semibold"
-      style={{ padding: "9px 14px" }}
-    >
+    <Button variant="ghost" onClick={handleCopy}>
       {copied ? "Copied ✓" : "Copy script"}
-    </button>
+    </Button>
   );
 }

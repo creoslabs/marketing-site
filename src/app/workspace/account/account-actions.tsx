@@ -2,31 +2,23 @@
 
 import { useConfirm } from "@/components/ws-confirm";
 import { useToast } from "@/components/ws-toast";
-import { WsButton } from "@/components/ws-button";
-
-export function ConnectButton({ label = "Connect" }: { label?: string }) {
-  const toast = useToast();
-  return (
-    <button
-      type="button"
-      onClick={() => toast("Connecting accounts isn't available yet.")}
-      className="ws-link-accent whitespace-nowrap text-[11.5px] font-medium"
-    >
-      {label}
-    </button>
-  );
-}
+import { Button } from "@/components/app/ui";
 
 export function AddTimezoneButton() {
   const toast = useToast();
   return (
-    <button
-      type="button"
-      onClick={() => toast("Setting a time zone isn't available yet.")}
-      className="ws-link-accent whitespace-nowrap text-[11.5px] font-medium"
-    >
-      Add
-    </button>
+    <Button variant="link" onClick={() => toast("Setting a time zone isn't available yet.")}>
+      Set time zone
+    </Button>
+  );
+}
+
+export function AvatarUploadButton() {
+  const toast = useToast();
+  return (
+    <Button variant="link" onClick={() => toast("Avatar upload isn't available yet.")}>
+      Upload
+    </Button>
   );
 }
 
@@ -47,8 +39,8 @@ export function DeleteAccountButton() {
   }
 
   return (
-    <WsButton variant="danger" onClick={handleDelete}>
+    <Button variant="danger" onClick={handleDelete}>
       Delete account
-    </WsButton>
+    </Button>
   );
 }

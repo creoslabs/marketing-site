@@ -1,62 +1,107 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Creator, Platform, Post } from "../data";
-import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../components";
+import { formatCompact, formatScore } from "../format";
 import { AddCreatorButton, PullHandlesButton } from "../creator-actions";
-import { SortDropdown, type SortValue } from "./feed-controls";
 import { useToast } from "@/components/ws-toast";
-import { WsPageHeader } from "@/components/ws-page-header";
+import { AppMain, Button, Chip, PageHeader, appStyles as s, cx } from "@/components/app/ui";
+import { PostCard, PostGrid } from "@/components/app/media";
+import { Switch } from "@/components/app/controls";
+import { FilterMenu } from "@/components/app/filter-menu";
+import { EmptyState } from "@/components/ws-empty-state";
 
-const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 const OUTLIER_THRESHOLD = 2;
 const NEW_WINDOW_MS = 24 * 60 * 60 * 1000;
+const PAGE_SIZE = 20;
+const DAY_MS = 86_400_000;
+// Module-level so render stays pure (the lint rule flags Date.now() inside a component).
+const nowMs = () => Date.now();
+
+type SortValue = "score" | "views" | "newest" | "oldest";
+const SORT_OPTIONS: Array<{ value: SortValue; label: string }> = [
+  { value: "score", label: "Score" },
+  { value: "views", label: "Views" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+];
+
+type RangeValue = "all" | "7" | "30" | "90";
+const RANGE_OPTIONS: Array<{ value: RangeValue; label: string }> = [
+  { value: "all", label: "All time" },
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+];
+
+const PLATFORM_CODE: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
 
 function isFreshlyPulled(post: Post) {
   return Date.now() - new Date(post.createdAtIso).getTime() < NEW_WINDOW_MS;
 }
 
-export function FeedGrid({
-  creators,
-  posts: allPosts,
-  eyebrow,
-  title = "Top outliers",
-  backLink,
-  emptyTitle,
-  emptyDescription,
-}: {
-  creators: Creator[];
-  posts: Post[];
-  eyebrow?: string;
-  title?: string;
-  backLink?: { href: string; label: string };
-  emptyTitle?: string;
-  emptyDescription?: string;
-}) {
+// The Feed: every tracked creator's posts, ranked. Filters, sort and the
+// outliers-only switch all run client-side on data already loaded, and the
+// grid is paginated ("Show 20 more") rather than rendering every post at once.
+export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; posts: Post[] }) {
   const router = useRouter();
   const toast = useToast();
   const [sort, setSort] = useState<SortValue>("score");
-  // null = all platforms. A single click on a chip isolates to just that
-  // platform; clicking the active one again (or "All") clears it — no
-  // dropdown, no multi-select checkboxes to fuss with.
   const [platformFilter, setPlatformFilter] = useState<Platform | null>(null);
+  const [creatorFilter, setCreatorFilter] = useState("all");
+  const [hookFilter, setHookFilter] = useState("all");
+  const [range, setRange] = useState<RangeValue>("all");
+  const [outliersOnly, setOutliersOnly] = useState(true);
+  const [visible, setVisible] = useState(PAGE_SIZE);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [favouriting, setFavouriting] = useState(false);
-  // Outliers-only is the default view — the whole point of this feed is
-  // surfacing the posts that broke out, not a chronological dump of
-  // everything pulled. Forced back to true (ignoring the user's own choice)
-  // when nothing has crossed the bar yet, so a thin-history creator never
-  // renders a blank grid with no way to see the posts that exist.
-  const [showAll, setShowAll] = useState(false);
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const above2x = useMemo(() => allPosts.filter((post) => post.score >= OUTLIER_THRESHOLD).length, [allPosts]);
-  // Only worth showing the isolate chips at all when there's more than one
-  // platform in the watchlist to isolate between.
   const platformsPresent = useMemo(() => [...new Set(allPosts.map((post) => post.platform))], [allPosts]);
+  const hookOptions = useMemo(() => {
+    const tags = new Map<string, string>();
+    for (const p of allPosts) for (const t of p.hookTags) tags.set(t.trim().toLowerCase(), t.trim());
+    return [...tags.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allPosts]);
+
+  const filtered = useMemo(() => {
+    const cutoff = range === "all" ? 0 : nowMs() - Number(range) * DAY_MS;
+    return allPosts.filter((p) => {
+      if (platformFilter && p.platform !== platformFilter) return false;
+      if (creatorFilter !== "all" && p.creatorId !== creatorFilter) return false;
+      if (hookFilter !== "all" && !p.hookTags.some((t) => t.trim().toLowerCase() === hookFilter)) return false;
+      if (cutoff && new Date(p.postedAtIso).getTime() < cutoff) return false;
+      return true;
+    });
+  }, [allPosts, platformFilter, creatorFilter, hookFilter, range]);
+
+  const outliers = useMemo(() => filtered.filter((p) => p.score >= OUTLIER_THRESHOLD), [filtered]);
+  // Nothing has crossed the bar in this view — show everything rather than
+  // an empty grid with no way to see what exists.
+  const noOutliersYet = filtered.length > 0 && outliers.length === 0;
+  const effectiveOutliersOnly = outliersOnly && !noOutliersYet;
+
+  const ranked = useMemo(
+    () =>
+      [...(effectiveOutliersOnly ? outliers : filtered)].sort((a, b) => {
+        if (sort === "views") return b.views - a.views;
+        if (sort === "newest") return new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime();
+        if (sort === "oldest") return new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime();
+        return b.score - a.score;
+      }),
+    [effectiveOutliersOnly, outliers, filtered, sort]
+  );
+  const shown = ranked.slice(0, visible);
+
+  function resetPaging<T>(setter: (v: T) => void) {
+    return (v: T) => {
+      setter(v);
+      setVisible(PAGE_SIZE);
+    };
+  }
 
   function toggleSelectMode() {
     setSelectMode((v) => !v);
@@ -89,269 +134,164 @@ export function FeedGrid({
     );
     const successCount = results.filter(Boolean).length;
     setFavouriting(false);
-    if (successCount > 0) {
-      toast(`Favourited ${successCount} post${successCount === 1 ? "" : "s"}.`, "success");
-    }
-    if (successCount < ids.length) {
-      toast(`${ids.length - successCount} couldn't be favourited.`, "error");
-    }
+    if (successCount > 0) toast(`Favourited ${successCount} post${successCount === 1 ? "" : "s"}.`, "success");
+    if (successCount < ids.length) toast(`${ids.length - successCount} couldn't be favourited.`, "error");
     setSelectMode(false);
     setSelectedIds(new Set());
     router.refresh();
   }
 
-  const platformFiltered = useMemo(
-    () => (platformFilter ? allPosts.filter((post) => post.platform === platformFilter) : allPosts),
-    [allPosts, platformFilter]
-  );
-  const outliersOnly = useMemo(
-    () => platformFiltered.filter((post) => post.score >= OUTLIER_THRESHOLD),
-    [platformFiltered]
-  );
-  // Nothing has crossed the bar yet (a thin-history creator, or every
-  // platform with an outlier just got filtered out) — fall back to showing
-  // everything rather than an empty grid with no way to see what exists.
-  const noOutliersYet = platformFiltered.length > 0 && outliersOnly.length === 0;
-  const effectiveShowAll = showAll || noOutliersYet;
-  const hiddenCount = platformFiltered.length - outliersOnly.length;
-
-  const posts = useMemo(
-    () =>
-      [...(effectiveShowAll ? platformFiltered : outliersOnly)].sort((a, b) => {
-        if (sort === "views") return b.views - a.views;
-        if (sort === "newest") return new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime();
-        if (sort === "oldest") return new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime();
-        return b.score - a.score;
-      }),
-    [effectiveShowAll, platformFiltered, outliersOnly, sort]
-  );
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label.toLowerCase() ?? "score";
 
   return (
-    <div className="ws-page-in px-6 py-[22px]">
-      {backLink && (
-        <Link href={backLink.href} className="mb-[10px] inline-block text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-          ← {backLink.label}
-        </Link>
-      )}
-      <WsPageHeader
-        eyebrow={eyebrow}
-        title={title}
-        sub={noOutliersYet ? "No posts have crossed 2× yet — showing everything pulled." : `${above2x} posts above 2×`}
-        action={
+    <AppMain>
+      <PageHeader
+        eyebrow="02 / Feed"
+        line1="Top outliers."
+        sub={
+          noOutliersYet
+            ? "No posts have crossed 2× yet — showing everything pulled."
+            : `${above2x} post${above2x === 1 ? "" : "s"} above 2× across ${creators.length} creator${creators.length === 1 ? "" : "s"}, ranked by ${sortLabel}.`
+        }
+        actions={
           <>
-          {!noOutliersYet && hiddenCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-              style={{ padding: "9px 12px" }}
-            >
-              {showAll ? "Show outliers only" : `Show all posts · ${hiddenCount}`}
-            </button>
-          )}
-          <SortDropdown current={sort} onChange={setSort} />
-          {platformsPresent.length > 1 && (
-            <div className="flex items-center gap-[6px]">
-              <button
-                type="button"
-                onClick={() => setPlatformFilter(null)}
-                className="rounded-[20px] text-[12px] font-medium"
-                style={
-                  platformFilter === null
-                    ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                    : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
-                }
-              >
-                All
-              </button>
-              {platformsPresent.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPlatformFilter((prev) => (prev === p ? null : p))}
-                  className="rounded-[20px] text-[12px] font-medium"
-                  style={
-                    platformFilter === p
-                      ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                      : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
-                  }
-                >
-                  {PLATFORM_LABEL[p]}
-                </button>
-              ))}
-            </div>
-          )}
-          {allPosts.length > 0 && (
-            <button
-              type="button"
-              onClick={toggleSelectMode}
-              className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-              style={{ padding: "9px 12px" }}
-            >
-              {selectMode ? "Cancel" : "Select"}
-            </button>
-          )}
-          <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
-            + Add creator
-          </AddCreatorButton>
+            {allPosts.length > 0 && (
+              <Button variant="ghost" onClick={toggleSelectMode}>
+                {selectMode ? "Cancel" : "Select"}
+              </Button>
+            )}
+            <AddCreatorButton variant="primary" />
           </>
         }
       />
 
-      {allPosts.length === 0 ? (
-        <div className="mt-[18px]">
-          <EmptyState
-            size="large"
-            title={emptyTitle ?? (creators.length === 0 ? "Nothing to show yet" : "No posts pulled yet")}
-            description={
-              emptyDescription ??
-              (creators.length === 0
-                ? "Add a creator to your watchlist to start seeing their posts ranked here."
-                : "Your watchlist is set up — pull now to start scoring posts against each creator's own median.")
-            }
-            action={
-              emptyTitle ? undefined : creators.length === 0 ? (
-                <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "10px 14px" }}>
-                  + Add creator
-                </AddCreatorButton>
-              ) : (
-                <PullHandlesButton handles={creators.flatMap((c) => c.handles)} />
-              )
-            }
-          />
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="mt-[18px]">
-          <EmptyState size="large" title="No posts match these filters" description="Try a different platform." />
-        </div>
-      ) : (
-        <div className="mt-[18px] grid grid-cols-2 gap-[18px] sm:grid-cols-3 lg:grid-cols-5">
-          {posts.map((post) => {
-            const creator = creatorById.get(post.creatorId);
-            const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle;
-            const isSelected = selectedIds.has(post.id);
-            return (
-              <Link
-                key={post.id}
-                href={`/outlier/video/${post.id}`}
-                className="block"
-                onClick={(e) => {
-                  if (selectMode) {
-                    e.preventDefault();
-                    toggleSelected(post.id);
-                  }
-                }}
-              >
-                <Thumb aspectRatio="9/13" radius={11}>
-                  {post.thumbnailUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
-                    <img
-                      src={post.thumbnailUrl}
-                      alt={post.caption}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
-                  {selectMode ? (
-                    <div
-                      className="absolute right-[8px] top-[8px] flex h-[20px] w-[20px] items-center justify-center rounded-[5px] text-[12px]"
-                      style={
-                        isSelected
-                          ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)", zIndex: 2 }
-                          : { border: "1.5px solid rgba(255,255,255,0.7)", background: "rgba(0,0,0,0.3)", zIndex: 2 }
-                      }
-                    >
-                      {isSelected ? "✓" : ""}
-                    </div>
-                  ) : post.thin ? (
-                    <div className="absolute right-[8px] top-[8px]" style={{ zIndex: 2 }}>
-                      <ThinHistoryPill />
-                    </div>
-                  ) : (
-                    isFreshlyPulled(post) && (
-                      <span
-                        className="absolute right-[8px] top-[8px] rounded-[5px] font-semibold uppercase"
-                        style={{
-                          zIndex: 2,
-                          fontSize: 9.5,
-                          letterSpacing: "0.04em",
-                          padding: "3px 6px",
-                          background: "var(--ws-accent)",
-                          color: "var(--ws-accent-ink)",
-                        }}
-                      >
-                        New
-                      </span>
-                    )
-                  )}
-                  <div className="absolute left-[8px] top-[8px]" style={{ zIndex: 2 }}>
-                    <PlatformBadge platform={post.platform} />
-                  </div>
-                  <div
-                    className="absolute inset-x-0 bottom-0"
-                    style={{
-                      height: 52,
-                      background:
-                        "linear-gradient(to top, color-mix(in srgb, var(--ws-ground) 70%, transparent), transparent)",
-                    }}
-                  />
-                  <div className="absolute bottom-[8px] left-[8px]" style={{ zIndex: 2 }}>
-                    <ScoreChip score={post.score} median={post.median} />
-                  </div>
-                </Thumb>
-
-                <div className="mt-[8px] flex items-center gap-[7px]">
-                  {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={26} />}
-                  <div className="min-w-0">
-                    <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                      {handle}
-                    </p>
-                    <p className="truncate text-[11px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-                      {post.postedAt}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-[7px]">
-                  <StatRow views={post.views} engagement={post.engagement} />
-                </div>
-                <p
-                  className="mt-[6px] text-[11.5px] leading-[1.4]"
-                  style={{ color: "var(--ws-ink-60)", textWrap: "pretty" as React.CSSProperties["textWrap"] }}
+      {allPosts.length > 0 && (
+        <div className={s.toolbar}>
+          {platformsPresent.length > 1 && (
+            <>
+              <div style={{ display: "flex", gap: 6 }} role="group" aria-label="Platform">
+                <button
+                  type="button"
+                  aria-pressed={platformFilter === null}
+                  className={cx(s.mono, s.chip, s.chipButton, platformFilter === null ? s.chipPaper : s.chipOutline)}
+                  onClick={() => resetPaging(setPlatformFilter)(null)}
                 >
-                  {post.caption.split("\n")[0]}
-                </p>
-              </Link>
-            );
-          })}
+                  All
+                </button>
+                {platformsPresent.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    aria-pressed={platformFilter === p}
+                    className={cx(s.mono, s.chip, s.chipButton, platformFilter === p ? s.chipPaper : s.chipOutline)}
+                    onClick={() => resetPaging(setPlatformFilter)(platformFilter === p ? null : p)}
+                  >
+                    {PLATFORM_CODE[p]}
+                  </button>
+                ))}
+              </div>
+              <span className={s.toolbarDivider} />
+            </>
+          )}
+          <FilterMenu
+            label="Creator"
+            value={creatorFilter}
+            onChange={resetPaging(setCreatorFilter)}
+            options={[{ value: "all", label: "All creators" }, ...creators.map((c) => ({ value: c.id, label: c.displayName }))]}
+          />
+          <FilterMenu
+            label="Hook style"
+            value={hookFilter}
+            onChange={resetPaging(setHookFilter)}
+            options={[{ value: "all", label: "Any hook style" }, ...hookOptions.map(([key, label]) => ({ value: key, label }))]}
+          />
+          <FilterMenu label="Date range" value={range} onChange={resetPaging(setRange)} options={RANGE_OPTIONS} />
+          <span className={s.toolbarRight}>
+            <span className={s.toolbarNote}>Score ≥ 2× only</span>
+            <Switch checked={effectiveOutliersOnly} onChange={resetPaging(setOutliersOnly)} label="Score at least 2x only" disabled={noOutliersYet} />
+            <FilterMenu label="Sort" prefix="Sort: " value={sort} onChange={resetPaging(setSort)} options={SORT_OPTIONS} align="right" />
+          </span>
         </div>
+      )}
+
+      {allPosts.length === 0 ? (
+        <EmptyState
+          size="large"
+          emoji="📭"
+          title={creators.length === 0 ? "Nothing to show yet" : "No posts pulled yet"}
+          description={
+            creators.length === 0
+              ? "Add a creator to your watchlist to start seeing their posts ranked here."
+              : "Your watchlist is set up — pull now to start scoring posts against each creator's own median."
+          }
+          action={
+            creators.length === 0 ? (
+              <AddCreatorButton variant="primary" />
+            ) : (
+              <PullHandlesButton handles={creators.flatMap((c) => c.handles)} icon="refresh" />
+            )
+          }
+        />
+      ) : ranked.length === 0 ? (
+        <EmptyState size="large" emoji="🔍" title="No posts match these filters" description="Try a different creator, hook style or date range." />
+      ) : (
+        <>
+          <PostGrid cols={5}>
+            {shown.map((post, i) => {
+              const creator = creatorById.get(post.creatorId);
+              const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle ?? "";
+              return (
+                <PostCard
+                  key={post.id}
+                  href={`/outlier/video/${post.id}`}
+                  ring={i === 0 && sort === "score" && !selectMode}
+                  tile={{
+                    src: post.thumbnailUrl,
+                    platform: post.platform,
+                    score: formatScore(post.score),
+                    scoreAccent: post.score >= OUTLIER_THRESHOLD,
+                    height: 280,
+                    emoji: "🎬",
+                    label: post.thin ? <span style={{ color: "var(--ws-warn)" }}>Thin history</span> : isFreshlyPulled(post) ? "New" : undefined,
+                  }}
+                  creator={{ initials: creator?.initials ?? "?", handle, avatarUrl: creator?.avatarUrl }}
+                  date={post.postedAt}
+                  caption={post.caption.split("\n")[0]}
+                  views={formatCompact(post.views)}
+                  engagement={`${post.engagement.toFixed(1)}%`}
+                  hook={post.hookTags[0]}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(post.id)}
+                  onToggle={() => toggleSelected(post.id)}
+                />
+              );
+            })}
+          </PostGrid>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            {visible < ranked.length && (
+              <Button variant="ghost" onClick={() => setVisible((v) => v + PAGE_SIZE)}>
+                Show {Math.min(PAGE_SIZE, ranked.length - visible)} more
+              </Button>
+            )}
+            <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>
+              Showing {shown.length} of {ranked.length}
+            </span>
+            {!effectiveOutliersOnly && !noOutliersYet && outliers.length < filtered.length && <Chip variant="soft">Including posts under 2×</Chip>}
+          </div>
+        </>
       )}
 
       {selectMode && selectedIds.size > 0 && (
-        <div
-          className="ws-card fixed left-1/2 flex items-center gap-[14px]"
-          style={{ padding: "12px 18px", transform: "translateX(-50%)", bottom: 24, zIndex: 100 }}
-        >
-          <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-            {selectedIds.size} selected
-          </span>
-          <button
-            type="button"
-            onClick={favouriteSelected}
-            disabled={favouriting}
-            className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-            style={{ padding: "8px 14px", opacity: favouriting ? 0.6 : 1 }}
-          >
+        <div className={s.floatBar} role="status">
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{selectedIds.size} selected</span>
+          <Button variant="primary" size="sm" onClick={favouriteSelected} disabled={favouriting}>
             {favouriting ? "Favouriting…" : "☆ Favourite all"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedIds(new Set())}
-            className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-            style={{ padding: "8px 14px" }}
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
             Clear
-          </button>
+          </Button>
         </div>
       )}
-    </div>
+    </AppMain>
   );
 }

@@ -3,6 +3,18 @@
 import { useState } from "react";
 import { useToast } from "@/components/ws-toast";
 import { NOTIFICATION_CATEGORIES } from "@/lib/notification-prefs";
+import { Switch } from "@/components/app/controls";
+import { SettingsRow } from "@/components/app/settings";
+
+// Which product each email category belongs to — shown muted beside the label.
+const PRODUCT: Record<string, string> = {
+  pull: "Outlier",
+  pull_failed: "Outlier",
+  analysis: "Signal",
+  analysis_failed: "Signal",
+  trend: "Outlier",
+  repurpose: "Outlier",
+};
 
 export function NotificationPreferences({ initialDisabled }: { initialDisabled: string[] }) {
   const toast = useToast();
@@ -36,37 +48,16 @@ export function NotificationPreferences({ initialDisabled }: { initialDisabled: 
   }
 
   return (
-    <div className="ws-stack">
-      {NOTIFICATION_CATEGORIES.map((cat) => {
-        const isOn = !disabled.has(cat.key);
-        return (
-          <div key={cat.key} className="flex items-center" style={{ padding: "11px 16px" }}>
-            <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-              {cat.label}
-            </span>
-            <div className="flex-1" />
-            <button
-              type="button"
-              onClick={() => toggle(cat.key)}
-              disabled={pending === cat.key}
-              aria-label={`${isOn ? "Disable" : "Enable"} ${cat.label}`}
-              className="relative"
-              style={{
-                width: 34,
-                height: 19,
-                borderRadius: 10,
-                background: isOn ? "var(--ws-accent)" : "var(--ws-hairline-strong)",
-                opacity: pending === cat.key ? 0.6 : 1,
-              }}
-            >
-              <span
-                className="absolute rounded-full bg-white"
-                style={{ width: 15, height: 15, top: 2, left: isOn ? 17 : 2, transition: "left 0.15s ease" }}
-              />
-            </button>
-          </div>
-        );
-      })}
-    </div>
+    <>
+      {NOTIFICATION_CATEGORIES.map((cat) => (
+        <SettingsRow
+          key={cat.key}
+          label={cat.label}
+          action={<Switch checked={!disabled.has(cat.key)} onChange={() => toggle(cat.key)} label={cat.label} disabled={pending === cat.key} />}
+        >
+          <small>{PRODUCT[cat.key]}</small>
+        </SettingsRow>
+      ))}
+    </>
   );
 }

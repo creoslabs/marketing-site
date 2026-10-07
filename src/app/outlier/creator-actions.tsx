@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 import { useConfirm } from "@/components/ws-confirm";
+import { Button, Mono, appStyles as s, cx, type ButtonVariant } from "@/components/app/ui";
+import { Segmented } from "@/components/app/controls";
+import { Icon, type IconName } from "@/components/app/icons";
+import { Modal } from "@/components/app/modal";
 import { parseHandleInput } from "@/lib/outlier/parse-handle-input";
 import type { Platform, Post } from "./data";
 
 const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
+const PLATFORM_OPTIONS = (["TT", "IG", "YT"] as const).map((p) => ({ value: p, label: PLATFORM_LABEL[p] }));
 
 // Runs `fn` over `items` with at most `limit` in flight at once — faster
 // than one-at-a-time for a handful of items, but still bounded so pulling an
@@ -26,29 +31,23 @@ async function mapWithConcurrencyLimit<T, R>(items: T[], limit: number, fn: (ite
   return results;
 }
 
-function PlatformPicker({ platform, onChange }: { platform: Platform; onChange: (p: Platform) => void }) {
-  return (
-    <div className="flex rounded-[7px] p-[2px]" style={{ border: "1px solid var(--ws-hairline)" }}>
-      {(["TT", "IG", "YT"] as const).map((p) => (
-        <button
-          key={p}
-          type="button"
-          onClick={() => onChange(p)}
-          className="flex-1 rounded-[5px] py-[7px] text-[12px] font-medium"
-          style={platform === p ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" } : { color: "var(--ws-ink-60)" }}
-        >
-          {PLATFORM_LABEL[p]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 type HandleRow = { key: number; platform: Platform; handle: string };
 
 let nextRowKey = 1;
 function makeRow(platform: Platform = "TT", handle = ""): HandleRow {
   return { key: nextRowKey++, platform, handle };
+}
+
+function PlatformSelect({ value, onChange, dashed }: { value: Platform; onChange: (p: Platform) => void; dashed?: boolean }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value as Platform)} className={cx(s.input, dashed && s.inputDashed)} aria-label="Platform">
+      {PLATFORM_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 // One creator, many platform handles — matches how a creator page actually
@@ -57,7 +56,17 @@ function makeRow(platform: Platform = "TT", handle = ""): HandleRow {
 // handle creates the creator (POST /api/outlier/creators, which also sets
 // its display name); every row after that attaches to that new creator via
 // the same endpoint AddPlatformButton already uses.
-export function AddCreatorButton({ className, style, children }: { className: string; style: React.CSSProperties; children: React.ReactNode }) {
+export function AddCreatorButton({
+  variant = "ghost",
+  icon = "plus",
+  size,
+  children = "Add creator",
+}: {
+  variant?: ButtonVariant;
+  icon?: IconName;
+  size?: "md" | "sm";
+  children?: React.ReactNode;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -148,209 +157,111 @@ export function AddCreatorButton({ className, style, children }: { className: st
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={className} style={style}>
+      <Button variant={variant} size={size} icon={icon} onClick={() => setOpen(true)}>
         {children}
-      </button>
+      </Button>
       {open && (
-        <div
-          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
-          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => !saving && setOpen(false)}
-        >
-          <div
-            className="ws-card ws-modal-in flex max-h-[85vh] flex-col"
-            style={{ width: 480, padding: 0 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center" style={{ padding: "18px 22px", borderBottom: "1px solid var(--ws-hairline)" }}>
-              <p className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-                Add creator
-              </p>
-              <div className="flex-1" />
-              <button type="button" onClick={() => setOpen(false)} aria-label="Close" style={{ color: "var(--ws-ink-45)" }}>
-                ✕
-              </button>
-            </div>
-
-            <div className="overflow-y-auto" style={{ padding: "18px 22px" }}>
-              <p className="ws-eyebrow">CREATOR</p>
-              <div className="mt-[10px] flex items-center gap-[10px]">
-                <span
-                  className="ws-placeholder flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-                  style={{ color: "var(--ws-ink-60)" }}
-                >
-                  {(name || filledRows[0]?.handle || "?").slice(0, 2).toUpperCase()}
-                </span>
-                <input
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={filledRows[0]?.handle || "Name"}
-                  className="flex-1 text-[13px] outline-none"
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 7,
-                    border: "1px solid var(--ws-hairline-strong)",
-                    background: "var(--ws-surface)",
-                    color: "var(--ws-ink)",
-                  }}
-                />
-              </div>
-
-              <p className="mt-[18px] ws-eyebrow">HANDLES</p>
-              <div className="mt-[10px] flex flex-col gap-[8px]">
-                {rows.map((row) => (
-                  <div key={row.key} className="flex items-center gap-[8px]">
-                    <select
-                      value={row.platform}
-                      onChange={(e) => updateRow(row.key, { platform: e.target.value as Platform })}
-                      className="text-[12.5px] outline-none"
-                      style={{
-                        padding: "9px 8px",
-                        borderRadius: 7,
-                        border: "1px solid var(--ws-hairline-strong)",
-                        background: "var(--ws-surface)",
-                        color: "var(--ws-ink)",
-                      }}
-                    >
-                      {(["TT", "IG", "YT"] as const).map((p) => (
-                        <option key={p} value={p}>
-                          {PLATFORM_LABEL[p]}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      value={row.handle}
-                      onChange={(e) => updateRow(row.key, { handle: e.target.value.replace(/^@/, "") })}
-                      placeholder="@handle"
-                      className="flex-1 text-[12.5px] outline-none"
-                      style={{
-                        padding: "9px 12px",
-                        borderRadius: 7,
-                        border: "1px solid var(--ws-hairline-strong)",
-                        background: "var(--ws-surface)",
-                        color: "var(--ws-ink)",
-                      }}
-                    />
-                    {rows.length > 1 && (
-                      <button type="button" onClick={() => removeRow(row.key)} aria-label="Remove platform" style={{ color: "var(--ws-ink-45)" }}>
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <div className="flex items-center gap-[8px]">
-                  <select
-                    value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value as Platform)}
-                    className="text-[12.5px] outline-none"
-                    style={{
-                      padding: "9px 8px",
-                      borderRadius: 7,
-                      border: "1px dashed var(--ws-hairline-strong)",
-                      background: "transparent",
-                      color: "var(--ws-ink)",
-                    }}
-                  >
-                    {(["TT", "IG", "YT"] as const).map((p) => (
-                      <option key={p} value={p}>
-                        {PLATFORM_LABEL[p]}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    value={newHandle}
-                    onChange={(e) => setNewHandle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addHandleRow();
-                      }
-                    }}
-                    placeholder="@handle or profile URL"
-                    className="flex-1 text-[12.5px] outline-none"
-                    style={{
-                      padding: "9px 12px",
-                      borderRadius: 7,
-                      border: "1px dashed var(--ws-hairline-strong)",
-                      background: "transparent",
-                      color: "var(--ws-ink)",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={addHandleRow}
-                    className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
-                    style={{ padding: "9px 12px" }}
-                  >
-                    + Add
-                  </button>
-                </div>
-              </div>
-              <p className="mt-[10px] text-[11px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
-                Each platform is scored against its own median, so 4× on TikTok means the same as 4× on Instagram.
-                Handles roll up into one creator page.
-              </p>
-
-              <div className="mt-[18px] grid grid-cols-2 gap-[18px]">
-                <div>
-                  <p className="ws-eyebrow">PULL RANGE</p>
-                  <div className="mt-[10px] flex items-center gap-[8px]">
-                    <input
-                      type="number"
-                      min={5}
-                      max={100}
-                      value={postLimit}
-                      onChange={(e) => setPostLimit(Math.min(100, Math.max(5, Number(e.target.value) || 30)))}
-                      aria-label="Posts to pull per platform"
-                      className="text-[12.5px] outline-none"
-                      style={{
-                        width: 64,
-                        padding: "9px 10px",
-                        borderRadius: 7,
-                        border: "1px solid var(--ws-hairline-strong)",
-                        background: "var(--ws-surface)",
-                        color: "var(--ws-ink)",
-                      }}
-                    />
-                    <span className="text-[12px]" style={{ color: "var(--ws-ink-60)" }}>posts per platform</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="ws-eyebrow">MEDIAN BASELINE</p>
-                  <p className="mt-[10px] text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    Trailing 20 posts
-                  </p>
-                </div>
-              </div>
-              <p className="mt-[10px] text-[11px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
-                Under 12 posts, a platform is marked <span style={{ color: "var(--ws-warn-text)" }}>thin history</span> and
-                left out of Trends.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-[9px]" style={{ padding: "16px 22px", borderTop: "1px solid var(--ws-hairline)" }}>
-              <button
-                type="button"
-                disabled={saving || filledRows.length === 0}
-                onClick={() => handleSubmit(true)}
-                className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-                style={{ padding: "10px 14px", opacity: saving || filledRows.length === 0 ? 0.6 : 1 }}
-              >
+        <Modal
+          title="Add creator"
+          busy={saving}
+          onClose={() => setOpen(false)}
+          footer={
+            <>
+              <Button variant="primary" disabled={saving || filledRows.length === 0} onClick={() => handleSubmit(true)}>
                 {saving ? "Adding…" : "Add and pull now"}
-              </button>
-              <button
-                type="button"
-                disabled={saving || filledRows.length === 0}
-                onClick={() => handleSubmit(false)}
-                className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-                style={{ padding: "10px 14px", opacity: saving || filledRows.length === 0 ? 0.6 : 1 }}
-              >
+              </Button>
+              <Button variant="ghost" disabled={saving || filledRows.length === 0} onClick={() => handleSubmit(false)}>
                 Add without pulling
-              </button>
+              </Button>
+            </>
+          }
+        >
+          <div>
+            <Mono className={s.fieldLabel}>Creator</Mono>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={filledRows[0]?.handle || "Name"}
+              className={s.input}
+              style={{ width: "100%" }}
+              aria-label="Creator name"
+            />
+          </div>
+
+          <div>
+            <Mono className={s.fieldLabel}>Handles</Mono>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {rows.map((row) => (
+                <div key={row.key} className={s.fieldRow}>
+                  <PlatformSelect value={row.platform} onChange={(p) => updateRow(row.key, { platform: p })} />
+                  <input
+                    value={row.handle}
+                    onChange={(e) => updateRow(row.key, { handle: e.target.value.replace(/^@/, "") })}
+                    placeholder="@handle"
+                    className={s.input}
+                    style={{ flex: 1, minWidth: 0 }}
+                    aria-label="Handle"
+                  />
+                  {rows.length > 1 && (
+                    <button type="button" onClick={() => removeRow(row.key)} aria-label="Remove platform" className={s.iconBtn} style={{ width: 32, height: 32 }}>
+                      <Icon name="close" size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className={s.fieldRow}>
+                <PlatformSelect value={newPlatform} onChange={setNewPlatform} dashed />
+                <input
+                  value={newHandle}
+                  onChange={(e) => setNewHandle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addHandleRow();
+                    }
+                  }}
+                  placeholder="@handle or profile URL"
+                  className={cx(s.input, s.inputDashed)}
+                  style={{ flex: 1, minWidth: 0 }}
+                  aria-label="Another handle or profile URL"
+                />
+                <Button variant="ghost" size="sm" icon="plus" onClick={addHandleRow}>
+                  Add
+                </Button>
+              </div>
+            </div>
+            <p className={s.hint} style={{ marginTop: 10 }}>
+              Each platform is scored against its own median, so 4× on TikTok means the same as 4× on Instagram. Handles roll up into one creator page.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+            <div>
+              <Mono className={s.fieldLabel}>Pull range</Mono>
+              <div className={s.fieldRow}>
+                <input
+                  type="number"
+                  min={5}
+                  max={100}
+                  value={postLimit}
+                  onChange={(e) => setPostLimit(Math.min(100, Math.max(5, Number(e.target.value) || 30)))}
+                  aria-label="Posts to pull per platform"
+                  className={s.input}
+                  style={{ width: 72 }}
+                />
+                <span style={{ fontSize: 13, color: "var(--ws-ink-60)" }}>posts per platform</span>
+              </div>
+            </div>
+            <div>
+              <Mono className={s.fieldLabel}>Median baseline</Mono>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>Trailing 20 posts</span>
             </div>
           </div>
-        </div>
+          <p className={s.hint}>
+            Under 12 posts, a platform is marked <span style={{ color: "var(--ws-warn)" }}>thin history</span> and left out of Trends.
+          </p>
+        </Modal>
       )}
     </>
   );
@@ -389,69 +300,39 @@ export function AddPlatformButton({ creatorId }: { creatorId: string }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="ws-btn-ghost rounded-[7px] text-[11.5px] font-medium"
-        style={{ padding: "7px 10px" }}
-      >
-        + Platform
-      </button>
+      <Button variant="ghost" size="sm" icon="plus" onClick={() => setOpen(true)}>
+        Platform
+      </Button>
       {open && (
-        <div
-          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
-          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => setOpen(false)}
-        >
-          <div className="ws-card ws-modal-in" style={{ width: 360, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Track another platform
-            </p>
-            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
-              <PlatformPicker platform={platform} onChange={setPlatform} />
-              <input
-                autoFocus
-                value={handle}
-                onChange={(e) => {
-                  const parsed = parseHandleInput(e.target.value);
-                  if (parsed.platform) {
-                    setPlatform(parsed.platform);
-                    setHandle(parsed.handle);
-                  } else {
-                    setHandle(e.target.value);
-                  }
-                }}
-                placeholder="handle or profile URL"
-                className="text-[12.5px] outline-none"
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 7,
-                  border: "1px solid var(--ws-hairline-strong)",
-                  background: "var(--ws-surface)",
-                  color: "var(--ws-ink)",
-                }}
-              />
-              <div className="mt-[4px] flex justify-end gap-[8px]">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-                  style={{ padding: "9px 14px" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !handle.trim()}
-                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-                  style={{ padding: "9px 14px", opacity: saving ? 0.6 : 1 }}
-                >
-                  {saving ? "Adding…" : "Add platform"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title="Track another platform" width={400} busy={saving} onClose={() => setOpen(false)}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <Segmented label="Platform" value={platform} options={PLATFORM_OPTIONS} onChange={setPlatform} />
+            <input
+              autoFocus
+              value={handle}
+              onChange={(e) => {
+                const parsed = parseHandleInput(e.target.value);
+                if (parsed.platform) {
+                  setPlatform(parsed.platform);
+                  setHandle(parsed.handle);
+                } else {
+                  setHandle(e.target.value);
+                }
+              }}
+              placeholder="handle or profile URL"
+              className={s.input}
+              aria-label="Handle or profile URL"
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={saving || !handle.trim()}>
+                {saving ? "Adding…" : "Add platform"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </>
   );
@@ -463,14 +344,16 @@ export function AddPlatformButton({ creatorId }: { creatorId: string }) {
 export function PullHandlesButton({
   handles,
   postLimit,
-  className,
-  style,
+  variant = "primary",
+  size,
+  icon,
   children = "Pull now",
 }: {
   handles: { id: string; handle: string }[];
   postLimit?: number;
-  className?: string;
-  style?: React.CSSProperties;
+  variant?: ButtonVariant;
+  size?: "md" | "sm";
+  icon?: IconName;
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -512,15 +395,9 @@ export function PullHandlesButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={handlePull}
-      disabled={pulling}
-      className={className ?? "ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"}
-      style={{ padding: "10px 14px", opacity: pulling ? 0.6 : 1, ...style }}
-    >
+    <Button variant={variant} size={size} icon={pulling ? undefined : icon} onClick={handlePull} disabled={pulling}>
       {pulling ? "Pulling…" : children}
-    </button>
+    </Button>
   );
 }
 
@@ -533,7 +410,7 @@ export function PullWithLimit({ handles }: { handles: { id: string; handle: stri
   const [postLimit, setPostLimit] = useState(30);
 
   return (
-    <div className="flex items-center gap-[8px]">
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <input
         type="number"
         min={5}
@@ -541,28 +418,21 @@ export function PullWithLimit({ handles }: { handles: { id: string; handle: stri
         value={postLimit}
         onChange={(e) => setPostLimit(Math.min(100, Math.max(5, Number(e.target.value) || 30)))}
         aria-label="Posts to pull"
-        className="text-[12.5px] outline-none"
-        style={{
-          width: 56,
-          padding: "9px 8px",
-          borderRadius: 7,
-          border: "1px solid var(--ws-hairline-strong)",
-          background: "var(--ws-surface)",
-          color: "var(--ws-ink)",
-        }}
+        className={s.input}
+        style={{ width: 72 }}
       />
-      <PullHandlesButton handles={handles} postLimit={postLimit} className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" />
+      <PullHandlesButton handles={handles} postLimit={postLimit} icon="refresh" />
     </div>
   );
 }
 
-export function RemoveCreatorButton({ creatorId, handle }: { creatorId: string; handle: string }) {
+function useRemoveCreator(creatorId: string, handle: string) {
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
   const [removing, setRemoving] = useState(false);
 
-  async function handleRemove() {
+  async function remove() {
     const confirmed = await confirm({
       title: `Stop tracking @${handle}?`,
       description: "This removes the creator, every platform they're tracked on, and all pulled posts. This can't be undone.",
@@ -581,17 +451,71 @@ export function RemoveCreatorButton({ creatorId, handle }: { creatorId: string; 
       toast("Couldn't remove that creator.", "error");
     }
   }
+  return { remove, removing };
+}
+
+export function RemoveCreatorButton({ creatorId, handle }: { creatorId: string; handle: string }) {
+  const { remove, removing } = useRemoveCreator(creatorId, handle);
+  return (
+    <Button variant="danger" size="sm" onClick={remove} disabled={removing}>
+      {removing ? "Removing…" : "Remove"}
+    </Button>
+  );
+}
+
+// "⋯" menu on a creator row. Destructive actions live one step removed,
+// here, instead of as a button in every row.
+export function CreatorRowMenu({ creatorId, handle }: { creatorId: string; handle: string }) {
+  const { remove, removing } = useRemoveCreator(creatorId, handle);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
   return (
-    <button
-      type="button"
-      onClick={handleRemove}
-      disabled={removing}
-      className="ws-btn-ghost rounded-[7px] text-[11.5px] font-medium"
-      style={{ padding: "7px 10px", color: "var(--ws-warn-text)", opacity: removing ? 0.6 : 1 }}
-    >
-      {removing ? "Removing…" : "Remove"}
-    </button>
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        className={s.iconBtn}
+        aria-label={`More actions for @${handle}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        disabled={removing}
+      >
+        <Icon name="more" size={16} />
+      </button>
+      {open && (
+        <div className={s.menu} role="menu" style={{ minWidth: 190 }}>
+          <button
+            type="button"
+            role="menuitem"
+            className={s.menuItem}
+            style={{ color: "var(--ws-warn)" }}
+            onClick={() => {
+              setOpen(false);
+              remove();
+            }}
+          >
+            Remove creator
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -629,10 +553,9 @@ export function RemoveHandleButton({ handleId, handle }: { handleId: string; han
       onClick={handleRemove}
       disabled={removing}
       aria-label={`Stop tracking @${handle}`}
-      className="text-[11px] font-medium"
-      style={{ color: "var(--ws-ink-45)", opacity: removing ? 0.6 : 1 }}
+      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ws-ink-45)", padding: 4, opacity: removing ? 0.6 : 1 }}
     >
-      ✕
+      <Icon name="close" size={12} />
     </button>
   );
 }
@@ -645,12 +568,12 @@ export function RemoveHandleButton({ handleId, handle }: { handleId: string; han
 // eligible; unanalyzed ones (however high-scoring) are skipped.
 export function BatchRepurposeButton({
   posts,
-  className = "ws-btn-ghost shrink-0 rounded-[8px] text-[12px] font-medium",
-  style,
+  variant = "ghost",
+  size = "sm",
 }: {
   posts: Post[];
-  className?: string;
-  style?: React.CSSProperties;
+  variant?: ButtonVariant;
+  size?: "md" | "sm";
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -706,67 +629,34 @@ export function BatchRepurposeButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleOpen}
-        className={className}
-        style={{ padding: "8px 12px", opacity: eligible.length > 0 ? 1 : 0.6, ...style }}
-      >
+      <Button variant={variant} size={size} onClick={handleOpen}>
         Repurpose top {eligible.length > 0 ? eligible.length : 3} →
-      </button>
+      </Button>
       {open && (
-        <div
-          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
-          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => !generating && setOpen(false)}
-        >
-          <div className="ws-card ws-modal-in" style={{ width: 400, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Repurpose top {eligible.length} outlier{eligible.length === 1 ? "" : "s"}
-            </p>
-            <p className="mt-[6px] text-[12px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
-              One topic, {eligible.length} original scripts — each modeled on that post&rsquo;s own hook and beat
-              structure, not a copy of its words.
-            </p>
-            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
-              <textarea
-                autoFocus
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
-                rows={3}
-                className="text-[12.5px] outline-none"
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 7,
-                  border: "1px solid var(--ws-hairline-strong)",
-                  background: "var(--ws-surface)",
-                  color: "var(--ws-ink)",
-                  resize: "none",
-                }}
-              />
-              <div className="mt-[4px] flex justify-end gap-[8px]">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  disabled={generating}
-                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-                  style={{ padding: "9px 14px" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={generating || !topic.trim()}
-                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-                  style={{ padding: "9px 14px", opacity: generating ? 0.6 : 1 }}
-                >
-                  {generating ? "Writing…" : `Generate ${eligible.length} script${eligible.length === 1 ? "" : "s"}`}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title={`Repurpose top ${eligible.length} outlier${eligible.length === 1 ? "" : "s"}`} width={440} busy={generating} onClose={() => setOpen(false)}>
+          <p className={s.hint} style={{ fontSize: 14, color: "var(--ws-ink-60)" }}>
+            One topic, {eligible.length} original scripts — each modeled on that post’s own hook and beat structure, not a copy of its words.
+          </p>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <textarea
+              autoFocus
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
+              rows={3}
+              className={s.input}
+              aria-label="Topic"
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <Button variant="ghost" onClick={() => setOpen(false)} disabled={generating}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={generating || !topic.trim()}>
+                {generating ? "Writing…" : `Generate ${eligible.length} script${eligible.length === 1 ? "" : "s"}`}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </>
   );

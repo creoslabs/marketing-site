@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import type { Creator, Platform } from "../data";
+import { AddCreatorButton, CreatorRowMenu } from "../creator-actions";
+import { formatCompact } from "../format";
+import { AppMain, Avatar, Button, Chip, PageHeader, appStyles as s, cx } from "@/components/app/ui";
+import { Icon } from "@/components/app/icons";
+import { FilterMenu } from "@/components/app/filter-menu";
+import { EmptyState } from "@/components/ws-empty-state";
 
 const ALL_PLATFORMS: Platform[] = ["TT", "IG", "YT"];
 const PLATFORM_LABEL: Record<Platform, string> = { TT: "TikTok", IG: "Instagram", YT: "YouTube" };
-import { Avatar, EmptyState, Sparkline, ThinHistoryPill } from "../components";
-import { AddCreatorButton, RemoveCreatorButton } from "../creator-actions";
-import { formatCompact } from "../format";
-import { WsPageHeader } from "@/components/ws-page-header";
-
-const COLUMNS = "1fr 96px 82px 74px 74px 92px 84px 64px";
 
 type SortValue = "recent" | "best" | "above2x" | "trend" | "median";
 
@@ -23,54 +22,27 @@ const SORT_OPTIONS: { value: SortValue; label: string }[] = [
   { value: "median", label: "Highest median" },
 ];
 
-function useOutsideClose(onClose: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [onClose]);
-  return ref;
-}
-
-function SortDropdown({ current, onChange }: { current: SortValue; onChange: (value: SortValue) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useOutsideClose(() => setOpen(false));
-  const label = SORT_OPTIONS.find((o) => o.value === current)?.label ?? "Recently added";
-
+function Spark({ values, trend }: { values: number[]; trend: number | null }) {
+  const max = Math.max(...values, 1);
+  const last = values.length - 1;
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium"
-        style={{ padding: "9px 12px" }}
-      >
-        {label} ▾
-      </button>
-      {open && (
-        <div className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+6px)] z-20 w-[180px] p-[6px]">
-          {SORT_OPTIONS.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => {
-                onChange(o.value);
-                setOpen(false);
-              }}
-              className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
-              style={{ color: o.value === current ? "var(--ws-accent-text)" : "var(--ws-ink)" }}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 28, width: 84 }} aria-hidden="true">
+      {values.map((v, i) => (
+        <div
+          key={i}
+          style={{
+            flex: 1,
+            height: `${Math.max(16, (v / max) * 100)}%`,
+            borderRadius: 1,
+            background: i === last && trend !== null ? (trend >= 0 ? "var(--ws-accent)" : "var(--ws-grey)") : "var(--ws-hairline-strong)",
+          }}
+        />
+      ))}
     </div>
   );
 }
+
+const th: React.CSSProperties = { padding: "14px 16px", fontWeight: 500 };
 
 export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }) {
   const [sort, setSort] = useState<SortValue>("recent");
@@ -80,19 +52,12 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
 
   const handleCount = allCreators.reduce((sum, creator) => sum + creator.handles.length, 0);
   const thinCount = allCreators.filter((creator) => creator.handles.some((h) => h.thin)).length;
-  const platformsPresent = useMemo(
-    () => ALL_PLATFORMS.filter((p) => allCreators.some((c) => c.handles.some((h) => h.platform === p))),
-    [allCreators]
-  );
+  const platformsPresent = useMemo(() => ALL_PLATFORMS.filter((p) => allCreators.some((c) => c.handles.some((h) => h.platform === p))), [allCreators]);
 
   const creators = useMemo(() => {
     const query = search.trim().toLowerCase();
     let filtered = query
-      ? allCreators.filter(
-          (c) =>
-            c.displayName.toLowerCase().includes(query) ||
-            c.handles.some((h) => h.handle.toLowerCase().includes(query))
-        )
+      ? allCreators.filter((c) => c.displayName.toLowerCase().includes(query) || c.handles.some((h) => h.handle.toLowerCase().includes(query)))
       : allCreators;
 
     if (platformFilter) filtered = filtered.filter((c) => c.handles.some((h) => h.platform === platformFilter));
@@ -117,50 +82,65 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
   }, [allCreators, sort, search, platformFilter, thinOnly]);
 
   const isRanked = sort !== "recent";
+  const noFilters = !platformFilter && !thinOnly;
 
   return (
-    <div className="ws-page-in px-6 py-[22px]">
-      <WsPageHeader
-        eyebrow="04 / CREATORS"
-        title="Who you're watching."
-        sub={`${allCreators.length} tracked · ${handleCount} handles · ${thinCount} with thin history`}
-        action={
-          <>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search creators…"
-              className="rounded-[8px] text-[12.5px] outline-none"
-              style={{
-                width: 220,
-                padding: "9px 12px",
-                background: "var(--ws-surface)",
-                border: "1px solid var(--ws-hairline)",
-                color: "var(--ws-ink)",
-              }}
-            />
-            <SortDropdown current={sort} onChange={setSort} />
-            <AddCreatorButton className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
-              + Add creator
-            </AddCreatorButton>
-          </>
-        }
+    <AppMain>
+      <PageHeader
+        eyebrow="04 / Creators"
+        line1="Who you’re"
+        line2="watching."
+        sub={`${allCreators.length} creator${allCreators.length === 1 ? "" : "s"} · ${handleCount} handle${handleCount === 1 ? "" : "s"} · ${thinCount} with thin history.`}
+        actions={<AddCreatorButton variant="primary" />}
       />
 
-      {allCreators.length > 0 && (platformsPresent.length > 1 || thinCount > 0) && (
-        <div className="mt-[12px] flex flex-wrap items-center gap-[8px]">
+      {allCreators.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <label
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              height: 40,
+              width: 280,
+              maxWidth: "100%",
+              padding: "0 14px",
+              borderRadius: 999,
+              border: "1px solid var(--ws-hairline-strong)",
+              background: "var(--ws-surface)",
+              color: "var(--ws-ink-45)",
+            }}
+          >
+            <Icon name="searchGlass" />
+            <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>Search creators</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search creators"
+              style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", color: "var(--ws-ink)", font: "inherit", fontSize: 14, outline: "none" }}
+            />
+          </label>
+          <FilterMenu label="Sort" value={sort} options={SORT_OPTIONS} onChange={setSort} />
+          <button
+            type="button"
+            aria-pressed={noFilters}
+            className={cx(s.mono, s.chip, s.chipButton, noFilters ? s.chipPaper : s.chipOutline)}
+            onClick={() => {
+              setPlatformFilter(null);
+              setThinOnly(false);
+            }}
+          >
+            All · {allCreators.length}
+          </button>
           {platformsPresent.length > 1 &&
             platformsPresent.map((p) => (
               <button
                 key={p}
                 type="button"
+                aria-pressed={platformFilter === p}
+                className={cx(s.mono, s.chip, s.chipButton, platformFilter === p ? s.chipPaper : s.chipOutline)}
                 onClick={() => setPlatformFilter((prev) => (prev === p ? null : p))}
-                className="rounded-[20px] text-[12px] font-medium"
-                style={
-                  platformFilter === p
-                    ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                    : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
-                }
               >
                 {PLATFORM_LABEL[p]}
               </button>
@@ -168,135 +148,113 @@ export function CreatorsTable({ creators: allCreators }: { creators: Creator[] }
           {thinCount > 0 && (
             <button
               type="button"
+              aria-pressed={thinOnly}
+              className={cx(s.mono, s.chip, s.chipButton, thinOnly ? s.chipPaper : s.chipOutline)}
               onClick={() => setThinOnly((v) => !v)}
-              className="rounded-[20px] text-[12px] font-medium"
-              style={
-                thinOnly
-                  ? { padding: "6px 12px", background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                  : { padding: "6px 12px", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }
-              }
             >
-              Thin history ({thinCount})
+              Thin history · {thinCount}
             </button>
           )}
         </div>
       )}
 
       {allCreators.length === 0 ? (
-        <div className="ws-card mt-[18px]">
-          <EmptyState
-            size="large"
-            title="You're not tracking anyone yet"
-            description="Add a creator by handle and Outlier starts scoring their posts against their own median."
-          />
-        </div>
+        <EmptyState
+          size="large"
+          emoji="🔭"
+          title="You’re not tracking anyone yet"
+          description="Add a creator by handle and Outlier starts scoring their posts against their own median."
+          action={<AddCreatorButton variant="primary" />}
+        />
       ) : creators.length === 0 ? (
-        <div className="ws-card mt-[18px]">
-          <EmptyState size="large" title="No creators match these filters" />
-        </div>
+        <EmptyState size="large" emoji="🔍" title="No creators match these filters" />
       ) : (
-        <div className="mt-[18px] overflow-x-auto">
-          <div className="ws-stack" style={{ width: "max-content", minWidth: "100%" }}>
-            <div
-              className="grid items-center"
-              style={{
-                gridTemplateColumns: COLUMNS,
-                gap: 14,
-                padding: "11px 16px",
-                background: "var(--ws-surface-header)",
-              }}
-            >
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>CREATOR</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>MEDIAN</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>BEST 30D</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>ABOVE 2×</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>CADENCE</span>
-              <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>TREND</span>
-              <span></span>
-              <span></span>
-            </div>
-
-            {creators.map((creator, i) => {
-              const isThin = creator.handles.some((h) => h.thin);
-              return (
-                <div
-                  key={creator.id}
-                  className="ws-row-hover grid items-center"
-                  style={{ gridTemplateColumns: COLUMNS, gap: 14, padding: "13px 16px" }}
-                >
-                  <div className="flex min-w-0 items-center gap-[10px]">
-                    {isRanked && (
-                      <span
-                        className="ws-tabular shrink-0 text-[11.5px] font-semibold"
-                        style={{ width: 16, color: i < 3 ? "var(--ws-accent-text)" : "var(--ws-ink-45)" }}
-                      >
-                        {i + 1}
-                      </span>
-                    )}
-                    <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={30} />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-[7px]">
-                        <span className="truncate text-[13px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {creator.displayName}
-                        </span>
-                        {isThin && <ThinHistoryPill />}
-                      </div>
-                      <p className="truncate text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        {creator.handles.map((h) => `${h.platform} ${h.handle}`).join(" · ")}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="ws-tabular text-[14px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {formatCompact(creator.median)}
-                  </span>
-
-                  <span className="ws-tabular text-[15px] font-semibold" style={{ color: "var(--ws-accent-text)" }}>
-                    {creator.bestScore.toFixed(1)}×
-                  </span>
-
-                  <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                    {creator.hitsAbove2x}
-                  </span>
-
-                  <span className="text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
-                    {creator.cadence}
-                  </span>
-
-                  <div className="flex items-center gap-[8px]">
-                    <Sparkline values={creator.spark} trend={creator.medianTrend} />
-                    <span
-                      className="ws-tabular text-[11.5px] font-medium"
-                      style={{
-                        color:
-                          creator.medianTrend === null
-                            ? "var(--ws-ink-45)"
-                            : creator.medianTrend >= 0
-                              ? "var(--ws-accent-text)"
-                              : "var(--ws-warn-text)",
-                      }}
-                    >
-                      {creator.medianTrend === null
-                        ? "—"
-                        : `${creator.medianTrend >= 0 ? "+" : ""}${creator.medianTrend}%`}
+        <div style={{ background: "var(--ws-surface)", border: "1px solid var(--ws-hairline)", borderRadius: 20, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "var(--ws-ink)", minWidth: 860 }}>
+            <thead>
+              <tr>
+                {[
+                  ["Creator", "left"],
+                  ["Platforms", "left"],
+                  ["Median views", "right"],
+                  ["Best 30D", "right"],
+                  ["Above 2×", "right"],
+                  ["Cadence", "right"],
+                  ["Trend", "left"],
+                  ["", "right"],
+                ].map(([label, align], i) => (
+                  <th key={i} scope="col" style={{ ...th, textAlign: align as "left" | "right" }}>
+                    <span className={s.mono} style={{ fontSize: 10, color: "var(--ws-ink-45)" }}>
+                      {label}
                     </span>
-                  </div>
-
-                  <Link
-                    href={`/outlier/creators/${creator.id}`}
-                    className="ws-btn-ghost justify-self-start rounded-[7px] text-[11.5px] font-medium"
-                    style={{ padding: "7px 10px" }}
-                  >
-                    Open
-                  </Link>
-
-                  <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0].handle} />
-                </div>
-              );
-            })}
-          </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {creators.map((creator, i) => {
+                const isThin = creator.handles.some((h) => h.thin);
+                const trend = creator.medianTrend;
+                return (
+                  <tr key={creator.id} style={{ borderTop: "1px solid var(--ws-hairline)" }}>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        {isRanked && (
+                          <span className={s.tabular} style={{ width: 16, fontSize: 12, fontWeight: 700, color: i < 3 ? "var(--ws-accent)" : "var(--ws-ink-45)" }}>
+                            {i + 1}
+                          </span>
+                        )}
+                        <Avatar initials={creator.initials} src={creator.avatarUrl} size={36} />
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+                          <span style={{ fontSize: 15, fontWeight: 700 }}>{creator.displayName}</span>
+                          {isThin ? <Chip variant="fail" className="">Thin history</Chip> : <span style={{ fontSize: 12, color: "var(--ws-ink-45)" }}>{creator.handles.map((h) => `@${h.handle}`).join(" · ")}</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {creator.handles.map((h) => (
+                          <Chip key={h.id} variant="soft">
+                            {h.platform}
+                          </Chip>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "right", fontSize: 15 }} className={s.tabular}>
+                      {formatCompact(creator.median)}
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                      <span className={s.disp} style={{ fontSize: 18, color: "var(--ws-accent)" }}>
+                        {creator.bestScore.toFixed(1)}×
+                      </span>
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "right", fontSize: 15 }} className={s.tabular}>
+                      {creator.hitsAbove2x}
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "right", fontSize: 14, color: "var(--ws-ink-60)" }}>{creator.cadence}</td>
+                    <td style={{ padding: "14px 16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Spark values={creator.spark} trend={trend} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: trend === null || trend < 0 ? "var(--ws-ink-45)" : "var(--ws-ink)" }}>
+                          {trend === null ? "—" : `${trend >= 0 ? "+" : "−"}${Math.abs(trend)}%`}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: "14px 16px", textAlign: "right" }}>
+                      <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                        <Button variant="ghost" size="sm" href={`/outlier/creators/${creator.id}`}>
+                          Open
+                        </Button>
+                        <CreatorRowMenu creatorId={creator.id} handle={creator.handles[0].handle} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-    </div>
+    </AppMain>
   );
 }

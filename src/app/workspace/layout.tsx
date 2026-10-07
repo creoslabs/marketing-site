@@ -31,16 +31,7 @@ export default async function WorkspaceLayout({
   const initials = deriveInitials(name);
 
   return (
-    <div className="ws" data-theme="dark" suppressHydrationWarning>
-      {/* Applies a saved theme choice before paint so there's no flash. This
-          div is server-rendered and never re-diffed by React, so mutating
-          the attribute imperatively here is safe. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html:
-            "try{var t=localStorage.getItem('ws-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
-        }}
-      />
+    <div className="ws">
       <WsUIProvider>
         <WorkspaceChrome name={name} email={email} initials={initials} />
         {children}

@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ws-toast";
 import { usePaletteActions } from "@/components/ws-command-palette";
+import { Button, appStyles as s } from "@/components/app/ui";
+import { Modal } from "@/components/app/modal";
 
 export function FavouriteButton({ postId, initialFavourited }: { postId: string; initialFavourited: boolean }) {
   const router = useRouter();
@@ -59,31 +61,9 @@ export function FavouriteButton({ postId, initialFavourited }: { postId: string;
   usePaletteActions(paletteActions);
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={pending}
-      className="flex-1 rounded-[8px] text-[12.5px] font-medium"
-      style={
-        saved
-          ? {
-              padding: "9px 10px",
-              background: "var(--ws-accent-tint)",
-              border: "1px solid var(--ws-accent-tint-border)",
-              color: "var(--ws-accent-tint-ink)",
-              opacity: pending ? 0.7 : 1,
-            }
-          : {
-              padding: "9px 10px",
-              background: "transparent",
-              border: "1px solid var(--ws-hairline)",
-              color: "var(--ws-ink-60)",
-              opacity: pending ? 0.7 : 1,
-            }
-      }
-    >
+    <Button variant={saved ? "paper" : "ghost"} onClick={handleClick} disabled={pending} style={{ flex: 1 }}>
       {saved ? "★ Saved" : "☆ Favourite"}
-    </button>
+    </Button>
   );
 }
 
@@ -91,26 +71,15 @@ export function OpenOnPlatformButton({ label, url }: { label: string; url: strin
   const toast = useToast();
   if (!url) {
     return (
-      <button
-        type="button"
-        onClick={() => toast("No link for this post yet.")}
-        className="flex-1 rounded-[8px] text-[12.5px] font-medium"
-        style={{ padding: "9px 10px", background: "transparent", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
-      >
+      <Button variant="ghost" onClick={() => toast("No link for this post yet.")} style={{ flex: 1 }}>
         {label} ↗
-      </button>
+      </Button>
     );
   }
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex flex-1 items-center justify-center rounded-[8px] text-[12.5px] font-medium"
-      style={{ padding: "9px 10px", background: "transparent", border: "1px solid var(--ws-hairline)", color: "var(--ws-ink-60)" }}
-    >
+    <Button variant="ghost" href={url} external style={{ flex: 1 }}>
       {label} ↗
-    </a>
+    </Button>
   );
 }
 
@@ -150,67 +119,34 @@ export function RepurposeButton({ postId, ready }: { postId: string; ready: bool
 
   return (
     <>
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-        style={{ padding: "10px 14px", opacity: ready ? 1 : 0.6 }}
-      >
-        Repurpose →
-      </button>
+      <Button variant="primary" onClick={handleOpen} style={{ opacity: ready ? 1 : 0.6 }}>
+        Repurpose into a script
+      </Button>
       {open && (
-        <div
-          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
-          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => !generating && setOpen(false)}
-        >
-          <div className="ws-card ws-modal-in" style={{ width: 400, padding: "20px" }} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Repurpose this post
-            </p>
-            <p className="mt-[6px] text-[12px] leading-[1.5]" style={{ color: "var(--ws-ink-45)" }}>
-              We&rsquo;ll write an original script for your own content, modeled on this post&rsquo;s hook and beat structure —
-              not a copy of its words.
-            </p>
-            <form onSubmit={handleSubmit} className="mt-[14px] flex flex-col gap-[10px]">
-              <textarea
-                autoFocus
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
-                rows={3}
-                className="text-[12.5px] outline-none"
-                style={{
-                  padding: "9px 12px",
-                  borderRadius: 7,
-                  border: "1px solid var(--ws-hairline-strong)",
-                  background: "var(--ws-surface)",
-                  color: "var(--ws-ink)",
-                  resize: "none",
-                }}
-              />
-              <div className="mt-[4px] flex justify-end gap-[8px]">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  disabled={generating}
-                  className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-                  style={{ padding: "9px 14px" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={generating || !topic.trim()}
-                  className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold"
-                  style={{ padding: "9px 14px", opacity: generating ? 0.6 : 1 }}
-                >
-                  {generating ? "Writing…" : "Generate script"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title="Repurpose this post" width={440} busy={generating} onClose={() => setOpen(false)}>
+          <p className={s.hint} style={{ fontSize: 14, color: "var(--ws-ink-60)" }}>
+            We’ll write an original script for your own content, modeled on this post’s hook and beat structure — not a copy of its words.
+          </p>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <textarea
+              autoFocus
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="What's your content about? e.g. 'budgeting tips for freelancers'"
+              rows={3}
+              className={s.input}
+              aria-label="Topic"
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <Button variant="ghost" onClick={() => setOpen(false)} disabled={generating}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={generating || !topic.trim()}>
+                {generating ? "Writing…" : "Generate script"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </>
   );
@@ -239,14 +175,8 @@ export function AnalyzePostButton({ postId, status }: { postId: string; status: 
 
   const busy = pending || status === "analyzing";
   return (
-    <button
-      type="button"
-      onClick={handleAnalyze}
-      disabled={busy}
-      className="ws-btn-primary w-full rounded-[8px] text-[12.5px] font-semibold"
-      style={{ padding: "10px 14px", opacity: busy ? 0.6 : 1 }}
-    >
+    <Button variant="primary" onClick={handleAnalyze} disabled={busy}>
       {busy ? "Transcribing & analyzing…" : status === "failed" ? "Retry analysis" : "Transcribe & analyze"}
-    </button>
+    </Button>
   );
 }

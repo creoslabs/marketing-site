@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ws-toast";
+import { Button } from "@/components/app/ui";
 
 export function SignOutOthersButton() {
   const toast = useToast();
@@ -24,14 +25,8 @@ export function SignOutOthersButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={pending}
-      className="ws-link-accent text-[11.5px] font-medium"
-      style={{ opacity: pending ? 0.6 : 1 }}
-    >
+    <Button variant="link" onClick={handleClick} disabled={pending}>
       {pending ? "Signing out…" : "Sign out others"}
-    </button>
+    </Button>
   );
 }

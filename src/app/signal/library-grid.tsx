@@ -2,9 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { Asset, Platform } from "./data";
-import { ScoreBadge, IssuePill, Thumb } from "./components";
+import type { Asset, Format, Platform } from "./data";
 import { DeleteAssetButton } from "./delete-asset-button";
+import { Button, Card, CardHead, Mono, appStyles as s, cx } from "@/components/app/ui";
+import { Icon } from "@/components/app/icons";
+import { FilterMenu } from "@/components/app/filter-menu";
+import { Switch } from "@/components/app/controls";
+import { MediaTile } from "@/components/app/media";
+import { EmptyState } from "@/components/ws-empty-state";
 
 type Row = { asset: Asset; percentile: number | null };
 type SortValue = "recent" | "score-desc" | "score-asc" | "issues";
@@ -18,51 +23,16 @@ const SORT_OPTIONS: { value: SortValue; label: string }[] = [
 
 const ALL_PLATFORMS: Platform[] = ["TikTok", "Meta"];
 
-function useOutsideClose(onClose: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [onClose]);
-  return ref;
+function percentileLabel(percentile: number | null, format: Format) {
+  if (percentile === null) return `first ${format}`;
+  if (percentile < 1) return `Bottom of ${format}s`;
+  const j = percentile % 10;
+  const k = percentile % 100;
+  const suffix = j === 1 && k !== 11 ? "st" : j === 2 && k !== 12 ? "nd" : j === 3 && k !== 13 ? "rd" : "th";
+  return `${percentile}${suffix} pct of ${format}s`;
 }
 
-function SortDropdown({ current, onChange }: { current: SortValue; onChange: (value: SortValue) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useOutsideClose(() => setOpen(false));
-  const label = SORT_OPTIONS.find((o) => o.value === current)?.label ?? "Most recent";
-
-  return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium" style={{ padding: "9px 12px" }}>
-        {label} ▾
-      </button>
-      {open && (
-        <div className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+6px)] z-20 w-[170px] p-[6px]">
-          {SORT_OPTIONS.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => {
-                onChange(o.value);
-                setOpen(false);
-              }}
-              className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
-              style={{ color: o.value === current ? "var(--ws-accent-text)" : "var(--ws-ink)" }}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FiltersDropdown({
+function FiltersMenu({
   platformFilter,
   onPlatformChange,
   failingOnly,
@@ -74,135 +44,86 @@ function FiltersDropdown({
   onFailingOnlyChange: (value: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useOutsideClose(() => setOpen(false));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
   const activeCount = (platformFilter !== "all" ? 1 : 0) + (failingOnly ? 1 : 0);
 
   return (
-    <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium" style={{ padding: "9px 12px" }}>
-        Filters{activeCount > 0 ? ` · ${activeCount}` : ""}
+    <div ref={ref} style={{ position: "relative" }}>
+      <button type="button" className={cx(s.btn, s.btnSm, s.btnGhost)} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span>Filters{activeCount > 0 ? ` · ${activeCount}` : ""}</span>
+        <Icon name="chevronDown" />
       </button>
       {open && (
-        <div className="ws-card ws-dropdown-in absolute right-0 top-[calc(100%+6px)] z-20 w-[190px] p-[6px]">
-          <p className="ws-eyebrow px-[10px] pb-[6px] pt-[4px]">Platform</p>
+        <div className={s.menu} style={{ minWidth: 230 }}>
+          <Mono className={s.menuLabel}>Platform</Mono>
           {(["all", ...ALL_PLATFORMS] as const).map((p) => (
             <button
               key={p}
               type="button"
+              className={s.menuItem}
+              style={platformFilter === p ? { color: "var(--ws-accent)" } : undefined}
               onClick={() => onPlatformChange(p)}
-              className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
-              style={{ color: platformFilter === p ? "var(--ws-accent-text)" : "var(--ws-ink)" }}
             >
               {p === "all" ? "All platforms" : p}
+              {platformFilter === p && <Icon name="check" size={14} />}
             </button>
           ))}
-          <div className="my-[4px] h-px" style={{ background: "var(--ws-hairline)" }} />
-          <button
-            type="button"
-            onClick={() => onFailingOnlyChange(!failingOnly)}
-            className="ws-row-hover w-full rounded-[6px] px-[10px] py-[8px] text-left text-[12.5px] font-medium"
-            style={{ color: failingOnly ? "var(--ws-accent-text)" : "var(--ws-ink)" }}
-          >
-            {failingOnly ? "✓ " : ""}Failing checks only
-          </button>
+          <div className={s.menuRule} />
+          <div className={s.menuItem} style={{ cursor: "default" }}>
+            <span>Failing checks only</span>
+            <Switch checked={failingOnly} onChange={onFailingOnlyChange} label="Failing checks only" />
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function ordinalSuffix(n: number) {
-  const j = n % 10;
-  const k = n % 100;
-  if (j === 1 && k !== 11) return "st";
-  if (j === 2 && k !== 12) return "nd";
-  if (j === 3 && k !== 13) return "rd";
-  return "th";
-}
-
-function AssetCard({ asset, percentile }: { asset: Asset; percentile: number | null }) {
-  const card = (
-    <>
-      <div className="group">
-        <Thumb
-          aspectRatio={asset.format === "video" ? "9/16" : "4/5"}
-          radius={10}
-          style={{ border: "1px solid var(--ws-hairline)", transition: "border-color 0.15s ease" }}
-          className="group-hover:[border-color:var(--ws-hairline-strong)]"
-        >
-          {asset.assetUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- a signed Supabase Storage URL, not a static asset next/image can optimize
-            <img
-              src={asset.assetUrl}
-              alt={asset.filename}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
-            />
-          )}
-          {asset.assetUrl && (
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 h-[64px]"
-              style={{ background: "linear-gradient(to bottom, rgba(0,0,0,.45), transparent)" }}
-            />
-          )}
-          <div className="absolute left-[10px] top-[10px]" style={{ zIndex: 2 }}>
-            <ScoreBadge score={asset.score} format={asset.format} />
-          </div>
-          {asset.issuePill && (
-            <div className="absolute bottom-[10px] left-[10px]" style={{ zIndex: 2 }}>
-              <IssuePill>{asset.issuePill}</IssuePill>
-            </div>
-          )}
-        </Thumb>
-      </div>
-      <div className="mt-[10px]">
-        <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-          {asset.filename}
-        </p>
-        <p className="mt-[3px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-          {asset.postedAt} ·{" "}
-          {percentile === null ? `first ${asset.format}` : `${percentile}${ordinalSuffix(percentile)} of ${asset.format}s`}
-        </p>
-      </div>
-    </>
-  );
-
+function AssetCard({ row, winner }: { row: Row; winner: boolean }) {
+  const { asset, percentile } = row;
   return (
-    <div className="group relative">
-      <Link href={`/signal/report/${asset.id}`} className="block">
-        {card}
+    <div className={s.assetCard}>
+      <Link href={`/signal/report/${asset.id}`} className={s.post} style={{ color: "inherit" }}>
+        <MediaTile
+          src={asset.assetUrl}
+          platform={asset.format === "video" ? "9:16 · Video" : "Static"}
+          label={asset.platforms[0]}
+          score={String(Math.round(asset.score))}
+          scoreAccent={winner}
+          height={290}
+          emoji={asset.format === "video" ? "🎬" : "🖼️"}
+          ring={winner}
+        />
+        <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset.filename}</span>
+        <span style={{ fontSize: 12, color: "var(--ws-ink-45)" }}>
+          {asset.postedAt} · {percentileLabel(percentile, asset.format)}
+        </span>
+        {asset.failedChecks > 0 && <span style={{ fontSize: 12, color: "var(--ws-warn)" }}>❌ {asset.failedChecks} failing check{asset.failedChecks === 1 ? "" : "s"}</span>}
       </Link>
       <DeleteAssetButton assetId={asset.id} filename={asset.filename} />
     </div>
   );
 }
 
-function AssetSection({ title, rows, median }: { title: string; rows: Row[]; median: number }) {
-  if (rows.length === 0) return null;
-  return (
-    <div className="mt-[24px] first:mt-[18px]">
-      <div className="flex items-baseline gap-[10px]">
-        <p className="ws-eyebrow">{title}</p>
-        <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-          {rows.length} · median {median}
-        </span>
-      </div>
-      <div className="mt-[12px] grid items-start gap-[14px]" style={{ gridTemplateColumns: "repeat(auto-fill, 110px)" }}>
-        {rows.map(({ asset, percentile }) => (
-          <AssetCard key={asset.id} asset={asset} percentile={percentile} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function LibraryGrid({ rows, medians }: { rows: Row[]; medians: { video: number; static: number } }) {
-  const total = rows.length;
   const [sort, setSort] = useState<SortValue>("recent");
   const [platformFilter, setPlatformFilter] = useState<Platform | "all">("all");
   const [failingOnly, setFailingOnly] = useState(false);
 
-  const sortedFiltered = useMemo(() => {
-    let filtered = rows;
+  const videoCount = rows.filter((r) => r.asset.format === "video").length;
+  const staticCount = rows.filter((r) => r.asset.format === "static").length;
+  const [format, setFormat] = useState<Format>(videoCount > 0 || staticCount === 0 ? "video" : "static");
+
+  const visible = useMemo(() => {
+    let filtered = rows.filter((r) => r.asset.format === format);
     if (platformFilter !== "all") filtered = filtered.filter((r) => r.asset.platforms.includes(platformFilter));
     if (failingOnly) filtered = filtered.filter((r) => r.asset.failedChecks > 0);
 
@@ -222,46 +143,42 @@ export function LibraryGrid({ rows, medians }: { rows: Row[]; medians: { video: 
         sorted.sort((a, b) => new Date(b.asset.createdAtIso).getTime() - new Date(a.asset.createdAtIso).getTime());
     }
     return sorted;
-  }, [rows, sort, platformFilter, failingOnly]);
+  }, [rows, format, sort, platformFilter, failingOnly]);
 
-  const videoRows = sortedFiltered.filter((r) => r.asset.format === "video");
-  const staticRows = sortedFiltered.filter((r) => r.asset.format === "static");
+  const topScore = Math.max(...rows.filter((r) => r.asset.format === format).map((r) => r.asset.score), 0);
 
   return (
-    <>
-      <div className="flex flex-wrap items-end justify-between gap-[16px]">
-        <div>
-          <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-            Library
-          </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {total} assets · statics median {medians.static} · videos median {medians.video}
-          </p>
-        </div>
-        <div className="flex items-center gap-[9px]">
-          <SortDropdown current={sort} onChange={setSort} />
-          <FiltersDropdown
-            platformFilter={platformFilter}
-            onPlatformChange={setPlatformFilter}
-            failingOnly={failingOnly}
-            onFailingOnlyChange={setFailingOnly}
-          />
-          <Link href="/signal/analyze" className="ws-btn-primary rounded-[7px] text-[12.5px] font-semibold" style={{ padding: "9px 12px" }}>
-            + Analyze
-          </Link>
-        </div>
+    <Card>
+      <CardHead
+        label={`Library · ${format === "video" ? "videos" : "statics"}`}
+        right={
+          <Mono className={s.cardLabel} style={{ fontSize: 10 }}>
+            Median {format === "video" ? medians.video : medians.static}
+          </Mono>
+        }
+      />
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+        <button type="button" aria-pressed={format === "video"} className={cx(s.mono, s.chip, s.chipButton, format === "video" ? s.chipPaper : s.chipOutline)} onClick={() => setFormat("video")}>
+          Video · {videoCount}
+        </button>
+        <button type="button" aria-pressed={format === "static"} className={cx(s.mono, s.chip, s.chipButton, format === "static" ? s.chipPaper : s.chipOutline)} onClick={() => setFormat("static")}>
+          Static · {staticCount}
+        </button>
+        <span style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <FilterMenu label="Sort" value={sort} options={SORT_OPTIONS} onChange={setSort} align="right" />
+          <FiltersMenu platformFilter={platformFilter} onPlatformChange={setPlatformFilter} failingOnly={failingOnly} onFailingOnlyChange={setFailingOnly} />
+        </span>
       </div>
 
-      {sortedFiltered.length === 0 ? (
-        <p className="mt-[24px] text-[13px]" style={{ color: "var(--ws-ink-45)" }}>
-          Nothing matches these filters.
-        </p>
+      {visible.length === 0 ? (
+        <EmptyState emoji="🔍" title={format === "video" ? (videoCount === 0 ? "No videos analysed yet" : "Nothing matches these filters") : staticCount === 0 ? "No statics analysed yet" : "Nothing matches these filters"} description="Scores are only comparable within a format." action={<Button variant="primary" icon="upload" href="/signal/analyze">Analyse</Button>} />
       ) : (
-        <>
-          <AssetSection title="VIDEOS" rows={videoRows} median={medians.video} />
-          <AssetSection title="STATICS" rows={staticRows} median={medians.static} />
-        </>
+        <div className={s.assetGrid}>
+          {visible.map((row) => (
+            <AssetCard key={row.asset.id} row={row} winner={sort !== "score-asc" && row.asset.score === topScore && topScore > 0} />
+          ))}
+        </div>
       )}
-    </>
+    </Card>
   );
 }

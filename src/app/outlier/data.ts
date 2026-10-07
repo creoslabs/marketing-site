@@ -79,6 +79,7 @@ export type CreatorPatterns = {
 
 export type Job = {
   id: string;
+  handleId: string;
   creatorId: string;
   handle: string;
   platform: Platform;
@@ -89,6 +90,9 @@ export type Job = {
   state: "running" | "queued" | "failed" | "done";
   error?: string;
   waitReason?: string;
+  // When this job was created — lets "paused" detection tell a failure that
+  // is still current from one a later successful pull has already superseded.
+  atIso?: string;
 };
 
 export type Collection = { id: string; name: string; postIds: string[] };

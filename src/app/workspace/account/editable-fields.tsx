@@ -3,58 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-function RowLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="w-[120px] shrink-0 text-[12.5px]" style={{ color: "var(--ws-ink-60)" }}>
-      {children}
-    </span>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
-  padding: "8px 10px",
-  borderRadius: 7,
-  border: "1px solid var(--ws-hairline-strong)",
-  background: "var(--ws-surface)",
-  color: "var(--ws-ink)",
-  fontSize: 12.5,
-  outline: "none",
-};
-
-function SaveButton({ saving, children = "Save" }: { saving: boolean; children?: React.ReactNode }) {
-  return (
-    <button
-      type="submit"
-      disabled={saving}
-      className="ws-btn-primary shrink-0 rounded-[7px] text-[11.5px] font-semibold"
-      style={{ padding: "7px 10px", opacity: saving ? 0.6 : 1 }}
-    >
-      {saving ? "Saving…" : children}
-    </button>
-  );
-}
-
-function CancelButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
-      style={{ padding: "7px 10px" }}
-    >
-      Cancel
-    </button>
-  );
-}
-
-function ErrorText({ children }: { children: string }) {
-  return (
-    <p className="mt-[8px] pl-[130px] text-[11.5px]" style={{ color: "var(--ws-warn-text)" }}>
-      {children}
-    </p>
-  );
-}
+import { Button, Chip, appStyles as s } from "@/components/app/ui";
 
 const CONFIG_ERROR = "Supabase isn't configured yet — add your project URL and anon key to .env.local.";
 
@@ -67,6 +16,23 @@ function tryCreateClient(): { client: ReturnType<typeof createClient> } | { erro
   } catch {
     return { error: CONFIG_ERROR };
   }
+}
+
+function Key({ children }: { children: React.ReactNode }) {
+  return <span className={s.setKey}>{children}</span>;
+}
+
+function Actions({ saving, onCancel }: { saving: boolean; onCancel: () => void }) {
+  return (
+    <>
+      <Button type="submit" variant="primary" size="sm" disabled={saving}>
+        {saving ? "Saving…" : "Save"}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onCancel}>
+        Cancel
+      </Button>
+    </>
+  );
 }
 
 export function EditableNameRow({ initialValue }: { initialValue: string }) {
@@ -103,45 +69,30 @@ export function EditableNameRow({ initialValue }: { initialValue: string }) {
     router.refresh();
   }
 
-  if (editing) {
-    return (
-      <div style={{ padding: "16px 22px" }}>
-        <form onSubmit={handleSave} className="flex items-center gap-[10px]">
-          <RowLabel>Name</RowLabel>
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            style={{ ...inputStyle, flex: 1, maxWidth: 280 }}
-          />
-          <SaveButton saving={saving} />
-          <CancelButton
-            onClick={() => {
+  return (
+    <div className={s.setRow}>
+      <Key>Name</Key>
+      {editing ? (
+        <form onSubmit={handleSave} className={s.setForm}>
+          <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className={s.input} style={{ flex: 1, maxWidth: 300 }} aria-label="Name" />
+          <Actions
+            saving={saving}
+            onCancel={() => {
               setDraft(value);
               setError("");
               setEditing(false);
             }}
           />
         </form>
-        {error && <ErrorText>{error}</ErrorText>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center" style={{ padding: "16px 22px" }}>
-      <RowLabel>Name</RowLabel>
-      <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-        {value}
-      </span>
-      <div className="flex-1" />
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="ws-link-accent text-[11.5px] font-medium"
-      >
-        Edit
-      </button>
+      ) : (
+        <>
+          <span className={s.setVal}>{value}</span>
+          <Button variant="link" onClick={() => setEditing(true)}>
+            Edit
+          </Button>
+        </>
+      )}
+      {error && <p className={s.setError}>{error}</p>}
     </div>
   );
 }
@@ -185,53 +136,44 @@ export function EditableEmailRow({ initialValue }: { initialValue: string }) {
   }
 
   return (
-    <div style={{ padding: "16px 22px" }}>
+    <div className={s.setRow}>
+      <Key>Email</Key>
       {editing ? (
-        <>
-          <form onSubmit={handleSave} className="flex items-center gap-[10px]">
-            <RowLabel>Email</RowLabel>
-            <input
-              autoFocus
-              type="email"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              style={{ ...inputStyle, flex: 1, maxWidth: 280 }}
-            />
-            <SaveButton saving={saving} />
-            <CancelButton
-              onClick={() => {
-                setDraft(initialValue);
-                setError("");
-                setEditing(false);
-              }}
-            />
-          </form>
-          {error && <ErrorText>{error}</ErrorText>}
-        </>
+        <form onSubmit={handleSave} className={s.setForm}>
+          <input
+            autoFocus
+            type="email"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className={s.input}
+            style={{ flex: 1, maxWidth: 300 }}
+            aria-label="Email"
+          />
+          <Actions
+            saving={saving}
+            onCancel={() => {
+              setDraft(initialValue);
+              setError("");
+              setEditing(false);
+            }}
+          />
+        </form>
       ) : (
-        <div className="flex items-center">
-          <RowLabel>Email</RowLabel>
-          <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-            {initialValue || "—"}
-          </span>
-          <div className="flex-1" />
-          <button
-            type="button"
+        <>
+          <span className={s.setVal}>{initialValue || "—"}</span>
+          <Button
+            variant="link"
             onClick={() => {
               setDraft(initialValue);
               setEditing(true);
             }}
-            className="ws-link-accent text-[11.5px] font-medium"
           >
             Edit
-          </button>
-        </div>
+          </Button>
+        </>
       )}
-      {pendingEmail && (
-        <p className="mt-[8px] pl-[130px] text-[11.5px]" style={{ color: "var(--ws-accent-text)" }}>
-          Confirmation sent to {pendingEmail} — your sign-in email won&apos;t change until you confirm it.
-        </p>
-      )}
+      {error && <p className={s.setError}>{error}</p>}
+      {pendingEmail && <p className={s.setOk}>Confirmation sent to {pendingEmail} — your sign-in email won&apos;t change until you confirm it.</p>}
     </div>
   );
 }
@@ -241,11 +183,14 @@ export function EditableApiKeyRow({
   metaKey,
   initialIsSet,
   placeholder = "sk-…",
+  problem,
 }: {
   label: string;
   metaKey: string;
   initialIsSet: boolean;
   placeholder?: string;
+  // A known problem with this key (e.g. "Limit reached") shown as a fail chip.
+  problem?: string;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -287,11 +232,11 @@ export function EditableApiKeyRow({
     await save(trimmed);
   }
 
-  if (editing) {
-    return (
-      <div style={{ padding: "16px 22px" }}>
-        <form onSubmit={handleSave} className="flex items-center gap-[10px]">
-          <RowLabel>{label}</RowLabel>
+  return (
+    <div className={s.setRow}>
+      <Key>{label}</Key>
+      {editing ? (
+        <form onSubmit={handleSave} className={s.setForm}>
           <input
             autoFocus
             type="password"
@@ -300,47 +245,42 @@ export function EditableApiKeyRow({
             placeholder={placeholder}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            style={{ ...inputStyle, flex: 1, maxWidth: 320 }}
+            className={s.input}
+            style={{ flex: 1, maxWidth: 340 }}
+            aria-label={label}
           />
-          <SaveButton saving={saving} />
-          <CancelButton
-            onClick={() => {
+          <Actions
+            saving={saving}
+            onCancel={() => {
               setDraft("");
               setError("");
               setEditing(false);
             }}
           />
         </form>
-        {error && <ErrorText>{error}</ErrorText>}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center" style={{ padding: "16px 22px" }}>
-      <RowLabel>{label}</RowLabel>
-      <span className="text-[12.5px] font-medium" style={{ color: isSet ? "var(--ws-ink)" : "var(--ws-ink-45)" }}>
-        {isSet ? "••••••••••••" : "Not set"}
-      </span>
-      <div className="flex-1" />
-      {isSet && (
-        <button
-          type="button"
-          onClick={() => save(null)}
-          disabled={saving}
-          className="mr-[14px] text-[11.5px] font-medium"
-          style={{ color: "var(--ws-warn-text)", opacity: saving ? 0.6 : 1 }}
-        >
-          Remove
-        </button>
+      ) : (
+        <>
+          <span className={s.setVal} style={isSet ? undefined : { color: "var(--ws-ink-45)" }}>
+            {isSet ? (
+              <span className={s.mono} style={{ fontSize: 12, letterSpacing: "0.2em" }}>
+                ••••••••••••
+              </span>
+            ) : (
+              "Not set"
+            )}
+          </span>
+          {isSet && <Chip variant={problem ? "fail" : "soft"}>{problem ?? "Set"}</Chip>}
+          <Button variant="link" onClick={() => setEditing(true)}>
+            {isSet ? "Change" : "Set"}
+          </Button>
+          {isSet && (
+            <Button variant="linkDanger" onClick={() => save(null)} disabled={saving}>
+              Remove
+            </Button>
+          )}
+        </>
       )}
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="ws-link-accent text-[11.5px] font-medium"
-      >
-        {isSet ? "Change" : "Set"}
-      </button>
+      {error && <p className={s.setError}>{error}</p>}
     </div>
   );
 }
@@ -385,61 +325,51 @@ export function EditablePasswordRow() {
   }
 
   return (
-    <div style={{ padding: "16px 22px" }}>
+    <div className={s.setRow}>
+      <Key>Password</Key>
       {editing ? (
-        <>
-          <form onSubmit={handleSave} className="flex flex-wrap items-center gap-[10px]">
-            <RowLabel>Password</RowLabel>
-            <input
-              autoFocus
-              type="password"
-              placeholder="New password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ ...inputStyle, width: 160 }}
-            />
-            <input
-              type="password"
-              placeholder="Confirm"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              style={{ ...inputStyle, width: 140 }}
-            />
-            <SaveButton saving={saving} />
-            <CancelButton
-              onClick={() => {
-                setPassword("");
-                setConfirm("");
-                setError("");
-                setEditing(false);
-              }}
-            />
-          </form>
-          {error && <ErrorText>{error}</ErrorText>}
-        </>
+        <form onSubmit={handleSave} className={s.setForm}>
+          <input
+            autoFocus
+            type="password"
+            placeholder="New password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={s.input}
+            style={{ width: 180 }}
+            aria-label="New password"
+          />
+          <input
+            type="password"
+            placeholder="Confirm"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className={s.input}
+            style={{ width: 160 }}
+            aria-label="Confirm new password"
+          />
+          <Actions
+            saving={saving}
+            onCancel={() => {
+              setPassword("");
+              setConfirm("");
+              setError("");
+              setEditing(false);
+            }}
+          />
+        </form>
       ) : (
-        <div className="flex items-center">
-          <RowLabel>Password</RowLabel>
-          <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-            ••••••••
-          </span>
-          <div className="flex-1" />
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="ws-link-accent text-[11.5px] font-medium"
-          >
+        <>
+          <span className={s.setVal}>••••••••••</span>
+          <Button variant="link" onClick={() => setEditing(true)}>
             Change
-          </button>
-        </div>
+          </Button>
+        </>
       )}
-      {success && (
-        <p className="mt-[8px] pl-[130px] text-[11.5px]" style={{ color: "var(--ws-accent-text)" }}>
-          Password updated.
-        </p>
-      )}
+      {error && <p className={s.setError}>{error}</p>}
+      {success && <p className={s.setOk}>Password updated.</p>}
     </div>
   );
 }

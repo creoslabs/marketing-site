@@ -440,6 +440,7 @@ export const getJobs = cache(
         const h = handleById.get(r.handle_id);
         return {
           id: r.id,
+          handleId: r.handle_id,
           creatorId: h?.creator_id ?? "",
           handle: h?.handle ?? "",
           platform: h?.platform ?? "TT",
@@ -449,6 +450,7 @@ export const getJobs = cache(
           eta: "",
           state: r.state,
           error: r.error ?? undefined,
+          atIso: r.created_at,
         };
       });
 

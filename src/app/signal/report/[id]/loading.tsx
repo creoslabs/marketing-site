@@ -1,47 +1,33 @@
-function SkeletonBlock({ style }: { style?: React.CSSProperties }) {
-  return <div className="ws-skeleton rounded-[6px]" style={style} />;
+import { AppMain } from "@/components/app/ui";
+
+function Skeleton({ style }: { style?: React.CSSProperties }) {
+  return <div className="ws-skeleton" style={{ borderRadius: 12, ...style }} />;
 }
 
 export default function ReportLoading() {
   return (
-    <div>
-      <div
-        className="flex items-center gap-[14px] px-6"
-        style={{ minHeight: 56, padding: "12px 22px", borderBottom: "1px solid var(--ws-hairline)" }}
-      >
-        <SkeletonBlock style={{ width: 60, height: 12 }} />
-        <div className="h-[18px] w-px" style={{ background: "var(--ws-hairline)" }} />
-        <SkeletonBlock style={{ width: 160, height: 14 }} />
-        <SkeletonBlock style={{ width: 90, height: 20, borderRadius: 4 }} />
+    <AppMain>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <Skeleton style={{ width: 70, height: 14 }} />
+        <Skeleton style={{ width: 220, height: 28 }} />
+        <Skeleton style={{ width: 130, height: 24, borderRadius: 999 }} />
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px]">
-        <div
-          className="flex flex-col gap-[22px] lg:flex-row"
-          style={{ padding: "22px", borderRight: "1px solid var(--ws-hairline)" }}
-        >
-          <div style={{ width: 250, flexShrink: 0 }}>
-            <SkeletonBlock style={{ width: 250, height: 444, borderRadius: 10 }} />
-            <SkeletonBlock style={{ width: 250, height: 38, marginTop: 10, borderRadius: 7 }} />
-          </div>
-          <div className="flex-1">
-            <SkeletonBlock style={{ width: 200, height: 12 }} />
-            <SkeletonBlock style={{ width: 140, height: 52, marginTop: 12 }} />
-            <SkeletonBlock style={{ width: "100%", height: 8, marginTop: 20, borderRadius: 4 }} />
-            <SkeletonBlock style={{ width: "100%", height: 60, marginTop: 24, borderRadius: 6 }} />
-            <SkeletonBlock style={{ width: "100%", height: 220, marginTop: 20, borderRadius: 8 }} />
-          </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        <div style={{ flex: "0 1 300px", width: 300 }}>
+          <Skeleton style={{ height: 520, borderRadius: 16 }} />
         </div>
-
-        <div style={{ padding: "22px" }}>
-          <SkeletonBlock style={{ width: 150, height: 12 }} />
-          <div className="mt-[14px] flex flex-col gap-[10px]">
-            {Array.from({ length: 5 }, (_, i) => (
-              <SkeletonBlock key={i} style={{ height: 62, borderRadius: 8 }} />
-            ))}
-          </div>
+        <div style={{ flex: "2 1 520px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <Skeleton style={{ height: 180, borderRadius: 22 }} />
+          <Skeleton style={{ height: 34 }} />
+          <Skeleton style={{ height: 320, borderRadius: 20 }} />
+        </div>
+        <div style={{ flex: "1 1 320px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <Skeleton style={{ height: 200, borderRadius: 22 }} />
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} style={{ height: 64, borderRadius: 14 }} />
+          ))}
         </div>
       </div>
-    </div>
+    </AppMain>
   );
 }

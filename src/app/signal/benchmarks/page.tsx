@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { Asset } from "../data";
-import { getLibrary, medianOf, percentileWithin, computeScoreTrend, getFailureThemes, getRecurringPasses, getFailureStreaks } from "../live-data";
-import type { FailureTheme, FailureStreak } from "../data";
-import { ScoreBadge } from "../components";
-import { EmptyState } from "@/components/ws-empty-state";
+import type { Asset, FailureStreak, FailureTheme } from "../data";
+import { getLibrary, medianOf, computeScoreTrend, getFailureThemes, getRecurringPasses, getFailureStreaks } from "../live-data";
+import { AppMain, Button, Card, CardHead, Chip, Mono, PageHeader, appStyles as s } from "@/components/app/ui";
 
 const PLATFORM_SHORT: Record<Asset["platforms"][number], string> = { TikTok: "TT", Meta: "META" };
 
@@ -15,12 +13,14 @@ export const metadata: Metadata = {
 
 function FormatColumn({
   title,
+  format,
   assets,
   median,
   platformMedians,
   trend,
 }: {
   title: string;
+  format: "static" | "video";
   assets: Asset[];
   median: number;
   platformMedians: { platform: Asset["platforms"][number]; median: number }[];
@@ -30,67 +30,51 @@ function FormatColumn({
   const max = Math.max(...sorted.map((a) => a.score), 1);
 
   return (
-    <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-      <div className="flex items-center">
-        <p className="ws-eyebrow">{title}</p>
-        <div className="flex-1" />
-        {trend !== null && (
-          <span
-            className="ws-tabular mr-[10px] text-[11.5px] font-medium"
-            style={{ color: trend >= 0 ? "var(--ws-accent-text)" : "var(--ws-warn-text)" }}
-          >
-            {trend >= 0 ? "+" : ""}
-            {trend}% vs earlier
-          </span>
-        )}
-        <span className="ws-tabular text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-          median {median}
-        </span>
-      </div>
-
+    <Card style={{ flex: "1 1 460px", gap: 14 }}>
+      <CardHead
+        label={title}
+        right={
+          <Mono className={s.cardLabel} style={{ fontSize: 10, color: sorted.length > 0 ? "var(--ws-ink)" : undefined }}>
+            Median {sorted.length > 0 ? median : "—"}
+          </Mono>
+        }
+      />
       {platformMedians.length > 1 && (
-        <p className="mt-[4px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-          {platformMedians.map((p, i) => (
-            <span key={p.platform}>
-              {i > 0 && " · "}
-              {p.platform} median {p.median}
-            </span>
-          ))}
-        </p>
+        <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>{platformMedians.map((p) => `${p.platform} median ${p.median}`).join(" · ")}</span>
       )}
-
+      {trend !== null && (
+        <span style={{ fontSize: 13, fontWeight: 600, color: trend >= 0 ? "var(--ws-ink)" : "var(--ws-warn)" }}>
+          {trend >= 0 ? "+" : "−"}
+          {Math.abs(trend)}% vs earlier
+        </span>
+      )}
       {sorted.length === 0 ? (
-        <EmptyState title="Nothing analyzed in this format yet" />
-      ) : (
-        <div className="mt-[14px] flex flex-col gap-[10px]">
-          {sorted.map((asset) => (
-            <Link key={asset.id} href={`/signal/report/${asset.id}`} className="flex items-center gap-[10px]">
-              <span
-                className="shrink-0 rounded-[4px] text-[9.5px] font-semibold uppercase"
-                style={{ padding: "2px 5px", background: "var(--ws-surface-header)", color: "var(--ws-ink-45)" }}
-              >
-                {PLATFORM_SHORT[asset.platforms[0]]}
-              </span>
-              <span className="w-[110px] shrink-0 truncate text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
-                {asset.filename}
-              </span>
-              <div className="h-[6px] flex-1 overflow-hidden rounded-[3px]" style={{ background: "var(--ws-hairline)" }}>
-                <div
-                  className="h-full rounded-[3px]"
-                  style={{
-                    width: `${(asset.score / max) * 100}%`,
-                    background: asset.score >= median ? "var(--ws-accent)" : "var(--ws-ink-45)",
-                  }}
-                />
-              </div>
-              <span className="ws-tabular w-[28px] shrink-0 text-right text-[11.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                {asset.score}
-              </span>
-            </Link>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "26px 0", textAlign: "center" }}>
+          <span className={s.emo} style={{ fontSize: 30 }} aria-hidden="true">
+            {format === "video" ? "🎬" : "🖼️"}
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 700 }}>Nothing analysed in this format yet</span>
+          <Button variant="ghost" size="sm" icon="upload" href="/signal/analyze">
+            Analyse a {format}
+          </Button>
         </div>
+      ) : (
+        sorted.map((asset, i) => (
+          <Link key={asset.id} href={`/signal/report/${asset.id}`} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 44, flex: "none" }}>
+              <Chip variant="soft">{PLATFORM_SHORT[asset.platforms[0]]}</Chip>
+            </span>
+            <span style={{ width: 150, flex: "none", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{asset.filename}</span>
+            <div style={{ flex: 1, height: 10, borderRadius: 5, background: "var(--ws-surface-header)" }} aria-hidden="true">
+              <div style={{ width: `${(asset.score / max) * 100}%`, height: 10, borderRadius: 5, background: i === 0 ? "var(--ws-accent)" : "var(--ws-grey)" }} />
+            </div>
+            <span className={s.disp} style={{ width: 34, textAlign: "right", fontSize: 18 }}>
+              {Math.round(asset.score)}
+            </span>
+          </Link>
+        ))
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -110,63 +94,48 @@ function ThemeList({
   title,
   description,
   themes,
-  verb,
-  tintColor,
-  textColor,
+  kind,
   streaks,
 }: {
   title: string;
   description: string;
   themes: FailureTheme[];
-  verb: string;
-  tintColor: string;
-  textColor: string;
+  kind: "fail" | "pass";
   streaks?: FailureStreak[];
 }) {
   return (
-    <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-      <p className="ws-eyebrow">{title}</p>
-      <p className="mt-[6px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-        {description}
-      </p>
+    <Card style={{ flex: "1 1 460px", gap: 10 }}>
+      <CardHead label={title} />
+      <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>{description}</span>
       {streaks && streaks.length > 0 && (
-        <div className="mt-[10px] flex flex-col gap-[4px]">
-          {streaks.map((s) => (
-            <p key={s.name} className="text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
-              ⚠ {s.name} has failed your last {s.streak} uploads in a row
-            </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {streaks.map((st) => (
+            <span key={st.name} style={{ fontSize: 13, fontWeight: 600, color: "var(--ws-warn)" }}>
+              ⚠️ {st.name} has failed your last {st.streak} uploads in a row
+            </span>
           ))}
         </div>
       )}
-      <div className="mt-[14px] flex flex-col gap-[8px]">
-        {themes.map((theme) => (
-          <div key={theme.name} className="flex items-center gap-[10px]">
-            <span className="min-w-0 flex-1 truncate text-[12.5px]" style={{ color: "var(--ws-ink)" }}>
-              {theme.name}
+      <div>
+        {themes.map((theme, i) => (
+          <div key={theme.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderTop: i === 0 ? "none" : "1px solid var(--ws-hairline)" }}>
+            <span className={s.emo} style={{ fontSize: 14 }} aria-hidden="true">
+              {kind === "fail" ? "❌" : "✅"}
             </span>
-            <span
-              className="rounded-[4px] text-[9.5px] font-semibold uppercase"
-              style={{ padding: "2px 5px", background: tintColor, color: textColor }}
-            >
-              Tier {theme.tier}
-            </span>
-            <span className="ws-tabular shrink-0 text-[12px] font-medium" style={{ color: textColor }}>
-              {verb} {theme.count}×
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14 }}>{theme.name}</span>
+            <Chip variant="soft">Tier {theme.tier}</Chip>
+            <span style={{ width: 84, textAlign: "right", fontSize: 13, fontWeight: 700, color: kind === "fail" ? "var(--ws-warn)" : "var(--ws-ink)" }}>
+              {kind === "fail" ? "failed" : "passed"} {theme.count}×
             </span>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
 export default async function BenchmarksPage() {
-  const [live, failureThemes, recurringPasses, failureStreaks] = await Promise.all([
-    getLibrary(),
-    getFailureThemes(),
-    getRecurringPasses(),
-    getFailureStreaks(),
-  ]);
+  const [live, failureThemes, recurringPasses, failureStreaks] = await Promise.all([getLibrary(), getFailureThemes(), getRecurringPasses(), getFailureStreaks()]);
   const assets = live.assets;
   const staticAssets = assets.filter((a) => a.format === "static");
   const videoAssets = assets.filter((a) => a.format === "video");
@@ -178,86 +147,43 @@ export default async function BenchmarksPage() {
     static: computeScoreTrend(staticAssets.map((a) => a.score)),
     video: computeScoreTrend(videoAssets.map((a) => a.score)),
   };
-  const example = staticAssets[0];
 
   return (
-    <div className="ws-page-in" style={{ padding: "26px 22px" }}>
-      <h1 className="text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-        Benchmarks
-      </h1>
-      <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-        Two medians, split by format — a video and a static score are never averaged together. Platform
-        medians and a recent-vs-earlier trend show alongside, once there&apos;s enough history to trust them.
-      </p>
+    <AppMain>
+      <PageHeader
+        eyebrow="03 / Benchmarks"
+        line1="Two formats."
+        line2="Never averaged."
+        sub="Platform medians and a recent-vs-earlier trend show up once there’s enough history to trust them."
+      />
 
-      <div className="mt-[18px] grid grid-cols-1 gap-[14px] lg:grid-cols-2">
-        <FormatColumn
-          title="STATIC · SORTED BY SCORE"
-          assets={staticAssets}
-          median={medians.static}
-          platformMedians={platformMediansFor(staticAssets)}
-          trend={trends.static}
-        />
-        <FormatColumn
-          title="VIDEO · SORTED BY SCORE"
-          assets={videoAssets}
-          median={medians.video}
-          platformMedians={platformMediansFor(videoAssets)}
-          trend={trends.video}
-        />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
+        <FormatColumn title="Static · sorted by score" format="static" assets={staticAssets} median={medians.static} platformMedians={platformMediansFor(staticAssets)} trend={trends.static} />
+        <FormatColumn title="Video · sorted by score" format="video" assets={videoAssets} median={medians.video} platformMedians={platformMediansFor(videoAssets)} trend={trends.video} />
       </div>
 
-      <div
-        className="mt-[14px] rounded-[10px]"
-        style={{ padding: "18px 20px 20px", border: "1px solid var(--ws-hairline)" }}
-      >
-        <p className="ws-eyebrow">WHY THESE STAY SEPARATE</p>
-        <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-ink-60)" }}>
-          A video ad and a static ad are scored against different criteria sets — a 70 on video and a 70
-          on static aren&apos;t the same claim. Selecting one of each for comparison shows only the
-          criteria they share, and says so. It never blends the two into one number.
-        </p>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "18px 20px", borderRadius: 18, background: "var(--ws-surface-header)" }}>
+        <span className={s.emo} style={{ fontSize: 20 }} aria-hidden="true">
+          🧭
+        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>Why these stay separate</span>
+          <span style={{ fontSize: 14, color: "var(--ws-ink-60)", lineHeight: 1.5 }}>
+            A video and a static are scored against different criteria sets, so a 70 on each isn’t the same claim. Compare only ever shows the criteria two assets share — it never blends them into one number.
+          </span>
+        </div>
       </div>
 
       {(failureThemes.length > 0 || recurringPasses.length > 0) && (
-        <div className="mt-[14px] grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
           {failureThemes.length > 0 && (
-            <ThemeList
-              title="RECURRING FAILURES ACROSS YOUR LIBRARY"
-              description="Criteria that have failed on more than one asset — an exact count, not a fabricated pattern."
-              themes={failureThemes}
-              verb="failed"
-              tintColor="var(--ws-warn-tint)"
-              textColor="var(--ws-warn-text)"
-              streaks={failureStreaks}
-            />
+            <ThemeList title="Recurring failures" description="Checks that failed on more than one asset — exact counts." themes={failureThemes} kind="fail" streaks={failureStreaks} />
           )}
           {recurringPasses.length > 0 && (
-            <ThemeList
-              title="WHAT YOUR BEST WORK NAILS"
-              description="Criteria that consistently pass on your above-median-scoring assets."
-              themes={recurringPasses}
-              verb="passed"
-              tintColor="var(--ws-accent-tint)"
-              textColor="var(--ws-accent-text)"
-            />
+            <ThemeList title="What your best work nails" description="Checks that pass on your above-median assets." themes={recurringPasses} kind="pass" />
           )}
         </div>
       )}
-
-      {example && (
-        <div className="mt-[14px] flex items-center gap-[12px]" style={{ padding: "4px 2px" }}>
-          <ScoreBadge score={example.score} format={example.format} />
-          <p className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            Example: {example.filename} ranks{" "}
-            {(() => {
-              const p = percentileWithin(example.score, example.format, assets);
-              return p === null ? "first" : `${p}th percentile`;
-            })()}{" "}
-            among statics only.
-          </p>
-        </div>
-      )}
-    </div>
+    </AppMain>
   );
 }

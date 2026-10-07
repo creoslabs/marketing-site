@@ -41,11 +41,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             style={{
               pointerEvents: "auto",
               padding: "12px 16px",
-              width: 300,
+              width: 340,
+              borderRadius: 16,
               borderLeft: `3px solid ${VARIANT_BORDER[t.variant]}`,
             }}
           >
-            <p className="text-[12.5px] font-medium leading-[1.4]" style={{ color: "var(--ws-ink)" }}>
+            <p className="text-[14px] font-medium leading-[1.4]" style={{ color: "var(--ws-ink)" }}>
               {t.message}
             </p>
           </div>

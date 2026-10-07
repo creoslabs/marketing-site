@@ -4,7 +4,10 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useConfirm } from "@/components/ws-confirm";
 import { useToast } from "@/components/ws-toast";
+import { Icon } from "@/components/app/icons";
+import { appStyles as s } from "@/components/app/ui";
 
+// Hover-revealed, and always behind a confirm — deleting is one step removed.
 export function DeleteAssetButton({ assetId, filename }: { assetId: string; filename: string }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -40,10 +43,9 @@ export function DeleteAssetButton({ assetId, filename }: { assetId: string; file
       onClick={handleDelete}
       disabled={pending}
       aria-label={`Delete ${filename}`}
-      className="absolute right-[8px] top-[8px] flex h-[24px] w-[24px] items-center justify-center rounded-[6px] text-[12px] opacity-0 transition-opacity group-hover:opacity-100"
-      style={{ background: "rgba(0,0,0,.6)", color: "#fff", zIndex: 3 }}
+      className={s.assetDelete}
     >
-      {pending ? "…" : "✕"}
+      <Icon name="close" size={13} />
     </button>
   );
 }

@@ -3,11 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorDetail } from "../../live-data";
 import { getPlatformLabel } from "../../data";
-import { Avatar, EmptyState, PlatformBadge, ScoreChip, StatRow, Thumb, ThinHistoryPill } from "../../components";
-import { AddPlatformButton, BatchRepurposeButton, PullWithLimit, RemoveCreatorButton, RemoveHandleButton } from "../../creator-actions";
+import { AddPlatformButton, BatchRepurposeButton, PullWithLimit, RemoveHandleButton } from "../../creator-actions";
 import { formatCompact } from "../../format";
-import { ExportCsvButton } from "./export-csv-button";
 import { NotesField } from "./notes-field";
+import { CreatorMoreMenu } from "./creator-menu";
+import { CreatorPosts } from "./posts-grid";
+import { AppMain, Avatar, Card, CardHead, Chip, Mono, StatsRow, appStyles as s, cx } from "@/components/app/ui";
+import { Icon } from "@/components/app/icons";
+import { EmptyState } from "@/components/ws-empty-state";
 
 export async function generateMetadata(props: PageProps<"/outlier/creators/[id]">): Promise<Metadata> {
   const { id } = await props.params;
@@ -26,7 +29,6 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   if (!detail) notFound();
 
   const { creator, posts, patterns } = detail;
-  const totalPosts = posts.length;
   const isThin = creator.handles.some((h) => h.thin);
 
   // Each platform is scored against its own median, so the chart and post
@@ -34,292 +36,166 @@ export default async function CreatorDetailPage(props: PageProps<"/outlier/creat
   // Instagram posts into one bar chart would compare two different
   // baselines as if they were the same scale.
   const activePlatform =
-    creator.platformStats.find((s) => s.platform === platformParamValue)?.platform ??
-    creator.platformStats[0]?.platform ??
-    null;
+    creator.platformStats.find((st) => st.platform === platformParamValue)?.platform ?? creator.platformStats[0]?.platform ?? null;
   const platformPosts = activePlatform ? posts.filter((p) => p.platform === activePlatform) : posts;
-  const activeMedian = creator.platformStats.find((s) => s.platform === activePlatform)?.median ?? creator.median;
+  const activeMedian = creator.platformStats.find((st) => st.platform === activePlatform)?.median ?? creator.median;
 
-  // Views-per-post, most recent first, for the bar chart below.
-  const history = platformPosts.slice(0, 20).map((post, index) => ({
-    index,
-    views: post.views,
-    isOutlier: post.score >= 2,
-  }));
-  const maxViews = history.length > 0 ? Math.max(...history.map((h) => h.views), 1) : 1;
+  // Latest 30 posts, oldest → newest, scaled so the median and the 2× line
+  // both sit inside the chart.
+  const history = [...platformPosts].sort((a, b) => new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime()).slice(-30);
+  const maxViews = Math.max(...history.map((h) => h.views), activeMedian * 2.2, 1);
   const medianPct = (activeMedian / maxViews) * 100;
+  const twoXPct = (activeMedian * 2 * 100) / maxViews;
+
+  const bestPost = platformPosts.length > 0 ? platformPosts.reduce((b, p) => (p.score > b.score ? p : b), platformPosts[0]) : null;
+  const above2x = platformPosts.filter((p) => p.score >= 2).length;
+  const trend = creator.medianTrend;
+  const maxHookCount = Math.max(...patterns.hookTags.map((t) => t.count), 1);
+  const handleFor = Object.fromEntries(creator.handles.map((h) => [h.platform, h.handle]));
+  const filename = `${creator.displayName.replace(/\s+/g, "-").toLowerCase()}-posts.csv`;
 
   return (
-    <div className="ws-page-in px-6 py-[22px]">
-      <Link href="/outlier/creators" className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-        ← Creators
+    <AppMain>
+      <Link href="/outlier/creators" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ws-ink-45)", alignSelf: "flex-start" }}>
+        <Icon name="chevronLeft" size={14} />
+        Creators
       </Link>
 
-      <p className="ws-eyebrow" style={{ marginTop: 16 }}>
-        04 / CREATORS · {creator.displayName.toUpperCase()}
-      </p>
-
-      <div className="mt-[12px] flex flex-wrap items-center gap-[16px]">
-        <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={48} />
-        <div>
-          <div className="flex items-center gap-[8px]">
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 28,
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                textTransform: "uppercase",
-                color: "var(--ws-ink)",
-              }}
-            >
-              {creator.displayName}
-            </h1>
-            {isThin && <ThinHistoryPill />}
-          </div>
-          <div className="mt-[6px] flex flex-wrap items-center gap-[6px]">
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20 }}>
+        <Avatar initials={creator.initials} src={creator.avatarUrl} size={72} />
+        <div style={{ flex: 1, minWidth: 240, display: "flex", flexDirection: "column", gap: 8 }}>
+          <h1 className={s.disp} style={{ margin: 0, fontSize: 52, lineHeight: 0.9 }}>
+            {creator.displayName}
+          </h1>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {isThin && <Chip variant="fail">Thin history</Chip>}
             {creator.handles.map((h) => (
-              <span
-                key={h.id}
-                className="flex items-center gap-[6px] rounded-[20px] text-[11px] font-medium"
-                style={{ padding: "4px 6px 4px 10px", background: "var(--ws-surface-header)", color: "var(--ws-ink-60)" }}
-              >
+              <Chip key={h.id} variant="outline" style={{ paddingRight: 4 }}>
                 {h.platform} @{h.handle}
                 <RemoveHandleButton handleId={h.id} handle={h.handle} />
-              </span>
+              </Chip>
             ))}
-            <AddPlatformButton creatorId={creator.id} />
           </div>
         </div>
-        <div className="flex-1" />
-        <ExportCsvButton posts={posts} filename={`${creator.displayName.replace(/\s+/g, "-").toLowerCase()}-posts.csv`} />
-        <BatchRepurposeButton posts={posts} />
-        <PullWithLimit handles={creator.handles} />
-        <RemoveCreatorButton creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} />
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <PullWithLimit handles={creator.handles} />
+          <AddPlatformButton creatorId={creator.id} />
+          <CreatorMoreMenu creatorId={creator.id} handle={creator.handles[0]?.handle ?? creator.displayName} posts={posts} filename={filename} />
+        </div>
       </div>
+
+      <StatsRow
+        stats={[
+          { label: "Median views", value: formatCompact(activeMedian), note: "running median" },
+          { label: "Best 30D", value: `${creator.bestScore.toFixed(1)}×`, note: bestPost ? bestPost.caption.split("\n")[0].slice(0, 28) : "—", accent: true },
+          { label: "Above 2×", value: above2x, note: above2x === 1 ? "post" : "posts" },
+          { label: "Cadence", value: creator.cadence, note: trend === null ? "not enough history for a trend" : `${trend >= 0 ? "+" : "−"}${Math.abs(trend)}% median vs earlier` },
+        ]}
+      />
 
       <NotesField creatorId={creator.id} initialNotes={creator.notes} />
 
-      <div className="ws-stack-row mt-[18px]">
-        <div className="flex-1" style={{ padding: "15px 16px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>MEDIAN</p>
-          <p className="ws-tabular text-[20px] font-bold tracking-[-0.03em]" style={{ color: "var(--ws-ink)" }}>
-            {formatCompact(creator.median)}
-          </p>
-        </div>
-        <div className="flex-1" style={{ padding: "15px 16px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>POSTS PULLED</p>
-          <p className="ws-tabular text-[20px] font-bold tracking-[-0.03em]" style={{ color: "var(--ws-ink)" }}>
-            {totalPosts}
-          </p>
-        </div>
-        <div className="flex-1" style={{ padding: "15px 16px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE</p>
-          <p className="ws-tabular text-[20px] font-bold tracking-[-0.03em]" style={{ color: "var(--ws-accent-text)" }}>
-            {creator.bestScore.toFixed(1)}×
-          </p>
-        </div>
-        <div className="flex-1" style={{ padding: "15px 16px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>CADENCE</p>
-          <p className="text-[20px] font-bold tracking-[-0.03em]" style={{ color: "var(--ws-ink)" }}>
-            {creator.cadence}
-          </p>
-        </div>
-      </div>
-
       {creator.platformStats.length > 1 && (
-        <div className="ws-card mt-[14px]" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow">PLATFORM COMPARISON</p>
-          <p className="mt-[4px] text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-            Each scored against that platform&rsquo;s own median, not blended together.
-          </p>
-          <div className="mt-[12px] grid gap-[10px]" style={{ gridTemplateColumns: `repeat(${creator.platformStats.length}, 1fr)` }}>
-            {creator.platformStats.map((stat) => (
-              <div key={stat.platform} className="rounded-[8px]" style={{ padding: "12px 14px", background: "var(--ws-surface-header)" }}>
-                <div className="flex items-center gap-[6px]">
-                  <PlatformBadge platform={stat.platform} />
-                  <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                    {stat.postCount} post{stat.postCount === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <p className="ws-tabular mt-[8px] text-[17px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-accent-text)" }}>
-                  {stat.bestScore.toFixed(1)}×
-                </p>
-                <p className="text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-                  best · median {formatCompact(stat.median)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {creator.platformStats.length > 1 && (
-        <div className="mt-[18px] flex items-center gap-[10px]">
-          <div className="ws-stack-row" style={{ display: "inline-flex", width: "auto" }}>
+        <div className={s.toolbar} style={{ borderRadius: 22 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} role="group" aria-label="Platform">
             {creator.platformStats.map((stat) => (
               <Link
                 key={stat.platform}
                 href={`/outlier/creators/${creator.id}?platform=${stat.platform}`}
-                className="text-[12.5px] font-medium"
-                style={{
-                  padding: "10px 16px",
-                  background: stat.platform === activePlatform ? "var(--ws-ink)" : "var(--ws-surface)",
-                  color: stat.platform === activePlatform ? "var(--ws-ground)" : "var(--ws-ink-60)",
-                }}
+                aria-current={stat.platform === activePlatform ? "page" : undefined}
+                className={cx(s.mono, s.chip, stat.platform === activePlatform ? s.chipPaper : s.chipOutline)}
               >
-                {getPlatformLabel(stat.platform)} <span className="ws-tabular">{stat.postCount} posts</span>
+                {getPlatformLabel(stat.platform)} · {stat.postCount} posts
               </Link>
             ))}
           </div>
-          <p className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            Each platform is scored against its own median — scores stay comparable across them.
-          </p>
+          <span className={s.toolbarNote}>Each platform is scored against its own median — scores stay comparable across them.</span>
         </div>
       )}
 
-      {platformPosts.length === 0 ? (
-        <div className="ws-card mt-[14px]">
-          <EmptyState
-            title="No posts pulled yet"
-            description="Views-per-post needs at least a few pulled posts before a median means anything."
-          />
-        </div>
-      ) : (
-        <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
-          <div className="flex items-center">
-            <p className="ws-eyebrow">
-              VIEWS PER POST{activePlatform ? ` · ${getPlatformLabel(activePlatform).toUpperCase()}` : ""}
-            </p>
-            <div className="flex-1" />
-            <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-              Running median {formatCompact(activeMedian)}
-            </span>
-          </div>
-          <div className="relative mt-[18px] flex items-end gap-[10px]" style={{ height: 140 }}>
-            <div
-              className="absolute inset-x-0 border-t border-dashed"
-              style={{ bottom: `${medianPct}%`, borderColor: "var(--ws-ink-45)" }}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
+        <div style={{ flex: "2 1 700px", minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+          <Card style={{ flex: 1 }}>
+            <CardHead
+              label={`Every post vs their median${activePlatform && creator.platformStats.length > 1 ? ` · ${getPlatformLabel(activePlatform)}` : ""}`}
+              right={
+                <Mono className={s.cardLabel} style={{ fontSize: 10 }}>
+                  Last {history.length} posts
+                </Mono>
+              }
             />
-            {history.map((point) => (
-              <div key={point.index} className="flex flex-1 flex-col items-center justify-end" style={{ height: "100%" }}>
-                <div
-                  className="w-full rounded-t-[3px]"
-                  style={{
-                    height: `${(point.views / maxViews) * 100}%`,
-                    background: point.isOutlier ? "var(--ws-accent)" : "var(--ws-ink-45)",
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-[18px]">
-        <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-          Hook patterns
-        </h2>
-        {patterns.analyzedCount === 0 ? (
-          <div className="ws-card mt-[14px]">
-            <EmptyState
-              title="No analyzed posts yet"
-              description="Transcribe & analyze one of this creator's posts to start seeing which hooks and beats actually work for them."
-            />
-          </div>
-        ) : (
-          <div className="ws-card mt-[14px]" style={{ padding: "18px 20px 20px" }}>
-            <p className="ws-eyebrow">
-              FROM {patterns.analyzedCount} ANALYZED POST{patterns.analyzedCount === 1 ? "" : "S"}
-            </p>
-            <div className="mt-[16px] grid gap-[22px] sm:grid-cols-2">
-              <div>
-                <p className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-                  Hook style
-                </p>
-                <div className="mt-[10px] flex flex-col gap-[9px]">
-                  {patterns.hookTags.map((tag) => (
-                    <div key={tag.label} className="flex items-center gap-[9px]">
-                      <Link
-                        href={`/outlier/tags/${encodeURIComponent(tag.label)}`}
-                        className="min-w-0 flex-1 truncate text-[12px] hover:underline"
-                        style={{ color: "var(--ws-ink)" }}
-                      >
-                        {tag.label}
-                      </Link>
-                      <div className="h-[6px] w-[60px] shrink-0 overflow-hidden rounded-full" style={{ background: "var(--ws-surface-header)" }}>
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${(tag.count / patterns.analyzedCount) * 100}%`, background: "var(--ws-accent)" }}
-                        />
-                      </div>
-                      <span className="ws-tabular shrink-0 text-[11px]" style={{ color: "var(--ws-ink-45)" }}>
-                        {tag.count}/{patterns.analyzedCount}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-                  Common beats
-                </p>
-                <div className="mt-[10px] flex flex-wrap gap-[6px]">
-                  {patterns.beatNames.map((beat) => (
-                    <span
-                      key={beat.label}
-                      className="rounded-[20px] text-[11px] font-medium"
-                      style={{ padding: "5px 10px", background: "var(--ws-surface-header)", color: "var(--ws-ink-60)" }}
-                    >
-                      {beat.label} · {beat.count}/{patterns.analyzedCount}
+            {history.length === 0 ? (
+              <EmptyState title="No posts pulled yet" description="Views-per-post needs at least a few pulled posts before a median means anything." />
+            ) : (
+              <div style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 4, height: 160 }} role="img" aria-label={`Views for the last ${history.length} posts against a running median of ${formatCompact(activeMedian)}`}>
+                {history.map((post) => (
+                  <div
+                    key={post.id}
+                    title={`${post.postedAt} · ${formatCompact(post.views)} views · ${post.score.toFixed(1)}×`}
+                    style={{ flex: 1, height: `${Math.max(4, (post.views / maxViews) * 100)}%`, borderRadius: "3px 3px 0 0", background: post.score >= 2 ? "var(--ws-accent)" : "var(--ws-hairline-strong)" }}
+                  />
+                ))}
+                <div style={{ position: "absolute", left: 0, right: 0, bottom: `${medianPct}%`, borderTop: "1px dashed var(--ws-ink-45)" }} />
+                <span className={s.mono} style={{ position: "absolute", right: 0, bottom: `calc(${medianPct}% + 6px)`, fontSize: 9, color: "var(--ws-ink-45)" }}>
+                  Median {formatCompact(activeMedian)}
+                </span>
+                {twoXPct <= 100 && (
+                  <>
+                    <div style={{ position: "absolute", left: 0, right: 0, bottom: `${twoXPct}%`, borderTop: "1px dashed var(--ws-accent)" }} />
+                    <span className={s.mono} style={{ position: "absolute", right: 0, bottom: `calc(${twoXPct}% + 6px)`, fontSize: 9, color: "var(--ws-accent)" }}>
+                      2× line
                     </span>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </Card>
+        </div>
+
+        <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+          <Card style={{ flex: 1 }}>
+            <CardHead label="Hook styles" right={patterns.analyzedCount > 0 ? <Mono className={s.cardLabel} style={{ fontSize: 10 }}>From {patterns.analyzedCount} analyzed</Mono> : undefined} />
+            {patterns.analyzedCount === 0 ? (
+              <p style={{ margin: 0, fontSize: 14, color: "var(--ws-ink-45)", lineHeight: 1.5 }}>
+                No analyzed posts yet — transcribe &amp; analyze one of this creator’s posts to see which hooks and beats work for them.
+              </p>
+            ) : (
+              <>
+                {patterns.hookTags.map((tag, i) => (
+                  <div key={tag.label} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <Link href={`/outlier/tags/${encodeURIComponent(tag.label)}`} style={{ width: 150, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {tag.label}
+                    </Link>
+                    <div style={{ flex: 1, height: 8, borderRadius: 4, background: "var(--ws-surface-header)" }}>
+                      <div style={{ width: `${(tag.count / maxHookCount) * 100}%`, height: 8, borderRadius: 4, background: i === 0 ? "var(--ws-accent)" : "var(--ws-grey)" }} />
+                    </div>
+                    <span style={{ width: 60, textAlign: "right", fontSize: 13, color: "var(--ws-ink-60)" }}>
+                      {tag.count} post{tag.count === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                ))}
+                {patterns.beatNames.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, paddingTop: 8 }}>
+                    <Mono className={s.cardLabel} style={{ fontSize: 10, marginRight: 4 }}>
+                      Common beats
+                    </Mono>
+                    {patterns.beatNames.map((beat) => (
+                      <Chip key={beat.label} variant="soft">
+                        {beat.label} · {beat.count}/{patterns.analyzedCount}
+                      </Chip>
+                    ))}
+                  </div>
+                )}
+                <div>
+                  <BatchRepurposeButton posts={posts} />
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
       </div>
 
-      <div className="mt-[18px]">
-        <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-          Posts · newest first
-        </h2>
-        {platformPosts.length === 0 ? (
-          <div className="ws-card mt-[14px]">
-            <EmptyState title="No posts pulled yet" />
-          </div>
-        ) : (
-          <div className="mt-[14px] grid grid-cols-2 gap-[16px] sm:grid-cols-3 lg:grid-cols-6">
-            {platformPosts.map((post) => (
-              <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
-                <Thumb aspectRatio="9/13" radius={10}>
-                  {post.thumbnailUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
-                    <img
-                      src={post.thumbnailUrl}
-                      alt={post.caption}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                  )}
-                  <div className="absolute left-[7px] top-[7px]" style={{ zIndex: 2 }}>
-                    <PlatformBadge platform={post.platform} />
-                  </div>
-                  <div className="absolute bottom-[7px] left-[7px]" style={{ zIndex: 2 }}>
-                    <ScoreChip score={post.score} median={post.median} />
-                  </div>
-                </Thumb>
-                <div className="mt-[6px]">
-                  <StatRow views={post.views} engagement={post.engagement} size="sm" />
-                </div>
-                <p className="mt-[2px] truncate text-[10.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                  {post.postedAt}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      <CreatorPosts posts={platformPosts} creator={{ initials: creator.initials, avatarUrl: creator.avatarUrl, handleFor }} />
+    </AppMain>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AnalyzeDropzone } from "./analyze-dropzone";
+import { AppMain, PageHeader } from "@/components/app/ui";
 
 export const metadata: Metadata = {
   title: "Analyze — Signal",
@@ -8,17 +9,11 @@ export const metadata: Metadata = {
 
 export default function AnalyzePage() {
   return (
-    <div className="ws-page-in" style={{ padding: "26px 22px" }}>
-      <h1 className="text-center text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-        Analyze a new asset
-      </h1>
-      <p className="mx-auto mt-2 max-w-[420px] text-center text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-        Format is detected on upload — the right criteria set is applied automatically.
-      </p>
-
-      <div className="mt-[36px]">
+    <AppMain>
+      <div style={{ maxWidth: 860, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
+        <PageHeader eyebrow="01 / Analyse" line1="Analyse new creative." sub="Format is detected on upload — the right criteria set is applied automatically." />
         <AnalyzeDropzone />
       </div>
-    </div>
+    </AppMain>
   );
 }

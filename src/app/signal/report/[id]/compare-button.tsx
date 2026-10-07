@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Format } from "../../data";
+import { Button, appStyles as s } from "@/components/app/ui";
+import { Modal } from "@/components/app/modal";
 
 type Option = { id: string; filename: string; score: number };
 
@@ -41,87 +43,71 @@ export function CompareButton({ assetId, format }: { assetId: string; format: Fo
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openPicker}
-        className="ws-btn-ghost rounded-[7px] text-[12.5px] font-medium"
-        style={{ padding: "9px 12px" }}
-      >
+      <Button variant="ghost" onClick={openPicker}>
         Compare
-      </button>
+      </Button>
       {open && (
-        <div
-          className="ws-overlay-in fixed inset-0 flex items-center justify-center px-6"
-          style={{ zIndex: 200, background: "rgba(0,0,0,.5)" }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="ws-card ws-modal-in"
-            style={{ width: 360, padding: "18px" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-[14px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Compare against
-            </p>
-            <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-              Pick up to {MAX_COMPARE_OTHERS} other {format}s — criteria sets aren&apos;t comparable across formats.
-            </p>
-            <div className="mt-[12px]" style={{ maxHeight: 280, overflowY: "auto" }}>
-              {loading ? (
-                <p className="py-[16px] text-center text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
-                  Loading…
-                </p>
-              ) : options.length === 0 ? (
-                <p className="py-[16px] text-center text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
-                  No other {format}s analyzed yet.
-                </p>
-              ) : (
-                options.map((o) => {
-                  const checked = selected.includes(o.id);
-                  const disabled = !checked && selected.length >= MAX_COMPARE_OTHERS;
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => toggle(o.id)}
-                      disabled={disabled}
-                      className="ws-row-hover flex w-full items-center justify-between rounded-[6px] text-left"
-                      style={{ padding: "9px 10px", opacity: disabled ? 0.4 : 1 }}
-                    >
-                      <span className="flex items-center gap-[8px]">
-                        <span
-                          className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded-[4px] text-[10px]"
-                          style={
-                            checked
-                              ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" }
-                              : { border: "1px solid var(--ws-hairline-strong)" }
-                          }
-                        >
-                          {checked ? "✓" : ""}
-                        </span>
-                        <span className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {o.filename}
-                        </span>
-                      </span>
-                      <span className="ws-tabular text-[12px]" style={{ color: "var(--ws-ink-45)" }}>
-                        {o.score}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={handleCompare}
-              disabled={selected.length === 0}
-              className="ws-btn-primary mt-[12px] w-full rounded-[7px] text-[12.5px] font-semibold"
-              style={{ padding: "10px 14px", opacity: selected.length === 0 ? 0.6 : 1 }}
-            >
+        <Modal
+          title="Compare against"
+          width={420}
+          onClose={() => setOpen(false)}
+          footer={
+            <Button variant="primary" onClick={handleCompare} disabled={selected.length === 0}>
               Compare {selected.length + 1}
-            </button>
+            </Button>
+          }
+        >
+          <p className={s.hint} style={{ fontSize: 14, color: "var(--ws-ink-60)" }}>
+            Pick up to {MAX_COMPARE_OTHERS} other {format}s — criteria sets aren’t comparable across formats.
+          </p>
+          <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+            {loading ? (
+              <p style={{ margin: 0, padding: 16, textAlign: "center", fontSize: 14, color: "var(--ws-ink-45)" }}>Loading…</p>
+            ) : options.length === 0 ? (
+              <p style={{ margin: 0, padding: 16, textAlign: "center", fontSize: 14, color: "var(--ws-ink-45)" }}>No other {format}s analysed yet.</p>
+            ) : (
+              options.map((o) => {
+                const checked = selected.includes(o.id);
+                const disabled = !checked && selected.length >= MAX_COMPARE_OTHERS;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={checked}
+                    onClick={() => toggle(o.id)}
+                    disabled={disabled}
+                    className={s.menuItem}
+                    style={{ opacity: disabled ? 0.4 : 1, textTransform: "none", letterSpacing: 0, fontSize: 14 }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <span
+                        style={{
+                          width: 18,
+                          height: 18,
+                          flex: "none",
+                          borderRadius: 6,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          ...(checked ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" } : { border: "1.5px solid var(--ws-hairline-strong)" }),
+                        }}
+                      >
+                        {checked ? "✓" : ""}
+                      </span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.filename}</span>
+                    </span>
+                    <span className={s.tabular} style={{ color: "var(--ws-ink-45)" }}>
+                      {o.score}
+                    </span>
+                  </button>
+                );
+              })
+            )}
           </div>
-        </div>
+        </Modal>
       )}
     </>
   );

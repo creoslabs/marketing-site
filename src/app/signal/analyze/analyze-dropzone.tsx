@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Platform } from "../data";
+import { Button, Mono, appStyles as s, cx } from "@/components/app/ui";
+import { Segmented } from "@/components/app/controls";
 
-const ALL_PLATFORMS: Platform[] = ["TikTok", "Meta"];
+type Target = "TikTok" | "Meta" | "Both";
+const TARGET_PLATFORMS: Record<Target, Platform[]> = { TikTok: ["TikTok"], Meta: ["Meta"], Both: ["TikTok", "Meta"] };
 
 type QueueItem = {
   id: string;
@@ -37,54 +40,44 @@ function useCyclingStage(active: boolean, stages: string[], intervalMs = 2200) {
 
 function Spinner({ size = 13 }: { size?: number }) {
   return (
-    <svg className="ws-spin shrink-0" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="9" stroke="var(--ws-hairline)" strokeWidth="3" />
+    <svg className="ws-spin" style={{ flex: "none" }} width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="var(--ws-hairline-strong)" strokeWidth="3" />
       <path d="M21 12a9 9 0 0 0-9-9" stroke="var(--ws-accent)" strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }
+
+const rowStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderTop: "1px solid var(--ws-hairline)" };
+const fileName: React.CSSProperties = { flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const stageText: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ws-ink-60)", flex: "none" };
 
 function QueueRow({ item }: { item: QueueItem }) {
   const isVideo = item.file.type.startsWith("video/");
   const stage = useCyclingStage(item.status === "analyzing", isVideo ? VIDEO_STAGES : STATIC_STAGES);
 
   return (
-    <div style={{ padding: "11px 14px" }}>
-      <div className="flex items-center gap-[10px]">
-        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-          {item.file.name}
+    <div style={{ ...rowStyle, flexWrap: "wrap" }}>
+      <span style={fileName}>{item.file.name}</span>
+      {item.status === "done" && item.assetId ? (
+        <Link href={`/signal/report/${item.assetId}`} style={{ fontSize: 13, fontWeight: 600 }}>
+          View report →
+        </Link>
+      ) : item.status === "error" ? (
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ws-warn)" }}>❌ Failed</span>
+      ) : item.status === "analyzing" ? (
+        <span style={stageText}>
+          <Spinner />
+          {stage}
         </span>
-        {item.status === "done" && item.assetId ? (
-          <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
-            View report →
-          </Link>
-        ) : item.status === "error" ? (
-          <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
-            Failed
-          </span>
-        ) : item.status === "analyzing" ? (
-          <span className="inline-flex shrink-0 items-center gap-[6px] text-[11.5px]" style={{ color: "var(--ws-ink-60)" }}>
-            <Spinner />
-            {stage}
-          </span>
-        ) : (
-          <span className="inline-flex shrink-0 items-center gap-[6px] text-[11.5px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
-            {item.status === "uploading" && <Spinner />}
-            {item.status}
-          </span>
-        )}
-      </div>
-      {item.status === "error" && item.error && (
-        <p className="mt-[4px] text-[11.5px] leading-[1.4]" style={{ color: "var(--ws-warn-text)" }}>
-          {item.error}
-        </p>
+      ) : (
+        <span style={{ ...stageText, color: "var(--ws-ink-45)", textTransform: "capitalize" }}>
+          {item.status === "uploading" && <Spinner />}
+          {item.status}
+        </span>
       )}
+      {item.status === "error" && item.error && <p style={{ flexBasis: "100%", margin: 0, fontSize: 13, color: "var(--ws-warn)", lineHeight: 1.4 }}>{item.error}</p>}
     </div>
   );
-}
-
-function Dot({ color }: { color: string }) {
-  return <span aria-hidden style={{ width: 6, height: 6, borderRadius: 999, background: color, display: "inline-block" }} />;
 }
 
 type ScorecardSort = "score" | "order";
@@ -94,102 +87,68 @@ type ScorecardSort = "score" | "order";
 // stays one working session instead of upload → wait → view → repeat for
 // each one individually. Rows still in progress just sink to the bottom
 // (no score yet) until they land.
-function Scorecard({
-  items,
-  sort,
-  onSortChange,
-}: {
-  items: QueueItem[];
-  sort: ScorecardSort;
-  onSortChange: (sort: ScorecardSort) => void;
-}) {
+function Scorecard({ items, sort, onSortChange }: { items: QueueItem[]; sort: ScorecardSort; onSortChange: (sort: ScorecardSort) => void }) {
   const anyDone = items.some((i) => i.status === "done");
-  const sorted =
-    sort === "score"
-      ? [...items].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
-      : items;
+  const sorted = sort === "score" ? [...items].sort((a, b) => (b.score ?? -1) - (a.score ?? -1)) : items;
 
   return (
-    <div className="mt-[18px]">
-      <div className="flex items-center justify-between px-[2px]">
-        <p className="ws-eyebrow">SCORECARD</p>
+    <div style={{ background: "var(--ws-surface)", border: "1px solid var(--ws-hairline)", borderRadius: 22, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 18px" }}>
+        <Mono className={s.cardLabel} style={{ fontSize: 11 }}>
+          Scorecard
+        </Mono>
         {anyDone && (
-          <div className="inline-flex rounded-[7px] p-[2px]" style={{ border: "1px solid var(--ws-hairline)" }}>
-            {([
+          <Segmented
+            label="Sort scorecard"
+            value={sort}
+            onChange={onSortChange}
+            options={[
               { value: "score", label: "Highest score" },
               { value: "order", label: "Upload order" },
-            ] as const).map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => onSortChange(o.value)}
-                className="rounded-[5px] px-[10px] py-[5px] text-[11px] font-medium"
-                style={sort === o.value ? { background: "var(--ws-accent)", color: "var(--ws-accent-ink)" } : { color: "var(--ws-ink-60)" }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+            ]}
+          />
         )}
       </div>
-      <div className="ws-stack mt-[10px]">
-        {sorted.map((item, i) => (
-          <ScorecardRow key={item.id} item={item} rank={sort === "score" && item.status === "done" ? i + 1 : undefined} />
-        ))}
-      </div>
+      {sorted.map((item, i) => (
+        <ScorecardRow key={item.id} item={item} rank={sort === "score" && item.status === "done" ? i + 1 : undefined} winner={sort === "score" && item.status === "done" && i === 0} />
+      ))}
     </div>
   );
 }
 
-function ScorecardRow({ item, rank }: { item: QueueItem; rank?: number }) {
+function ScorecardRow({ item, rank, winner }: { item: QueueItem; rank?: number; winner?: boolean }) {
   const isVideo = item.file.type.startsWith("video/");
   const stage = useCyclingStage(item.status === "analyzing", isVideo ? VIDEO_STAGES : STATIC_STAGES);
 
   return (
-    <div className="flex items-center gap-[12px]" style={{ padding: "11px 14px" }}>
-      <span
-        className="ws-tabular flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full text-[11px] font-semibold"
-        style={{ background: "var(--ws-surface-header)", color: "var(--ws-ink-45)" }}
-      >
+    <div style={{ ...rowStyle, ...(winner ? { boxShadow: "inset 2px 0 0 var(--ws-accent)", background: "var(--ws-surface-header)" } : null) }}>
+      <span className={cx(s.mono, s.tabular)} style={{ width: 26, height: 26, flex: "none", borderRadius: "50%", background: winner ? "var(--ws-accent)" : "var(--ws-surface-header)", color: winner ? "var(--ws-accent-ink)" : "var(--ws-ink-45)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>
         {rank ?? "–"}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-        {item.file.name}
-      </span>
+      <span style={fileName}>{item.file.name}</span>
       {item.status === "done" && item.counts ? (
         <>
-          <span className="hidden items-center gap-[8px] sm:inline-flex">
-            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
-              <Dot color="var(--ws-accent-text)" />
-              {item.counts.pass}
-            </span>
-            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
-              <Dot color="var(--ws-ink-45)" />
-              {item.counts.partial}
-            </span>
-            <span className="ws-tabular inline-flex items-center gap-[4px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
-              <Dot color="var(--ws-warn-text)" />
-              {item.counts.fail}
-            </span>
+          <span style={{ display: "inline-flex", gap: 10, fontSize: 13, color: "var(--ws-ink-60)", flex: "none" }}>
+            <span>✅ {item.counts.pass}</span>
+            <span>⚠️ {item.counts.partial}</span>
+            <span style={{ color: item.counts.fail > 0 ? "var(--ws-warn)" : undefined }}>❌ {item.counts.fail}</span>
           </span>
-          <span className="ws-tabular shrink-0 text-[20px] font-bold" style={{ letterSpacing: "-0.03em", color: "var(--ws-ink)" }}>
+          <span className={cx(s.disp, s.tabular)} style={{ fontSize: 24, flex: "none" }}>
             {item.score}
           </span>
-          <Link href={`/signal/report/${item.assetId}`} className="ws-link-accent shrink-0 text-[11.5px] font-medium">
+          <Link href={`/signal/report/${item.assetId}`} style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>
             View →
           </Link>
         </>
       ) : item.status === "error" ? (
-        <span className="shrink-0 text-[11.5px] font-medium" style={{ color: "var(--ws-warn-text)" }}>
-          Failed
-        </span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ws-warn)", flex: "none" }}>❌ Failed</span>
       ) : item.status === "analyzing" ? (
-        <span className="inline-flex shrink-0 items-center gap-[6px] text-[11px]" style={{ color: "var(--ws-ink-60)" }}>
+        <span style={stageText}>
           <Spinner />
           {stage}
         </span>
       ) : (
-        <span className="inline-flex shrink-0 items-center gap-[6px] text-[11px] capitalize" style={{ color: "var(--ws-ink-45)" }}>
+        <span style={{ ...stageText, color: "var(--ws-ink-45)", textTransform: "capitalize" }}>
           {item.status === "uploading" && <Spinner />}
           {item.status}
         </span>
@@ -235,7 +194,8 @@ export function AnalyzeDropzone() {
   const [dragOver, setDragOver] = useState(false);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [running, setRunning] = useState(false);
-  const [platforms, setPlatforms] = useState<Platform[]>(["Meta"]);
+  const [target, setTarget] = useState<Target>("Meta");
+  const platforms = TARGET_PLATFORMS[target];
   const [scorecardSort, setScorecardSort] = useState<ScorecardSort>("score");
   const inputRef = useRef<HTMLInputElement>(null);
   const isBatch = queue.length > 1;
@@ -246,17 +206,6 @@ export function AnalyzeDropzone() {
     Boolean(activeItem && activeItem.status === "analyzing"),
     activeIsVideo ? VIDEO_STAGES : STATIC_STAGES
   );
-
-  function togglePlatform(platform: Platform) {
-    setPlatforms((prev) => {
-      if (prev.includes(platform)) {
-        // Always leave at least one platform selected — an asset needs
-        // somewhere to be scored against.
-        return prev.length === 1 ? prev : prev.filter((p) => p !== platform);
-      }
-      return [...prev, platform];
-    });
-  }
 
   const idle = queue.length === 0;
   const finished = queue.length > 0 && !running && queue.every((q) => q.status === "done" || q.status === "error");
@@ -311,32 +260,23 @@ export function AnalyzeDropzone() {
     setQueue([]);
   }
 
+  const doneCount = queue.filter((q) => q.status === "done" || q.status === "error").length;
+
   return (
-    <div className={isBatch ? "mx-auto max-w-[640px]" : "mx-auto max-w-[520px]"}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       {idle && (
-        <div className="mb-[14px] flex items-center justify-center gap-[8px]">
-          <span className="text-[11.5px] font-medium" style={{ color: "var(--ws-ink-45)" }}>
-            Where will this run?
-          </span>
-          {ALL_PLATFORMS.map((platform) => {
-            const active = platforms.includes(platform);
-            return (
-              <button
-                key={platform}
-                type="button"
-                onClick={() => togglePlatform(platform)}
-                className="rounded-[20px] text-[11.5px] font-medium"
-                style={{
-                  padding: "5px 12px",
-                  border: `1px solid ${active ? "var(--ws-accent)" : "var(--ws-hairline)"}`,
-                  background: active ? "var(--ws-accent-tint)" : "transparent",
-                  color: active ? "var(--ws-accent-tint-ink)" : "var(--ws-ink-60)",
-                }}
-              >
-                {platform}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+          <span style={{ fontSize: 14, color: "var(--ws-ink-60)" }}>Where will this run?</span>
+          <Segmented
+            label="Where will this run?"
+            value={target}
+            onChange={setTarget}
+            options={[
+              { value: "TikTok", label: "TikTok" },
+              { value: "Meta", label: "Meta" },
+              { value: "Both", label: "Both" },
+            ]}
+          />
         </div>
       )}
 
@@ -347,56 +287,53 @@ export function AnalyzeDropzone() {
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className="flex flex-col items-center rounded-[12px] text-center"
         style={{
-          padding: "60px 32px",
-          border: `1.5px dashed ${dragOver ? "var(--ws-accent)" : "color-mix(in srgb, var(--ws-accent) 50%, transparent)"}`,
-          background: dragOver ? "var(--ws-accent-tint)" : "var(--ws-surface)",
+          border: `1.5px dashed ${dragOver ? "var(--ws-accent)" : "var(--ws-hairline-strong)"}`,
+          borderRadius: 28,
+          padding: idle ? "64px 32px" : "44px 32px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          textAlign: "center",
+          background: dragOver ? "var(--ws-surface-header)" : "var(--ws-surface)",
           transition: "background-color 0.15s ease, border-color 0.15s ease",
         }}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept="video/*,image/*"
-          className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
-        />
+        <input ref={inputRef} type="file" multiple accept="video/*,image/*" style={{ display: "none" }} onChange={(e) => handleFiles(e.target.files)} />
 
         {idle && (
           <>
-            <div
-              className="flex h-[56px] w-[56px] items-center justify-center rounded-[14px]"
-              style={{ background: "var(--ws-accent-tint)", color: "var(--ws-accent-text)", fontSize: 24 }}
-            >
-              ↑
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }} aria-hidden="true">
+              {[
+                { w: 64, h: 110, e: "🎬" },
+                { w: 88, h: 88, e: "🖼️" },
+                { w: 64, h: 110, e: "🎞️" },
+              ].map((t) => (
+                <div key={t.e} style={{ width: t.w, height: t.h, flex: "none", borderRadius: 16, background: "radial-gradient(120% 80% at 30% 20%, #34322c 0%, #1a1917 55%, #0f0f0e 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span className={s.emo} style={{ fontSize: 28 }}>
+                    {t.e}
+                  </span>
+                </div>
+              ))}
             </div>
-            <p className="mt-[18px] text-[16px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Drop assets to analyze
-            </p>
-            <p className="mt-[6px] text-[12.5px]" style={{ color: "var(--ws-ink-45)" }}>
-              Static or video, one or many · up to 500 MB each
-            </p>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="ws-btn-primary mt-[20px] rounded-[8px] text-[12.5px] font-semibold"
-              style={{ padding: "10px 16px" }}
-            >
+            <span className={s.disp} style={{ fontSize: 28, marginTop: 8 }}>
+              Drop assets to analyse
+            </span>
+            <span style={{ fontSize: 15, color: "var(--ws-ink-60)" }}>Static or video, one or many · up to 500 MB each</span>
+            <Button variant="primary" icon="upload" onClick={() => inputRef.current?.click()}>
               Choose files
-            </button>
+            </Button>
           </>
         )}
 
         {!idle && (
           <>
-            <p className="ws-eyebrow inline-flex items-center gap-[8px]">
+            <Mono style={{ fontSize: 11, color: "var(--ws-accent)", display: "inline-flex", alignItems: "center", gap: 8 }}>
               {running && <Spinner size={12} />}
-              {running ? "PROCESSING" : "DONE"} · {queue.filter((q) => q.status === "done" || q.status === "error").length}/
-              {queue.length}
-            </p>
-            <p className="mt-[10px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
+              {running ? "Processing" : "Done"} · {doneCount}/{queue.length}
+            </Mono>
+            <span style={{ fontSize: 15, color: "var(--ws-ink-60)" }}>
               {running
                 ? activeItem
                   ? headlineStage
@@ -404,20 +341,9 @@ export function AnalyzeDropzone() {
                 : queue.some((q) => q.status === "error")
                   ? `${queue.filter((q) => q.status === "error").length} of ${queue.length} failed — see below.`
                   : "All files processed."}
-            </p>
-            <div
-              className={`mt-[16px] h-[4px] w-full overflow-hidden rounded-[3px] ${running ? "ws-progress-indeterminate" : ""}`}
-              style={{ background: "var(--ws-hairline)" }}
-            >
-              {!running && (
-                <div
-                  className="h-full rounded-[3px]"
-                  style={{
-                    width: `${(queue.filter((q) => q.status === "done" || q.status === "error").length / queue.length) * 100}%`,
-                    background: "var(--ws-accent)",
-                  }}
-                />
-              )}
+            </span>
+            <div className={running ? "ws-progress-indeterminate" : undefined} style={{ height: 4, width: "100%", maxWidth: 420, borderRadius: 2, background: "var(--ws-hairline)", overflow: "hidden" }}>
+              {!running && <div style={{ height: "100%", borderRadius: 2, width: `${(doneCount / queue.length) * 100}%`, background: "var(--ws-accent)" }} />}
             </div>
           </>
         )}
@@ -427,7 +353,7 @@ export function AnalyzeDropzone() {
         <Scorecard items={queue} sort={scorecardSort} onSortChange={setScorecardSort} />
       ) : (
         queue.length > 0 && (
-          <div className="ws-stack mt-[18px]">
+          <div style={{ background: "var(--ws-surface)", border: "1px solid var(--ws-hairline)", borderRadius: 22, overflow: "hidden" }}>
             {queue.map((item) => (
               <QueueRow key={item.id} item={item} />
             ))}
@@ -436,13 +362,29 @@ export function AnalyzeDropzone() {
       )}
 
       {finished && (
-        <div className="mt-[16px] flex justify-center gap-[8px]">
-          <button type="button" onClick={reset} className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium" style={{ padding: "9px 14px" }}>
-            {queue.some((q) => q.status === "error") ? "Try again" : "Analyze more"}
-          </button>
-          <Link href="/signal" className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold" style={{ padding: "9px 14px" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+          <Button variant="ghost" onClick={reset}>
+            {queue.some((q) => q.status === "error") ? "Try again" : "Analyse more"}
+          </Button>
+          <Button variant="primary" href="/signal">
             Go to Library
-          </Link>
+          </Button>
+        </div>
+      )}
+
+      {idle && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+          {[
+            ["01", "Format detected", "Video or static, and its aspect ratio — the right criteria set is applied automatically."],
+            ["02", "Scored tier by tier", "Structural checks first, then contextual ones, each with a timestamp where it applies."],
+            ["03", "Benchmarked", "Placed against everything you’ve analysed in that format, so the number means something."],
+          ].map(([n, title, body], i) => (
+            <div key={n} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: 8, paddingTop: 16, borderTop: `2px solid ${i === 0 ? "var(--ws-accent)" : "var(--ws-hairline-strong)"}` }}>
+              <Mono style={{ fontSize: 10, color: i === 0 ? "var(--ws-accent)" : "var(--ws-ink-45)" }}>{n}</Mono>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{title}</span>
+              <span style={{ fontSize: 14, color: "var(--ws-ink-60)", lineHeight: 1.45 }}>{body}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>

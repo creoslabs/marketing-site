@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getAssetDetail } from "../live-data";
-import { VerdictLabel } from "../components";
+import { getAssetDetail, getLibrary } from "../live-data";
+import { AssetPicker, ExportCompareButton, SwapButton } from "./compare-controls";
+import { AppMain, Button, Card, Chip, PageHeader, appStyles as s, statusEmoji, type StatusKind } from "@/components/app/ui";
+import { MediaTile } from "@/components/app/media";
+import { EmptyState } from "@/components/ws-empty-state";
 
 export const metadata: Metadata = {
   title: "Compare — Signal",
@@ -13,91 +14,171 @@ const MAX_COMPARE = 4;
 
 export default async function ComparePage(props: PageProps<"/signal/compare">) {
   const { ids: idsParam } = await props.searchParams;
-  const ids = (typeof idsParam === "string" ? idsParam.split(",") : []).filter(Boolean).slice(0, MAX_COMPARE);
-  if (ids.length < 2) notFound();
+  const requested = (typeof idsParam === "string" ? idsParam.split(",") : []).filter(Boolean).slice(0, MAX_COMPARE);
 
-  const details = await Promise.all(ids.map((id) => getAssetDetail(id)));
-  if (details.some((d) => !d)) notFound();
-  const assets = details as NonNullable<(typeof details)[number]>[];
-  if (new Set(assets.map((a) => a.asset.format)).size > 1) notFound();
+  const { assets: library } = await getLibrary();
+  const byId = new Map(library.map((a) => [a.id, a]));
 
-  const names = [...new Set(assets.flatMap((a) => a.criteria.map((c) => c.name)))];
-  const columns = `1.2fr repeat(${assets.length}, 1fr)`;
+  // Same format only: the first asset decides the format. With no (or invalid)
+  // selection, default to the two most recent assets of the newest asset's format.
+  const lead = requested.map((id) => byId.get(id)).find(Boolean) ?? library[0];
+  const format = lead?.format;
+  const sameFormat = library.filter((a) => a.format === format);
+  let ids = requested.filter((id) => byId.get(id)?.format === format);
+  if (ids.length < 2) ids = sameFormat.slice(0, 2).map((a) => a.id);
+
+  if (!format || ids.length < 2) {
+    return (
+      <AppMain>
+        <PageHeader eyebrow="04 / Compare" line1="Compare two assets." line2="Same format only." sub="Only criteria both assets were scored on are shown." />
+        <EmptyState
+          size="large"
+          emoji="⚖️"
+          title="You need two assets of the same format"
+          description="Analyse at least two videos or two statics, then compare their results side by side."
+          action={
+            <Button variant="primary" icon="upload" href="/signal/analyze">
+              Analyse
+            </Button>
+          }
+        />
+      </AppMain>
+    );
+  }
+
+  const details = (await Promise.all(ids.map((id) => getAssetDetail(id)))).filter((d): d is NonNullable<typeof d> => Boolean(d));
+  if (details.length < 2) {
+    return (
+      <AppMain>
+        <PageHeader eyebrow="04 / Compare" line1="Compare two assets." line2="Same format only." />
+        <EmptyState size="large" emoji="⚖️" title="Couldn’t load those assets" description="Pick two from the Library to compare." action={<Button variant="primary" href="/signal">Go to Library</Button>} />
+      </AppMain>
+    );
+  }
+  const shownIds = details.map((d) => d.asset.id);
+
+  // Only criteria every selected asset was scored on.
+  const shared = details[0].criteria.filter((c) => details.every((d) => d.criteria.some((x) => x.name === c.name)));
+  const rows = shared.map((c) => {
+    const cells = details.map((d) => d.criteria.find((x) => x.name === c.name)!);
+    return { name: c.name, tier: c.tier, cells, differs: new Set(cells.map((x) => x.verdict)).size > 1 };
+  });
+  const differing = rows.filter((r) => r.differs).length;
+  const bothFail = rows.filter((r) => r.cells.every((x) => x.verdict === "fail")).map((r) => r.name);
+  const ranked = [...details].sort((a, b) => b.asset.score - a.asset.score);
+  const [top, runnerUp] = ranked;
+  const gap = Math.round(top.asset.score - runnerUp.asset.score);
+  const summary = gap === 0 ? `${top.asset.filename} and ${runnerUp.asset.filename} score the same.` : `${top.asset.filename} scores ${gap} point${gap === 1 ? "" : "s"} higher than ${runnerUp.asset.filename}.`;
+  const options = sameFormat.map((a) => ({ id: a.id, filename: a.filename, score: a.score }));
+
+  const csv = [
+    ["Criterion", "Tier", ...details.map((d) => d.asset.filename)],
+    ...rows.map((r) => [r.name, `Tier ${r.tier}`, ...r.cells.map((x) => x.verdict)]),
+  ];
 
   return (
-    <div className="ws-page-in" style={{ padding: "26px 22px" }}>
-      <Link href="/signal" className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink-60)" }}>
-        ← Library
-      </Link>
-      <h1 className="mt-[10px] text-[22px] font-bold tracking-[-0.02em]" style={{ color: "var(--ws-ink)" }}>
-        Compare
-      </h1>
-      <p className="mt-2 text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-        Only the criteria they share, shown side by side — scores are never blended across assets.
-      </p>
+    <AppMain>
+      <PageHeader
+        eyebrow="04 / Compare"
+        line1={`Compare ${details.length === 2 ? "two" : details.length} assets.`}
+        line2="Same format only."
+        sub="Only criteria both assets were scored on are shown. Video vs static comparisons aren’t possible — the criteria sets don’t overlap enough to be fair."
+        actions={
+          <>
+            {details.length === 2 && <SwapButton ids={shownIds} />}
+            <ExportCompareButton rows={csv} filename="signal-compare.csv" />
+          </>
+        }
+      />
 
-      <div
-        className="mt-[20px] grid grid-cols-1 gap-[14px]"
-        style={{ gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))` }}
-      >
-        {assets.map((detail) => (
-          <Link key={detail.asset.id} href={`/signal/report/${detail.asset.id}`} className="ws-card block" style={{ padding: "16px 18px" }}>
-            <p className="truncate text-[13.5px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              {detail.asset.filename}
-            </p>
-            <p className="ws-tabular mt-[6px] text-[26px] font-bold" style={{ color: "var(--ws-ink)" }}>
-              {detail.asset.score}
-            </p>
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-[18px] overflow-x-auto">
-        <div className="ws-stack" style={{ minWidth: 280 + assets.length * 160 }}>
-          <div className="grid items-center" style={{ gridTemplateColumns: columns, gap: 14, padding: "11px 16px", background: "var(--ws-surface-header)" }}>
-            <span className="ws-eyebrow" style={{ color: "var(--ws-ink-45)" }}>
-              CRITERION
-            </span>
-            {assets.map((detail) => (
-              <span key={detail.asset.id} className="ws-eyebrow truncate" style={{ color: "var(--ws-ink-45)" }}>
-                {detail.asset.filename}
-              </span>
-            ))}
-          </div>
-          {names.map((name) => {
-            const cells = assets.map((detail) => detail.criteria.find((c) => c.name === name));
-            const verdicts = new Set(cells.filter(Boolean).map((c) => c!.verdict));
-            const differs = verdicts.size > 1;
-            return (
-              <div
-                key={name}
-                className="grid items-start"
-                style={{ gridTemplateColumns: columns, gap: 14, padding: "12px 16px", background: differs ? "var(--ws-warn-tint)" : undefined }}
-              >
-                <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                  {name}
-                </span>
-                {cells.map((c, i) => (
-                  <div key={assets[i].asset.id}>
-                    {c ? (
-                      <>
-                        <VerdictLabel verdict={c.verdict} />
-                        <p className="mt-[3px] text-[11px] leading-[1.4]" style={{ color: "var(--ws-ink-45)" }}>
-                          {c.evidence}
-                        </p>
-                      </>
-                    ) : (
-                      <span className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        —
-                      </span>
-                    )}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
+        {details.map((d, i) => {
+          const winner = d.asset.id === top.asset.id && gap > 0;
+          return (
+            <Card key={d.asset.id} ring={winner} style={{ flex: "1 1 360px", padding: 20 }}>
+              <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                <div style={{ width: 90, flex: "none" }}>
+                  <MediaTile src={d.asset.assetUrl ?? d.frames?.[0]?.url} height={150} emoji={d.asset.format === "video" ? "🎬" : "🖼️"} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <AssetPicker current={d.asset.id} position={i} ids={shownIds} options={options} />
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span className={s.disp} style={{ fontSize: 56, letterSpacing: "-0.05em", lineHeight: 0.85, color: winner ? "var(--ws-accent)" : undefined }}>
+                      {Math.round(d.asset.score)}
+                    </span>
+                    <span style={{ color: "var(--ws-ink-45)" }}>/100</span>
                   </div>
-                ))}
+                  <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>
+                    {d.asset.format === "video" ? "9:16 video" : "Static"} · {d.asset.platforms.join(" + ")}
+                  </span>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            </Card>
+          );
+        })}
       </div>
-    </div>
+
+      <Card paper ring style={{ padding: 22 }}>
+        <span className={s.mono} style={{ fontSize: 10, color: "#55534d" }}>
+          What separates them
+        </span>
+        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{summary}</span>
+        <span style={{ fontSize: 14, color: "#46443f" }}>
+          {differing} of {rows.length} shared check{rows.length === 1 ? "" : "s"} differ.
+          {bothFail.length > 0 ? ` Both fail ${bothFail.slice(0, 2).join(" and ").toLowerCase()}${bothFail.length > 2 ? ` and ${bothFail.length - 2} more` : ""}.` : ""}
+        </span>
+      </Card>
+
+      {rows.length === 0 ? (
+        <EmptyState size="large" emoji="⚖️" title="No shared criteria" description="These assets weren’t scored on any of the same checks." />
+      ) : (
+        <div style={{ background: "var(--ws-surface)", border: "1px solid var(--ws-hairline)", borderRadius: 20, overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", color: "var(--ws-ink)", minWidth: 520 }}>
+            <thead>
+              <tr>
+                <th scope="col" style={{ textAlign: "left", padding: "14px 18px", fontWeight: 500 }}>
+                  <span className={s.mono} style={{ fontSize: 10, color: "var(--ws-ink-45)" }}>
+                    Shared criterion
+                  </span>
+                </th>
+                {details.map((d) => (
+                  <th key={d.asset.id} scope="col" style={{ textAlign: "left", padding: "14px 18px", fontWeight: 500 }}>
+                    <span className={s.mono} style={{ fontSize: 10, color: "var(--ws-ink-45)" }}>
+                      {d.asset.filename}
+                    </span>
+                  </th>
+                ))}
+                <th scope="col" style={{ padding: "14px 18px" }}>
+                  <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden" }}>Differs</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.name} style={{ borderTop: "1px solid var(--ws-hairline)", background: r.differs ? "var(--ws-surface-header)" : undefined }}>
+                  <td style={{ padding: "14px 18px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{r.name}</span>
+                      <span style={{ fontSize: 12, color: "var(--ws-ink-45)" }}>Tier {r.tier}</span>
+                    </div>
+                  </td>
+                  {r.cells.map((c, i) => (
+                    <td key={i} style={{ padding: "14px 18px" }} title={c.evidence}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: c.verdict === "fail" ? "var(--ws-warn)" : c.verdict === "partial" ? "var(--ws-ink)" : "var(--ws-ink-45)", textTransform: "capitalize" }}>
+                        <span className={s.emo} style={{ fontSize: 13 }} aria-hidden="true">
+                          {statusEmoji(c.verdict as StatusKind)}
+                        </span>
+                        {c.verdict}
+                      </span>
+                    </td>
+                  ))}
+                  <td style={{ padding: "14px 18px", textAlign: "right" }}>{r.differs && <Chip variant="accent">Differs</Chip>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </AppMain>
   );
 }

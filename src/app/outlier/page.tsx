@@ -12,47 +12,14 @@ import {
   getPostsByHookTag,
 } from "./live-data";
 import { relativeTime } from "@/lib/relative-time";
-import { Avatar, EmptyState, PlatformBadge, ProgressBar, ScoreChip, StatRow, Thumb } from "./components";
+import { formatCompact, formatScore } from "./format";
+import { pullsPaused } from "./pull-errors";
 import { AddCreatorButton, PullHandlesButton, BatchRepurposeButton } from "./creator-actions";
 import { OnboardingChecklist } from "./onboarding-checklist";
-import { NextStepSuggestion, type Suggestion } from "./next-step-suggestion";
-import { WhatsNewCard } from "@/components/whats-new-card";
-
-// Picked from real usage, most-relevant-first — never a fabricated
-// "try this" for a feature the data shows they wouldn't need. Only ever
-// returns one at a time so the home page doesn't accumulate nags.
-function computeNextStepSuggestion({
-  hasAnalyzedAny,
-  hasRepurposed,
-  favouritesCount,
-  hasCollections,
-}: {
-  hasAnalyzedAny: boolean;
-  hasRepurposed: boolean;
-  favouritesCount: number;
-  hasCollections: boolean;
-}): Suggestion | null {
-  if (!hasAnalyzedAny) return null; // still onboarding — the checklist already covers this
-  if (!hasRepurposed) {
-    return {
-      id: "try-repurpose",
-      title: "Turn a hook into your own script",
-      description: "You've analyzed a post — Outlier can generate an original script modeled on its structure.",
-      href: "/outlier/feed",
-      cta: "Find a post to repurpose",
-    };
-  }
-  if (favouritesCount >= 3 && !hasCollections) {
-    return {
-      id: "try-collections",
-      title: "Organize your favourites",
-      description: `You have ${favouritesCount} favourites saved — group them into a named collection to find them faster later.`,
-      href: "/outlier/favourites",
-      cta: "Create a collection",
-    };
-  }
-  return null;
-}
+import { AnnouncementBar, type Announcement } from "@/components/app/announcement";
+import { getLatestChangelogEntry } from "@/lib/changelog";
+import { Alert, AppMain, Avatar, Button, Card, CardHead, PageHeader, StatsRow, appStyles as s } from "@/components/app/ui";
+import { PostCard, PostGrid } from "@/components/app/media";
 
 export const metadata: Metadata = {
   title: "Outlier — Creos Labs",
@@ -66,8 +33,44 @@ function greeting() {
   return "Good evening";
 }
 
+// Picked from real usage, most-relevant-first — never a fabricated
+// "try this" for a feature the data shows they wouldn't need. Only ever
+// returns one at a time so the home page doesn't accumulate nags.
+function nextStepTip({
+  hasAnalyzedAny,
+  hasRepurposed,
+  favouritesCount,
+  hasCollections,
+}: {
+  hasAnalyzedAny: boolean;
+  hasRepurposed: boolean;
+  favouritesCount: number;
+  hasCollections: boolean;
+}): Announcement | null {
+  if (!hasAnalyzedAny) return null; // still onboarding — the checklist already covers this
+  if (!hasRepurposed) {
+    return {
+      id: "tip-try-repurpose",
+      label: "Tip",
+      text: "You've analyzed a post — turn its hook into an original script for your own content.",
+      href: "/outlier/feed",
+      cta: "Find a post to repurpose",
+    };
+  }
+  if (favouritesCount >= 3 && !hasCollections) {
+    return {
+      id: "tip-try-collections",
+      label: "Tip",
+      text: `You have ${favouritesCount} favourites saved — group them into a named collection to find them faster later.`,
+      href: "/outlier/favourites",
+      cta: "Create a collection",
+    };
+  }
+  return null;
+}
+
 export default async function OutlierHomePage() {
-  const [user, creators, posts, { jobs }, recentRepurposes, favouritePosts, collections, hookPatterns] = await Promise.all([
+  const [user, creators, posts, { jobs, finished }, recentRepurposes, favouritePosts, collections, hookPatterns] = await Promise.all([
     getUser(),
     getCreators(),
     getPosts(),
@@ -84,300 +87,216 @@ export default async function OutlierHomePage() {
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const allHandles = creators.flatMap((c) => c.handles);
-  // Matches the grid's max column count (lg:grid-cols-4) so this always
-  // fills a clean row instead of leaving one card stranded alone on a
-  // second, mostly-empty row.
   const topOutliers = posts.slice(0, 4);
   const runningJobs = jobs.filter((job) => job.state === "running");
   const thinCreators = creators.filter((creator) => creator.handles.some((h) => h.thin));
   const hasPosts = posts.length > 0;
-  const bestToday = hasPosts ? posts.reduce((best, post) => (post.score > best.score ? post : best), posts[0]) : null;
+  const best = hasPosts ? posts.reduce((b, post) => (post.score > b.score ? post : b), posts[0]) : null;
   const outlierPosts = posts.filter((post) => post.score >= 2);
-  const nextStepSuggestion = computeNextStepSuggestion({
+  const paused = pullsPaused(jobs, finished[0]?.finishedAtIso ?? null);
+
+  const latest = getLatestChangelogEntry();
+  const tip = nextStepTip({
     hasAnalyzedAny: posts.some((p) => p.analysisStatus === "done"),
     hasRepurposed: recentRepurposes.length > 0,
     favouritesCount: favouritePosts.length,
     hasCollections: collections.length > 0,
   });
+  const announcements: Announcement[] = [
+    { id: latest.id, label: "New", text: latest.summary, href: latest.href, cta: latest.cta },
+    ...(tip ? [tip] : []),
+  ];
 
   if (creators.length === 0) {
     return (
-      <div className="ws-page-in flex min-h-[70vh] items-center justify-center px-6 py-[22px]">
-        <div style={{ maxWidth: 420, width: "100%" }}>
+      <AppMain>
+        <PageHeader eyebrow={`01 / Home · ${today}`} line1={`${greeting()},`} line2={`${firstName}.`} sub="Nothing pulled yet." />
+        <div style={{ maxWidth: 560 }}>
           <OnboardingChecklist creators={creators} posts={posts} />
         </div>
-      </div>
+      </AppMain>
     );
   }
 
+  const bestHandle = best ? creatorById.get(best.creatorId)?.handles.find((h) => h.platform === best.platform)?.handle : null;
+
   return (
-    <div className="ws-page-in px-6 py-[22px]">
+    <AppMain>
+      <PageHeader
+        eyebrow={`01 / Home · ${today}`}
+        line1={`${greeting()},`}
+        line2={`${firstName}.`}
+        sub={hasPosts ? `${outlierPosts.length} outliers across ${posts.length} posts from ${creators.length} creator${creators.length === 1 ? "" : "s"}.` : "Nothing pulled yet."}
+        actions={
+          <>
+            <AddCreatorButton variant="ghost" />
+            <PullHandlesButton handles={allHandles} variant="primary" icon="refresh" />
+          </>
+        }
+      />
+
       <OnboardingChecklist creators={creators} posts={posts} />
-      <WhatsNewCard />
-      <NextStepSuggestion suggestion={nextStepSuggestion} />
-      <div className="flex flex-wrap items-start justify-between gap-[16px]">
-        <div>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>01 / HOME · {today.toUpperCase()}</p>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 46,
-              fontWeight: 700,
-              letterSpacing: "-0.03em",
-              lineHeight: 1.02,
-              textTransform: "uppercase",
-              color: "var(--ws-ink)",
-            }}
-          >
-            {greeting()},
-            <br />
-            <span style={{ color: "var(--ws-headline-grey)" }}>{firstName}.</span>
-          </h1>
-          <p className="mt-[14px] text-[13px]" style={{ color: "var(--ws-ink-60)" }}>
-            {hasPosts ? `${outlierPosts.length} outliers across ${posts.length} posts.` : "Nothing pulled yet."}
-          </p>
-        </div>
-        <div className="flex items-center gap-[9px]">
-          <AddCreatorButton className="ws-btn-ghost rounded-[8px] text-[12.5px] font-medium" style={{ padding: "10px 14px" }}>
-            Add creator
-          </AddCreatorButton>
-          <PullHandlesButton handles={allHandles} />
-        </div>
-      </div>
+      <AnnouncementBar items={announcements} />
 
-      <div className="ws-stack-row mt-[18px]">
-        <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>OUTLIERS</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {outlierPosts.length}
-          </p>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>score ≥ 2×</p>
-        </div>
-        <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>BEST SCORE</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {bestToday ? `${bestToday.score.toFixed(1)}×` : "—"}
-          </p>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            {bestToday
-              ? `@${creatorById.get(bestToday.creatorId)?.handles.find((h) => h.platform === bestToday.platform)?.handle}`
-              : "no posts yet"}
-          </p>
-        </div>
-        <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>POSTS PULLED</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {posts.length}
-          </p>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-            across {creators.length} creators
-          </p>
-        </div>
-        <div className="flex-1" style={{ padding: "16px 18px" }}>
-          <p className="ws-eyebrow" style={{ marginBottom: 10 }}>NEEDS ATTENTION</p>
-          <p className="ws-tabular text-[28px] font-medium tracking-[-0.04em]" style={{ color: "var(--ws-ink)" }}>
-            {thinCreators.length}
-          </p>
-          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>thin history</p>
-        </div>
-      </div>
+      {paused && (
+        <Alert
+          compact
+          actions={
+            <Button variant="ghost" size="sm" href="/outlier/progress">
+              See what failed
+            </Button>
+          }
+        >
+          <span>
+            <b style={{ color: "var(--ws-ink)", fontSize: 14 }}>Pulls are paused.</b>{" "}
+            {paused.kind === "limit" ? "Apify’s monthly usage limit was reached" : "Apify rejected your token"} — {paused.jobs.length} pull{paused.jobs.length === 1 ? "" : "s"} failed.
+          </span>
+        </Alert>
+      )}
 
-      <div className="mt-[18px] grid grid-cols-1 gap-[18px] lg:grid-cols-[1fr_352px]">
-        {/* Left column */}
-        <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-          <div className="flex items-center">
-            <h2 className="text-[15px] font-semibold" style={{ color: "var(--ws-ink)" }}>
-              Today&apos;s top outliers
-            </h2>
-            <div className="flex-1" />
-            {hasPosts && (
-              <Link href="/outlier/feed" className="ws-link-accent text-[12px] font-medium">
-                All {posts.length} in Feed →
-              </Link>
-            )}
-          </div>
+      <StatsRow
+        stats={[
+          { label: "Outliers", value: outlierPosts.length, note: "score ≥ 2×" },
+          { label: "Best score", value: best ? formatScore(best.score) : "—", note: bestHandle ? `@${bestHandle}` : "no posts yet", accent: true },
+          { label: "Posts pulled", value: posts.length, note: `across ${creators.length} creator${creators.length === 1 ? "" : "s"}` },
+          { label: "Needs attention", value: thinCreators.length, note: "thin history" },
+        ]}
+      />
 
-          {hasPosts ? (
-            <div className="mt-[14px] grid grid-cols-2 gap-[14px] sm:grid-cols-3 lg:grid-cols-4">
-              {topOutliers.map((post) => {
-                const creator = creatorById.get(post.creatorId);
-                const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle ?? "";
-                return (
-                  <Link key={post.id} href={`/outlier/video/${post.id}`} className="block">
-                    <Thumb aspectRatio="9/13" radius={10}>
-                      {post.thumbnailUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element -- a scraped CDN URL, not a static asset next/image can optimize
-                        <img
-                          src={post.thumbnailUrl}
-                          alt={post.caption}
-                          className="absolute inset-0 h-full w-full object-cover"
-                        />
-                      )}
-                      <div className="absolute left-[7px] top-[7px]" style={{ zIndex: 2 }}>
-                        <PlatformBadge platform={post.platform} />
-                      </div>
-                      <div
-                        className="absolute inset-x-0 bottom-0"
-                        style={{
-                          height: 44,
-                          background:
-                            "linear-gradient(to top, color-mix(in srgb, var(--ws-ground) 70%, transparent), transparent)",
-                        }}
-                      />
-                      <div className="absolute bottom-[7px] left-[7px]" style={{ zIndex: 2 }}>
-                        <ScoreChip score={post.score} median={post.median} />
-                      </div>
-                    </Thumb>
-                    <div className="mt-[7px] flex items-center gap-[6px]">
-                      {creator && <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={18} />}
-                      <span className="truncate text-[11px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                        {handle}
-                      </span>
-                    </div>
-                    <div className="mt-[4px]">
-                      <StatRow views={post.views} engagement={post.engagement} size="sm" />
-                    </div>
-                    <p className="mt-[2px] truncate text-[10px]" style={{ color: "var(--ws-ink-45)" }}>
-                      {post.postedAt}
-                    </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "stretch" }}>
+        <div style={{ flex: "3 1 840px", minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+          <Card>
+            <CardHead
+              label="Today’s top outliers"
+              right={
+                hasPosts && (
+                  <Link href="/outlier/feed" className={s.cardLink}>
+                    All {posts.length} in Feed →
                   </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState
-              title="No posts pulled yet"
-              description="Pull your watchlist to start scoring posts against each creator's own median."
-              action={
-                <PullHandlesButton
-                  handles={allHandles}
-                  className="ws-btn-primary rounded-[8px] text-[12.5px] font-semibold"
-                  style={{ padding: "9px 14px" }}
-                />
+                )
               }
             />
-          )}
+            {hasPosts ? (
+              <PostGrid cols={4}>
+                {topOutliers.map((post, i) => {
+                  const creator = creatorById.get(post.creatorId);
+                  const handle = creator?.handles.find((h) => h.platform === post.platform)?.handle ?? "";
+                  return (
+                    <PostCard
+                      key={post.id}
+                      href={`/outlier/video/${post.id}`}
+                      ring={i === 0}
+                      tile={{ src: post.thumbnailUrl, platform: post.platform, score: formatScore(post.score), scoreAccent: post.score >= 2, height: 270, emoji: "🎬" }}
+                      creator={{ initials: creator?.initials ?? "?", handle, avatarUrl: creator?.avatarUrl }}
+                      date={post.postedAt}
+                      caption={post.caption}
+                      views={formatCompact(post.views)}
+                      engagement={`${post.engagement.toFixed(1)}%`}
+                      hook={post.hookTags[0]}
+                    />
+                  );
+                })}
+              </PostGrid>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "32px 0", textAlign: "center" }}>
+                <span style={{ fontSize: 16, fontWeight: 700 }}>No posts pulled yet</span>
+                <span style={{ fontSize: 14, color: "var(--ws-ink-45)" }}>Pull your watchlist to start scoring posts against each creator’s own median.</span>
+                <PullHandlesButton handles={allHandles} variant="primary" icon="refresh" />
+              </div>
+            )}
+          </Card>
         </div>
 
-        {/* Right column */}
-        <div className="flex flex-col gap-[14px]">
+        <div style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
           {topPattern && (
-            <div
-              className="rounded-[10px]"
-              style={{ padding: "18px 20px 20px", background: "var(--ws-accent-tint)", border: "1px solid var(--ws-accent-tint-border)" }}
-            >
-              <p className="ws-eyebrow" style={{ color: "var(--ws-accent-tint-ink)" }}>
-                PATTERN WORTH TAKING
+            <Card paper ring>
+              <CardHead label="Pattern worth taking" paper />
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.35 }}>
+                “{topPattern.tag}” beat the median for all {topPattern.creatorCount} creators who used it, averaging {topPattern.avgScore.toFixed(1)}×.
               </p>
-              <p className="mt-[10px] text-[13px] leading-[1.5]" style={{ color: "var(--ws-accent-tint-ink)" }}>
-                &ldquo;{topPattern.tag}&rdquo; beat the median for all {topPattern.creatorCount} creators who used
-                it, averaging {topPattern.avgScore.toFixed(1)}×.
-              </p>
-              <div className="mt-[14px] flex items-center gap-[9px]">
-                <BatchRepurposeButton
-                  posts={topPatternPosts}
-                  className="ws-btn-primary rounded-[7px] text-[11.5px] font-semibold"
-                  style={{ padding: "8px 12px" }}
-                />
-                <Link
-                  href="/outlier/trends"
-                  className="rounded-[7px] text-[11.5px] font-medium"
-                  style={{ padding: "8px 12px", color: "var(--ws-accent-tint-ink)" }}
-                >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <BatchRepurposeButton posts={topPatternPosts} variant="ink" />
+                <Button variant="ghost" size="sm" href="/outlier/trends" style={{ color: "#0b0b0a", borderColor: "#b9b6ae" }}>
                   See in Trends
-                </Link>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
 
-          <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-            <div className="flex items-center">
-              <p className="ws-eyebrow">PROCESSING NOW</p>
-              <div className="flex-1" />
-              <Link href="/outlier/progress" className="ws-link-accent text-[11.5px] font-medium">
-                Progress →
-              </Link>
-            </div>
+          <Card>
+            <CardHead
+              label="Processing now"
+              right={
+                <Link href="/outlier/progress" className={s.cardLink}>
+                  Progress →
+                </Link>
+              }
+            />
             {runningJobs.length > 0 ? (
-              <div className="mt-[14px] flex flex-col gap-[14px]">
-                {runningJobs.map((job) => {
-                  return (
-                    <div key={job.id}>
-                      <div className="flex items-center">
-                        <span className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          @{job.handle} · {job.scope}
-                        </span>
-                        <div className="flex-1" />
-                      </div>
-                      <p className="mt-[4px] text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        {job.stage}
-                      </p>
-                      <div className="mt-[8px]">
-                        <ProgressBar pct={job.pct} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {runningJobs.map((job) => (
+                  <div key={job.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>
+                      @{job.handle} · {job.scope}
+                    </span>
+                    <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>{job.stage}</span>
+                    <div className="ws-progress-indeterminate" style={{ height: 4, borderRadius: 2, background: "var(--ws-hairline)" }} />
+                  </div>
+                ))}
               </div>
             ) : (
-              <EmptyState title="Nothing running right now" />
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--ws-surface-header)", borderRadius: 14, padding: 16 }}>
+                <span className={s.emo} style={{ fontSize: 20 }} aria-hidden="true">
+                  {paused ? "⏸️" : "💤"}
+                </span>
+                <span style={{ fontSize: 14, color: "var(--ws-ink-60)" }}>
+                  {paused ? "Nothing running — pulls are paused until the Apify limit resets." : "Nothing running right now."}
+                </span>
+              </div>
             )}
-          </div>
+          </Card>
 
           {thinCreators.length > 0 && (
-            <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-              <p className="ws-eyebrow">NEEDS ATTENTION</p>
-              <div className="mt-[14px] flex flex-col gap-[14px]">
-                {thinCreators.map((creator) => {
-                  const thinHandle = creator.handles.find((h) => h.thin)!;
-                  return (
-                    <div key={creator.id} className="flex items-center gap-[10px]">
-                      <Avatar initials={creator.initials} avatarUrl={creator.avatarUrl} size={26} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                          {creator.displayName}
-                        </p>
-                        <p className="text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                          {thinHandle.postCount} posts — median not reliable yet
-                        </p>
-                      </div>
-                      <PullHandlesButton
-                        handles={[thinHandle]}
-                        className="ws-btn-ghost shrink-0 rounded-[7px] text-[11.5px] font-medium"
-                        style={{ padding: "7px 10px" }}
-                      >
-                        Pull more
-                      </PullHandlesButton>
+            <Card>
+              <CardHead label="Needs attention" />
+              {thinCreators.map((creator) => {
+                const thinHandle = creator.handles.find((h) => h.thin)!;
+                return (
+                  <div key={creator.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Avatar initials={creator.initials} src={creator.avatarUrl} size={36} />
+                    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{creator.displayName}</span>
+                      <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>{thinHandle.postCount} posts — median not reliable yet</span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <PullHandlesButton handles={[thinHandle]} variant="ghost" size="sm">
+                      Pull more
+                    </PullHandlesButton>
+                  </div>
+                );
+              })}
+            </Card>
           )}
 
           {recentRepurposes.length > 0 && (
-            <div className="ws-card" style={{ padding: "18px 20px 20px" }}>
-              <p className="ws-eyebrow">YOUR RECENT REPURPOSES</p>
-              <div className="mt-[14px] flex flex-col gap-[12px]">
+            <Card>
+              <CardHead label="Your recent repurposes" />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {recentRepurposes.map((item) => {
                   const creator = creatorById.get(item.creatorId);
                   return (
-                    <Link key={item.id} href={`/outlier/repurpose/${item.id}`} className="ws-row-hover -mx-[6px] block rounded-[8px] px-[6px] py-[4px]">
-                      <p className="text-[12.5px] font-medium" style={{ color: "var(--ws-ink)" }}>
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-[11.5px]" style={{ color: "var(--ws-ink-45)" }}>
-                        from {creator?.handles[0].handle ?? "a tracked creator"} · {item.sourceScore.toFixed(1)}× ·{" "}
-                        {relativeTime(item.createdAtIso)}
-                      </p>
+                    <Link key={item.id} href={`/outlier/repurpose/${item.id}`} style={{ display: "flex", flexDirection: "column", gap: 3, padding: "8px 0" }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{item.title}</span>
+                      <span style={{ fontSize: 13, color: "var(--ws-ink-45)" }}>
+                        from {creator?.handles[0].handle ?? "a tracked creator"} · {item.sourceScore.toFixed(1)}× · {relativeTime(item.createdAtIso)}
+                      </span>
                     </Link>
                   );
                 })}
               </div>
-            </div>
+            </Card>
           )}
         </div>
       </div>
-    </div>
+    </AppMain>
   );
 }
