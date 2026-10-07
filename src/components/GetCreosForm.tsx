@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import styles from "@/components/home/home.module.css";
+import styles from "@/components/site/site.module.css";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-// The one real signup mechanism on the site — deliberately lives only here,
-// inside the pricing card, so there's a single moment where a visitor enters
-// their email rather than two near-identical "Get Creos" forms in different
-// places on the page.
+// The one real signup mechanism on the site — it lives in the founding-access
+// card (the `#get` destination for every "Get Creos" button) so there's a
+// single moment where a visitor enters their email.
 export function GetCreosForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -43,35 +42,36 @@ export function GetCreosForm() {
 
   if (status === "success") {
     return (
-      <p className={styles.signupDone}>
+      <p id="get" className={styles.getDone} role="status">
         You&apos;re on the list — we&apos;ll be in touch.
       </p>
     );
   }
 
   return (
-    <div className="w-full">
-      <form onSubmit={handleSubmit} className={styles.signup}>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
-          disabled={status === "loading"}
-          className={styles.signupInput}
-        />
-        <button type="submit" disabled={status === "loading"} className={styles.btn}>
-          {status === "loading" ? (
-            "Joining…"
-          ) : (
-            <>
-              Get Creos <span className="cta-arrow">→</span>
-            </>
-          )}
-        </button>
-      </form>
-      {status === "error" && <p className={styles.signupErr}>{message}</p>}
-    </div>
+    <form id="get" onSubmit={handleSubmit} className={styles.getForm} noValidate={false}>
+      <label htmlFor="get-creos-email" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
+        Email address
+      </label>
+      <input
+        id="get-creos-email"
+        type="email"
+        required
+        autoComplete="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@email.com"
+        disabled={status === "loading"}
+        className={styles.getInput}
+      />
+      <button type="submit" disabled={status === "loading"} className={`${styles.btn} ${styles.btnInk} ${styles.btnFull}`}>
+        {status === "loading" ? "Joining…" : "Get Creos →"}
+      </button>
+      {status === "error" && (
+        <p className={styles.getErr} role="alert">
+          {message}
+        </p>
+      )}
+    </form>
   );
 }

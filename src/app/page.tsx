@@ -1,39 +1,12 @@
-import styles from "@/components/home/home.module.css";
-import { HomeHeader } from "@/components/home/HomeHeader";
-import { HomeHero } from "@/components/home/HomeHero";
-import { HomePlatforms } from "@/components/home/HomePlatforms";
-import { HomeLoop } from "@/components/home/HomeLoop";
-import { HomeOutlierSection } from "@/components/home/HomeOutlierSection";
-import { HomeSignalSection } from "@/components/home/HomeSignalSection";
-import { HomePricing } from "@/components/home/HomePricing";
-import { HomeCustomSection } from "@/components/home/HomeCustomSection";
-import { HomeClose } from "@/components/home/HomeClose";
-import { HomeFooter } from "@/components/home/HomeFooter";
+import type { Metadata } from "next";
+import { HomePage } from "@/components/site/HomePage";
+
+export const metadata: Metadata = {
+  title: "Creos Labs — Marketing, engineered",
+  description:
+    "Social media marketing tools and custom builds for teams, agencies and creators. Outlier and Signal are live — made by a marketer, for people who actually run campaigns.",
+};
 
 export default function Home() {
-  return (
-    <div className={styles.creosHome} data-creos-home data-theme="dark" suppressHydrationWarning>
-      {/* Applies a saved theme choice before paint so there's no flash. This
-          div is server-rendered and never re-diffed by React, so mutating
-          the attribute imperatively here is safe. */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html:
-            "try{var t=localStorage.getItem('home-theme');if(t==='light'||t==='dark')document.currentScript.parentElement.setAttribute('data-theme',t);}catch(e){}",
-        }}
-      />
-      <HomeHeader />
-      <main>
-        <HomeHero />
-        <HomePlatforms />
-        <HomeLoop />
-        <HomeOutlierSection />
-        <HomeSignalSection />
-        <HomePricing />
-        <HomeCustomSection />
-        <HomeClose />
-      </main>
-      <HomeFooter />
-    </div>
-  );
+  return <HomePage />;
 }
