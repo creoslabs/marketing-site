@@ -3,7 +3,8 @@
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import styles from "./site.module.css";
-import { Asterisk, ENQUIRE_HREF, Wordmark, cx } from "./ui";
+import { BrandLockup } from "@/components/brand";
+import { ENQUIRE_HREF, cx } from "./ui";
 import { useProductHref, useDashboardHref } from "@/lib/use-product-href";
 
 type Product = "outlier" | "signal";
@@ -60,19 +61,15 @@ export function SiteHeader({ product, isLoggedIn = false }: { product?: Product;
       <header className={cx(styles.wrap, styles.header, product && styles.headerProd)}>
         {product ? (
           <Link href={rootHref} className={styles.lockup} aria-label="Creos Labs home">
-            <Asterisk size={28} />
-            <Wordmark className={styles.wordmark} />
+            <BrandLockup className={styles.lockImg} />
             <span className={styles.lockSlash} aria-hidden="true">
               /
             </span>
-            <span className={cx(styles.disp, styles.wordmark)} style={{ color: "var(--paper)" }}>
-              {label}
-            </span>
+            <span className={cx(styles.disp, styles.productName)}>{label}</span>
           </Link>
         ) : (
           <a href="#top" className={cx(styles.lockup, styles.lockupHome)} aria-label="Creos Labs home">
-            <Asterisk size={30} />
-            <Wordmark className={cx(styles.wordmark, styles.wordmarkHome)} />
+            <BrandLockup className={cx(styles.lockImg, styles.lockImgHome)} />
           </a>
         )}
 

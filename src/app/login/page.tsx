@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LoginForm } from "@/components/LoginForm";
+import { BrandLockup } from "@/components/brand";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,8 +13,8 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -top-64 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-white/10 blur-[140px]" />
 
       <div className="relative w-full max-w-sm">
-        <Link href="/" className="text-[15px] font-semibold tracking-tight">
-          Creos Labs
+        <Link href="/" aria-label="Creos Labs home" className="inline-flex">
+          <BrandLockup height={24} />
         </Link>
 
         <h1 className="mt-8 text-3xl font-semibold tracking-tight">

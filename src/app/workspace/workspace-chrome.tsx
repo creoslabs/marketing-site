@@ -9,6 +9,7 @@ import { useCommandPalette } from "@/components/ws-command-palette";
 import { NotificationBell } from "@/components/notification-bell";
 import { WsTabNav } from "@/components/ws-tab-nav";
 import { NewMenu } from "./new-menu";
+import { BrandLockupMono } from "@/components/brand";
 
 const TABS = [
   { href: "/workspace", label: "Overview", exact: true },
@@ -55,18 +56,8 @@ export function WorkspaceChrome({
       className="flex items-center px-4 sm:px-[28px]"
       style={{ height: CHROME_HEIGHT, gap: 20, borderBottom: "1px solid var(--ws-hairline)" }}
     >
-      <Link
-        href="/workspace"
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          letterSpacing: "-0.02em",
-          color: "var(--ws-wordmark-ink)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        CREOS LABS
-        <sup style={{ fontSize: 9, marginLeft: 1, fontWeight: 500 }}>®</sup>
+      <Link href="/workspace" aria-label="Creos Labs workspace" style={{ display: "flex", alignItems: "center" }}>
+        <BrandLockupMono height={20} color="var(--ws-wordmark-ink)" />
       </Link>
 
       <div className="hidden sm:block" style={{ height: CHROME_HEIGHT }}>

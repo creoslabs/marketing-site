@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import styles from "./site.module.css";
-import { Asterisk, ENQUIRE_HREF, Wordmark, cx } from "./ui";
+import { BrandLockup } from "@/components/brand";
+import { ENQUIRE_HREF, cx } from "./ui";
 import { useProductHref, useLandingHref } from "@/lib/use-product-href";
 
 const YEAR = 2026;
@@ -24,8 +25,7 @@ export function SiteFooter({ variant }: { variant: "home" | "product" }) {
         <div className={cx(styles.wrap, styles.footerHome)}>
           <div className={styles.footerTop}>
             <div className={styles.bigMark}>
-              <Asterisk size={112} className={styles.bigAsterisk} />
-              <Wordmark className={styles.bigMarkText} />
+              <BrandLockup className={styles.bigLockup} />
             </div>
             <nav className={styles.footNav} aria-label="Footer">
               <a href="#products">Products</a>
@@ -48,8 +48,7 @@ export function SiteFooter({ variant }: { variant: "home" | "product" }) {
         <div className={styles.footProdTop}>
           <div className={styles.footBrand}>
             <Link href={rootHref} className={styles.footBrandRow} aria-label="Creos Labs home">
-              <Asterisk size={52} className={styles.footAsterisk} />
-              <Wordmark className={styles.footBrandText} />
+              <BrandLockup className={styles.footLockup} />
             </Link>
             <span className={styles.footTag}>Marketing technology, built by marketers.</span>
           </div>

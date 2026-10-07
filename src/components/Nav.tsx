@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LiquidButton } from "@/components/ui/button";
 import { useProductHref } from "@/lib/use-product-href";
+import { BrandLockup } from "@/components/brand";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
@@ -55,8 +56,8 @@ export default function Nav() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <div className="flex items-center gap-8">
-          <Link href={topHref} className="text-[15px] font-semibold tracking-tight">
-            Creos Labs
+          <Link href={topHref} aria-label="Creos Labs home" className="flex items-center">
+            <BrandLockup height={22} />
           </Link>
 
           <nav className="hidden items-center gap-6 text-[13.5px] text-muted sm:flex">

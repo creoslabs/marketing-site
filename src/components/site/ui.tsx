@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import styles from "./site.module.css";
+import { BrandMark } from "@/components/brand";
 
 export const ENQUIRE_HREF = "mailto:hello@creos-labs.com?subject=Custom%20build%20enquiry";
 export const TEAMS_HREF = "mailto:hello@creos-labs.com?subject=Creos%20for%20teams";
@@ -8,28 +9,10 @@ export function cx(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
 }
 
-// The approved split-asterisk: six arms, top three paper and bottom three
-// accent. On any light or white background the whole mark is ink.
+// The approved split-asterisk symbol (brand pack artwork). `light` is for light
+// and white backgrounds, where the whole mark is black.
 export function Asterisk({ size = 24, light = false, className }: { size?: number; light?: boolean; className?: string }) {
-  const top = light ? "#0B0B0A" : "#F2F0EA";
-  const bottom = light ? "#0B0B0A" : "#FFD60A";
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className} style={{ flex: "none" }}>
-      <g strokeWidth="3.2" strokeLinecap="square">
-        <path d="M12 12V2.5M12 12L3.8 7.2M12 12l8.2-4.8" stroke={top} />
-        <path d="M12 12v9.5M12 12l-8.2 4.8M12 12l8.2 4.8" stroke={bottom} />
-      </g>
-    </svg>
-  );
-}
-
-// "CREOS LABS®" — never "CREOS LABS*".
-export function Wordmark({ className }: { className?: string }) {
-  return (
-    <span className={cx(styles.disp, className)}>
-      CREOS LABS<sup>®</sup>
-    </span>
-  );
+  return <BrandMark size={size} light={light} className={className} />;
 }
 
 export function Emoji({ children, className, style }: { children: ReactNode; className?: string; style?: CSSProperties }) {

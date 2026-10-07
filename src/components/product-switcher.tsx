@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { OutlierMark, SignalMark } from "./product-icons";
 import { useProductHref, useDashboardHref } from "@/lib/use-product-href";
+import { BrandLockupMono } from "@/components/brand";
 
 const PRODUCTS = [
   { key: "outlier", label: "Outlier", Mark: OutlierMark },
@@ -44,9 +45,7 @@ export function ProductSwitcher({ current }: { current: "outlier" | "signal" }) 
         className="ws-row-hover flex items-center whitespace-nowrap"
         style={{ gap: 14, fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", padding: "6px 8px", margin: "-6px -8px", borderRadius: 8 }}
       >
-        <span style={{ color: "var(--ws-wordmark-ink)" }}>
-          CREOS LABS<sup style={{ fontSize: 9, marginLeft: 1, fontWeight: 500 }}>®</sup>
-        </span>
+        <BrandLockupMono height={20} color="var(--ws-wordmark-ink)" />
         <span style={{ fontWeight: 400, color: "var(--ws-ink-45)" }}>/</span>
         <span className="flex items-center gap-[8px]" style={{ color: "var(--ws-wordmark-ink)", textTransform: "uppercase" }}>
           <active.Mark size={16} />
