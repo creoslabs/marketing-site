@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import type { ReactNode } from "react";
 import styles from "./site.module.css";
+import { Reveal } from "@/components/Reveal";
 import { Accent, Eyebrow, Mono, cx } from "./ui";
 
 const LOGOS = [
@@ -18,17 +19,21 @@ const LOGOS = [
 function LogoRow({ small }: { small?: boolean }) {
   return (
     <div className={cx(styles.integLogos, small && styles.integLogosSmall)} role="list" aria-label="Works with Slack, email, Google Sheets and Notion">
-      {LOGOS.map((l) => {
+      {LOGOS.map((l, i) => {
         const hasFile = existsSync(path.join(process.cwd(), "public/brand/integrations", `${l.key}.svg`));
-        return hasFile ? (
-          <span key={l.key} role="listitem" className={styles.integLogoTile} title={l.name}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
-            <img src={`/brand/integrations/${l.key}.svg`} alt={l.name} />
-          </span>
-        ) : (
-          <span key={l.key} role="listitem" className={styles.integLogoName}>
-            {l.name}
-          </span>
+        return (
+          <Reveal key={l.key} delay={i * 90}>
+            {hasFile ? (
+              <span role="listitem" className={styles.integLogoTile} data-name={l.name}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
+                <img src={`/brand/integrations/${l.key}.svg`} alt={l.name} />
+              </span>
+            ) : (
+              <span role="listitem" className={styles.integLogoName}>
+                {l.name}
+              </span>
+            )}
+          </Reveal>
         );
       })}
     </div>
