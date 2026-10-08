@@ -40,6 +40,8 @@ All redirect URIs live on the root domain, whichever product the user starts fro
 
 ## 4. Logos
 
+> **Placeholder artwork in place.** `slack.svg`, `sheets.svg` and `notion.svg` currently come from SVG Repo (third-party uploads), and `sheets.svg` is the Google Drive icon, not Sheets. Replace all three with the official files from each brand's own asset page before launch.
+
 Use each brand's official files only, and check their guidelines (Slack, Google, Notion all publish them).
 Drop them in `public/brand/integrations/` as `slack.svg`, `sheets.svg`, `notion.svg`. Until a file exists the UI shows the service name
 instead of a logo — nothing is redrawn. Email uses a generic envelope. Phrase as "works with", never as a partnership.

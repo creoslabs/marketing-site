@@ -1,4 +1,5 @@
 import styles from "./site.module.css";
+import { HeroIntegrations } from "./IntegrationsBand";
 import { Asterisk, ENQUIRE_HREF, Emoji, Mono, Accent, cx } from "./ui";
 
 type OrbitChip = { x: number; y: number; emoji: string; label: string; dark: boolean };
@@ -66,6 +67,7 @@ export function HomeHero() {
             Enquire about a custom build →
           </a>
         </div>
+        <HeroIntegrations />
       </div>
 
       <div className={styles.heroVisual}>

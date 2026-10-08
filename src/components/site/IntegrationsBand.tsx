@@ -111,3 +111,14 @@ export function IntegrationsLine({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+// Under the hero CTAs: a quiet "Works with" row.
+export function HeroIntegrations() {
+  if (!integrationsLive()) return null;
+  return (
+    <div className={styles.heroWorks}>
+      <Mono className={styles.heroWorksLabel}>Works with</Mono>
+      <LogoRow small />
+    </div>
+  );
+}

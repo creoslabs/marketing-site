@@ -3613,3 +3613,16 @@
   line-height: 1.5;
   color: var(--muted-d);
 }
+
+.heroWorks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 28px;
+}
+
+.heroWorksLabel {
+  font-size: 11px;
+  color: var(--label-d);
+}
