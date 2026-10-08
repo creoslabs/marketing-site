@@ -7,7 +7,7 @@ import styles from "./integrations.module.css";
 // pack. Until a file is there, the tile shows the service's initial rather
 // than anything redrawn.
 export function ProviderLogo({ provider, hasFile, size = 44 }: { provider: Provider; hasFile: boolean; size?: number }) {
-  const inner = Math.round(size * 0.6);
+  const inner = Math.round(size * 0.8);
   return (
     <span className={styles.logo} style={{ width: size, height: size }} aria-hidden="true">
       {hasFile ? (

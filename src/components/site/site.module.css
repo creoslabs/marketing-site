@@ -3478,7 +3478,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 40px;
 }
 
 .integLogoTile {
@@ -3487,13 +3487,11 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: var(--paper);
 }
 
 .integLogoTile img {
-  width: 36px;
-  height: 36px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -3504,17 +3502,12 @@
 }
 
 .integLogosSmall {
-  gap: 12px;
+  gap: 28px;
 }
 
 .integLogosSmall .integLogoTile {
-  width: 48px;
-  height: 48px;
-}
-
-.integLogosSmall .integLogoTile img {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
 }
 
 .slackMock {
