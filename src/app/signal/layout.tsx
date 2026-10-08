@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { SignalChrome } from "./signal-chrome";
+import { countAttention } from "@/lib/integrations/store";
 import { WsUIProvider } from "@/components/ws-ui-provider";
 
 function deriveInitials(name: string) {
@@ -23,11 +24,12 @@ export default async function SignalLayout({ children }: { children: React.React
   const name = getDisplayName(user);
   const email = user?.email ?? "";
   const initials = deriveInitials(name);
+  const attention = (await countAttention(user.id)) > 0;
 
   return (
     <div className="ws">
       <WsUIProvider>
-        <SignalChrome name={name} email={email} initials={initials} />
+        <SignalChrome name={name} email={email} initials={initials} attention={attention} />
         {children}
       </WsUIProvider>
     </div>

@@ -78,7 +78,7 @@ export async function proxy(request: NextRequest) {
       ? `/products/${subdomainProduct}`
       : originalPath === "/app"
         ? `/${subdomainProduct}`
-        : originalPath.startsWith(`/${subdomainProduct}`)
+        : originalPath.startsWith(`/${subdomainProduct}`) || originalPath.startsWith("/api/")
           ? originalPath
           : `/${subdomainProduct}${originalPath}`;
 

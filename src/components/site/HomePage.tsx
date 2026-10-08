@@ -3,6 +3,7 @@ import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { HomeHero } from "./HomeHero";
 import { TryLink } from "./TryLink";
+import { IntegrationsBand } from "./IntegrationsBand";
 import { Accent, Asterisk, Avatar, AvatarStack, ENQUIRE_HREF, Emoji, Eyebrow, Mono, cx } from "./ui";
 
 // Prices for the three scoped builds. Left empty on purpose: the design handoff
@@ -213,6 +214,8 @@ export function HomePage() {
             </div>
           </div>
         </section>
+
+        <IntegrationsBand />
 
         <section id="services" className={cx(styles.services, styles.secLight)}>
           <div className={styles.wrap}>

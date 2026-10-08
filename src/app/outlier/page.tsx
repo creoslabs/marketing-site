@@ -16,6 +16,7 @@ import { formatCompact, formatScore } from "./format";
 import { pullsPaused } from "./pull-errors";
 import { AddCreatorButton, PullHandlesButton, BatchRepurposeButton } from "./creator-actions";
 import { OnboardingChecklist } from "./onboarding-checklist";
+import { IntegrationPrompt } from "@/components/integrations/integration-prompt";
 import { AnnouncementBar, type Announcement } from "@/components/app/announcement";
 import { getLatestChangelogEntry } from "@/lib/changelog";
 import { Alert, AppMain, Avatar, Button, Card, CardHead, PageHeader, StatsRow, appStyles as s } from "@/components/app/ui";
@@ -137,6 +138,7 @@ export default async function OutlierHomePage() {
 
       <OnboardingChecklist creators={creators} posts={posts} />
       <AnnouncementBar items={announcements} />
+      <IntegrationPrompt product="outlier" />
 
       {paused && (
         <Alert

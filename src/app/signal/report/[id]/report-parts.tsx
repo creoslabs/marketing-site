@@ -8,6 +8,7 @@ import { Icon } from "@/components/app/icons";
 import { ExportPdfButton, type PdfReportData } from "./report-pdf";
 import { ReanalyzeButton } from "./reanalyze-button";
 import { CompareButton } from "./compare-button";
+import { SendToMenu } from "@/components/integrations/send-to-menu";
 
 export type VersionLink = { id: string; filename: string; score: number } | null | undefined;
 export type TopFix = { title: string; clears: number; criteria: string[]; body: string };
@@ -55,6 +56,7 @@ export function ReportHeader({
         </Link>
       )}
       <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <SendToMenu kind="signal" id={asset.id} product="signal" />
         <CompareButton assetId={asset.id} format={asset.format} />
         <ExportPdfButton data={pdfData} />
         <ReanalyzeButton assetId={asset.id} platforms={asset.platforms} />

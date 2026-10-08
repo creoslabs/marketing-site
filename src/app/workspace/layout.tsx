@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { WorkspaceChrome } from "./workspace-chrome";
+import { countAttention } from "@/lib/integrations/store";
 import { WsUIProvider } from "@/components/ws-ui-provider";
 
 function deriveInitials(name: string) {
@@ -29,11 +30,12 @@ export default async function WorkspaceLayout({
   const email = user?.email ?? "";
   const name = getDisplayName(user);
   const initials = deriveInitials(name);
+  const attention = (await countAttention(user.id)) > 0;
 
   return (
     <div className="ws">
       <WsUIProvider>
-        <WorkspaceChrome name={name} email={email} initials={initials} />
+        <WorkspaceChrome name={name} email={email} initials={initials} attention={attention} />
         {children}
       </WsUIProvider>
     </div>

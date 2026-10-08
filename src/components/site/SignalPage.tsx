@@ -6,6 +6,7 @@ import { SiteFooter } from "./SiteFooter";
 import { Faq, type FaqItem } from "./Faq";
 import { Journey, type JourneyStage } from "./Journey";
 import { PricingSection, ProductClose } from "./ProductSections";
+import { IntegrationsLine } from "./IntegrationsBand";
 import { Accent, Asterisk, Avatar, Emoji, Eyebrow, Grey, Mono, PillLinks, ProductBadge, cx } from "./ui";
 import { serverProductHref, serverDashboardHref } from "@/lib/product-links";
 import { getUser } from "@/lib/supabase/data";
@@ -218,6 +219,8 @@ export async function SignalPage() {
 
           <Journey title="One ad, from upload to fix" stages={JOURNEY} />
         </section>
+
+        <IntegrationsLine>Share scorecards to Slack, Notion or Sheets so the team sees the fails before launch.</IntegrationsLine>
 
         <section id="demo" className={cx(styles.sec, styles.secRule)}>
           <div className={styles.wrap}>

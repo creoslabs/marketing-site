@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getLibrary, medianOf, percentileWithin, getFailureThemes } from "./live-data";
 import { LibraryGrid } from "./library-grid";
+import { IntegrationPrompt } from "@/components/integrations/integration-prompt";
 import { AppMain, Button, PageHeader, Mono, appStyles as s } from "@/components/app/ui";
 import { Icon } from "@/components/app/icons";
 
@@ -80,6 +81,8 @@ export default async function LibraryPage() {
           </>
         }
       />
+
+      <IntegrationPrompt product="signal" />
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
         <div style={{ flex: "3 1 800px", minWidth: 0 }}>

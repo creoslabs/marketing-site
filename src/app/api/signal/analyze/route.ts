@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,6 +8,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runVideoPipeline, runStaticPipeline } from "@/lib/signal/pipeline";
 import type { Platform, StaticFinding, VideoFinding } from "@/app/signal/data";
 import { shouldNotify } from "@/lib/notification-prefs";
+import { emitSafe, kickDelivery } from "@/lib/integrations/deliver";
+import { buildScorecardPayload } from "@/lib/integrations/messages";
 
 const VALID_PLATFORMS: Platform[] = ["TikTok", "Meta"];
 
@@ -207,6 +209,12 @@ export async function POST(request: Request) {
         body: `Scored ${result.score} · ${result.failedChecks} check${result.failedChecks === 1 ? "" : "s"} failing.`,
         href: `/signal/report/${assetId}`,
       });
+    }
+
+    // Queue the scorecard for Slack / email / Sheets / Notion, then send it
+    // as soon as the response is out rather than waiting for the cron.
+    if ((await emitSafe(user.id, "scorecard_completed", () => buildScorecardPayload(admin, user.id, assetId))) > 0) {
+      kickDelivery(after);
     }
 
     // Returning the score/counts here saves a round trip for callers that

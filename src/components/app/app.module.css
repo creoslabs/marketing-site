@@ -875,6 +875,7 @@
 }
 
 .accountBtn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -952,6 +953,13 @@
 
 .menuItemMuted {
   color: var(--ws-ink-60);
+}
+
+.attentionDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ws-warn);
 }
 
 .menuRule {

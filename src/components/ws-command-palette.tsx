@@ -11,6 +11,7 @@ const DESTINATIONS: Destination[] = [
   { label: "Overview", target: "root", path: "/workspace", group: "Workspace" },
   { label: "Account", target: "root", path: "/workspace/account", group: "Workspace" },
   { label: "Billing", target: "root", path: "/workspace/billing", group: "Workspace" },
+  { label: "Integrations", target: "root", path: "/workspace/integrations", group: "Workspace" },
   { label: "Home", target: "outlier", path: "/", group: "Outlier" },
   { label: "Feed", target: "outlier", path: "/feed", group: "Outlier" },
   { label: "Trends", target: "outlier", path: "/trends", group: "Outlier" },

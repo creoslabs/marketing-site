@@ -9,6 +9,6 @@ const TABS: AppTab[] = [
   { href: "/signal/compare", label: "Compare" },
 ];
 
-export function SignalChrome({ name, email, initials }: { name: string; email: string; initials: string }) {
-  return <AppHeader product="signal" tabs={TABS} user={{ name, email, initials }} />;
+export function SignalChrome({ name, email, initials, attention }: { name: string; email: string; initials: string; attention?: boolean }) {
+  return <AppHeader product="signal" tabs={TABS} user={{ name, email, initials }} attention={attention} />;
 }

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getPostDetail, getCollections } from "../../live-data";
 import { getPlatformLabel } from "../../data";
 import { formatCompact } from "../../format";
+import { SendToMenu } from "@/components/integrations/send-to-menu";
 import { FavouriteButton, OpenOnPlatformButton, RepurposeButton, AnalyzePostButton } from "../video-actions";
 import { CollectionMenu } from "../../collection-menu";
 import { AppMain, Avatar, Card, CardHead, Chip, Mono, appStyles as s, cx } from "@/components/app/ui";
@@ -81,6 +82,7 @@ export default async function VideoDetailPage(props: PageProps<"/outlier/video/[
           </span>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <SendToMenu kind="outlier" id={post.id} product="outlier" />
           <CollectionMenu postId={post.id} collections={collections} />
           <RepurposeButton postId={post.id} ready={row.analysis_status === "done"} />
         </div>

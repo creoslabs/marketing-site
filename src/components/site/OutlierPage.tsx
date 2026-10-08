@@ -6,6 +6,7 @@ import { SiteFooter } from "./SiteFooter";
 import { Faq, type FaqItem } from "./Faq";
 import { Journey, type JourneyStage } from "./Journey";
 import { PricingSection, ProductClose } from "./ProductSections";
+import { IntegrationsLine } from "./IntegrationsBand";
 import { Accent, Asterisk, Avatar, Emoji, Eyebrow, Grey, Mono, PillLinks, ProductBadge, cx } from "./ui";
 import { serverProductHref, serverDashboardHref } from "@/lib/product-links";
 import { getUser } from "@/lib/supabase/data";
@@ -226,6 +227,8 @@ export async function OutlierPage() {
 
           <Journey title="One competitor reel, start to finish" stages={JOURNEY} />
         </section>
+
+        <IntegrationsLine>Get outlier alerts in Slack or your inbox the moment a tracked creator breaks out.</IntegrationsLine>
 
         <section id="demo" className={cx(styles.sec, styles.secRule)}>
           <div className={styles.wrap}>

@@ -8,6 +8,6 @@ const TABS: AppTab[] = [
   { href: "/workspace/billing", label: "Billing" },
 ];
 
-export function WorkspaceChrome({ name, email, initials }: { name: string; email: string; initials: string }) {
-  return <AppHeader product="workspace" tabs={TABS} user={{ name, email, initials }} />;
+export function WorkspaceChrome({ name, email, initials, attention }: { name: string; email: string; initials: string; attention?: boolean }) {
+  return <AppHeader product="workspace" tabs={TABS} user={{ name, email, initials }} attention={attention} />;
 }

@@ -93,13 +93,15 @@ function ProductSwitcher({ current }: { current: Exclude<AppProduct, "workspace"
   );
 }
 
-function AccountMenu({ name, email, initials }: { name: string; email: string; initials: string }) {
+function AccountMenu({ name, email, initials, product, attention }: { name: string; email: string; initials: string; product: AppProduct; attention?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useOutside(ref, () => setOpen(false), open);
   const accountHref = useProductHref("root", "/workspace/account");
   const billingHref = useProductHref("root", "/workspace/billing");
+  const workspaceIntegrationsHref = useProductHref("root", "/workspace/integrations");
+  const integrationsHref = product === "workspace" ? workspaceIntegrationsHref : `/${product}/integrations`;
 
   async function signOut() {
     const supabase = createClient();
@@ -113,6 +115,7 @@ function AccountMenu({ name, email, initials }: { name: string; email: string; i
       <button type="button" className={styles.accountBtn} aria-label="Account menu" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <Avatar initials={initials.slice(0, 1)} size={28} paper />
         <span className={styles.accountName}>{name}</span>
+        {attention && <span className={styles.unreadDot} style={{ top: 2, right: 2, background: "var(--ws-warn)" }} aria-label="An integration needs attention" />}
       </button>
       {open && (
         <div className={styles.menu} role="menu">
@@ -123,6 +126,10 @@ function AccountMenu({ name, email, initials }: { name: string; email: string; i
           </Link>
           <Link href={billingHref} role="menuitem" className={styles.menuItem} onClick={() => setOpen(false)}>
             Billing
+          </Link>
+          <Link href={integrationsHref} role="menuitem" className={styles.menuItem} onClick={() => setOpen(false)}>
+            Integrations
+            {attention && <span className={styles.attentionDot} aria-label="Needs attention" />}
           </Link>
           <div className={styles.menuRule} />
           <button type="button" role="menuitem" className={styles.menuItem} onClick={signOut}>
@@ -143,11 +150,13 @@ export function AppHeader({
   tabs,
   user,
   pulledLabel,
+  attention,
 }: {
   product: AppProduct;
   tabs: AppTab[];
   user: { name: string; email: string; initials: string };
   pulledLabel?: string | null;
+  attention?: boolean;
 }) {
   const pathname = usePathname();
   const openPalette = useCommandPalette();
@@ -193,7 +202,7 @@ export function AppHeader({
             <span className={cx(styles.mono, styles.kbd)}>⌘K</span>
           </button>
           <NotificationBell />
-          <AccountMenu {...user} />
+          <AccountMenu {...user} product={product} attention={attention} />
           <button
             type="button"
             className={cx(styles.iconBtn, styles.menuToggle)}

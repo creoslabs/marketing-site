@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getApifyToken, pullTikTok, pullInstagram, pullYouTube } from "./apify";
 import { analyzeOutlierPost } from "./analyze-post";
 import { shouldNotify } from "@/lib/notification-prefs";
+import { emitSafe } from "@/lib/integrations/deliver";
+import { buildOutlierPayload } from "@/lib/integrations/messages";
 
 function medianOf(nums: number[]) {
   if (nums.length === 0) return 0;
@@ -23,6 +25,11 @@ export type PullOutcome = { ok: true; newCount: number; totalPulled: number; aut
 // fires a notification past a 25% shift, since real short-form view counts
 // are naturally noisy and a smaller move isn't "meaningful" on its own.
 const TREND_ALERT_THRESHOLD_PCT = 25;
+// An outlier alert needs to be at least this many times the handle's median
+// (the Outlier feed's own default bar) and is capped per pull.
+const OUTLIER_ALERT_MULTIPLE = 2;
+const MAX_ALERTS_PER_PULL = 3;
+const nowMs = () => Date.now();
 
 async function checkMedianTrend(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,6 +179,27 @@ export async function pullHandle(
         userAnthropicKey: apiKeys.anthropicKey,
       });
       if (result.ok) autoAnalyzed = bestNew.id;
+    }
+
+    // Outlier alerts for integrations: posts that only just appeared, were
+    // published in the last week, and are well above this handle's median.
+    // First pulls of a handle are skipped — its whole back catalogue is
+    // "new" then, and none of it is breaking out right now. Capped so one
+    // pull can't flood a channel; the cron sends them within the minute.
+    const wasFirstPull = existingIds.size === 0;
+    const weekAgo = nowMs() - 7 * 24 * 60 * 60 * 1000;
+    if (!wasFirstPull && median > 0) {
+      const breakouts = (allPostRows ?? [])
+        .filter((r) => !existingIds.has(r.external_id) && r.views / median >= OUTLIER_ALERT_MULTIPLE)
+        .map((r) => ({ id: r.id as string, multiple: r.views / median }))
+        .sort((a, b) => b.multiple - a.multiple)
+        .slice(0, MAX_ALERTS_PER_PULL);
+      const recentIds = new Set(rawPosts.filter((p) => new Date(p.postedAt).getTime() >= weekAgo).map((p) => p.externalId));
+      for (const b of breakouts) {
+        const row = (allPostRows ?? []).find((r) => r.id === b.id);
+        if (!row || !recentIds.has(row.external_id)) continue;
+        await emitSafe(handle.user_id, "outlier_detected", () => buildOutlierPayload(admin, handle.user_id, b.id));
+      }
     }
 
     if (await shouldNotify(admin, handle.user_id, "pull")) {
