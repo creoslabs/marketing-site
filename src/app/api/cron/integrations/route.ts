@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { processDue } from "@/lib/integrations/deliver";
 
-// Runs every minute (vercel.json): sends queued deliveries, retries failures
-// with backoff, and releases daily/weekly digests when their window opens.
+// Runs once a day at 14:30 UTC (vercel.json — Hobby plans allow daily crons
+// only): sends anything still queued, retries failed deliveries, and releases
+// the daily/weekly digests that open at 14:00 UTC. Instant deliveries don't
+// wait for it — they're sent right after the request that queued them.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 

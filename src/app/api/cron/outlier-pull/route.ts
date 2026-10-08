@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { kickDelivery } from "@/lib/integrations/deliver";
 import { pullHandle, type HandleToPull } from "@/lib/outlier/pull-handle";
 
 // Runs on Vercel Cron once a day (see vercel.json) and pulls every handle
@@ -70,5 +71,8 @@ export async function GET(request: Request) {
     );
   }
 
+  // Outlier alerts queued by these pulls go out now; the daily integrations
+  // cron is only the retry/digest safety net.
+  kickDelivery(after);
   return NextResponse.json({ pulled: results.length, results });
 }

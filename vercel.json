@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/integrations",
-      "schedule": "* * * * *"
+      "schedule": "30 14 * * *"
     },
     {
       "path": "/api/cron/integrations-weekly",

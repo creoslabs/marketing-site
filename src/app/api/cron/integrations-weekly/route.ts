@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emit } from "@/lib/integrations/deliver";
+import { emit, kickDelivery } from "@/lib/integrations/deliver";
 import { buildWeeklyDigest } from "@/lib/integrations/messages";
 
 // Mondays 14:00 UTC (vercel.json): builds each connected user's weekly
@@ -28,5 +28,6 @@ export async function GET(request: Request) {
     const digest = await buildWeeklyDigest(admin, userId);
     if (digest) queued += await emit(userId, "weekly_digest", digest);
   }
+  kickDelivery(after);
   return NextResponse.json({ users: userIds.length, queued });
 }

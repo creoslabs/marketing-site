@@ -36,7 +36,7 @@ function canReceive(row: IntegrationRow): boolean {
 // Products emit events; this routes each to every destination the user has
 // switched on for it and queues one delivery per destination. Sending
 // happens in processDue() (kicked off straight away by callers via after(),
-// and by the per-minute cron as the retry safety net).
+// and by the daily cron as the retry and digest safety net).
 export async function emit(userId: string, event: EventKey, payload: DeliveryPayload, opts?: { only?: Provider[] }): Promise<number> {
   const admin = createAdminClient();
   const rows = await activeRowsForUser(userId);
@@ -316,7 +316,7 @@ export async function sendNow(row: IntegrationRow, payload: DeliveryPayload): Pr
 
 // Sends what was just queued without waiting for the next cron tick. Only
 // works inside a request scope (route handlers); anywhere else the
-// per-minute cron picks the rows up within 60 seconds.
+// daily cron picks the rows up.
 export function kickDelivery(after: (fn: () => Promise<unknown>) => void) {
   try {
     after(() => processDue().catch(() => {}));

@@ -49,7 +49,7 @@ Don't show Teams or "coming soon" logos.
 
 ## 5. Crons (vercel.json)
 
-- `/api/cron/integrations` every minute — sends queued deliveries, retries (3 attempts, 1 min then 5 min backoff), releases digests.
+- `/api/cron/integrations` daily at 14:30 UTC — sends anything still queued, retries failures, releases digests. Daily because Hobby plans only allow daily crons; instant deliveries are sent right after the request that queued them (scorecards, manual and daily Outlier pulls). On Pro, change it to `* * * * *` and retries run within minutes. Hobby cron timing can drift by up to an hour.
 - `/api/cron/integrations-weekly` Mondays 14:00 UTC — builds the weekly outlier digest.
 
 ## 6. Before the website copy goes live

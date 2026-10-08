@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { pullHandle } from "@/lib/outlier/pull-handle";
+import { kickDelivery } from "@/lib/integrations/deliver";
 
 // A metadata-only pull is fast, but the best new outlier now also gets
 // auto-analyzed (download + transcribe + Claude) in the same request —
@@ -53,5 +54,7 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
+  // Send any outlier alerts this pull queued without waiting for a cron.
+  kickDelivery(after);
   return NextResponse.json({ newCount: result.newCount, totalPulled: result.totalPulled, autoAnalyzed: result.autoAnalyzed });
 }
