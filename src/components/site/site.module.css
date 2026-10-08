@@ -3477,51 +3477,44 @@
 .integLogos {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-}
-
-.integLogo {
-  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 18px 8px 8px;
-  border: 1px solid var(--line2);
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--paper);
+  gap: 16px;
 }
 
 .integLogoTile {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: var(--paper);
-  color: var(--ink);
 }
 
 .integLogoTile img {
-  width: 20px;
-  height: 20px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
 }
 
-.integLogosSmall .integLogo {
-  padding: 5px 12px 5px 5px;
-  font-size: 12px;
+.integLogoName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.integLogosSmall {
+  gap: 12px;
 }
 
 .integLogosSmall .integLogoTile {
-  width: 24px;
-  height: 24px;
+  width: 48px;
+  height: 48px;
 }
 
 .integLogosSmall .integLogoTile img {
-  width: 14px;
-  height: 14px;
+  width: 28px;
+  height: 28px;
 }
 
 .slackMock {
