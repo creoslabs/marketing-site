@@ -20,7 +20,6 @@ only server code using the service-role key can read them, so tokens can never r
 | `NOTION_CLIENT_ID`, `NOTION_CLIENT_SECRET` | Notion public integration. |
 | `RESEND_API_KEY`, `EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` | Transactional email (`EMAIL_FROM` like `Creos Labs <alerts@mail.creos-labs.com>`). |
 | `CRON_SECRET` | Already used by the Outlier cron; the two new crons use it too. |
-| `NEXT_PUBLIC_INTEGRATIONS_LIVE` | Set to `1` **last** to show the homepage band and product-page lines. |
 
 A provider with missing variables shows "Unavailable" on its card instead of a broken connect flow.
 
@@ -55,4 +54,4 @@ Don't show Teams or "coming soon" logos.
 ## 6. Before the website copy goes live
 
 Go through the acceptance list in the brief, then update the privacy policy to list the integrations and the transactional email
-provider as subprocessors, then set `NEXT_PUBLIC_INTEGRATIONS_LIVE=1`.
+provider as subprocessors, The homepage hero row, band and product-page lines are always shown (no switch), so do this before promoting the site.

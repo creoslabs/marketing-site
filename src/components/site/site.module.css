@@ -619,13 +619,6 @@
   justify-content: center;
 }
 
-.orbitLabel {
-  position: absolute;
-  text-align: center;
-  font-size: 9px;
-  color: var(--label-d);
-}
-
 .orbitChip {
   position: absolute;
   transform: translate(-50%, -50%);

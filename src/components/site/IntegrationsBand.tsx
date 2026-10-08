@@ -4,13 +4,6 @@ import type { ReactNode } from "react";
 import styles from "./site.module.css";
 import { Accent, Eyebrow, Mono, cx } from "./ui";
 
-// The integrations copy only goes live once all four integrations work end
-// to end, so a plural claim is true on day one. Flip NEXT_PUBLIC_INTEGRATIONS_LIVE=1
-// in the deployment environment when that's the case.
-export function integrationsLive() {
-  return process.env.NEXT_PUBLIC_INTEGRATIONS_LIVE === "1";
-}
-
 const LOGOS = [
   { key: "slack", name: "Slack" },
   { key: "email", name: "Email" },
@@ -76,7 +69,6 @@ function SlackMock() {
 // Homepage band: after the Outlier and Signal sections, before the custom
 // build section.
 export function IntegrationsBand() {
-  if (!integrationsLive()) return null;
   return (
     <section id="integrations" className={styles.integBand}>
       <div className={styles.wrap}>
@@ -101,7 +93,6 @@ export function IntegrationsBand() {
 
 // One line plus a smaller logo row on each product page.
 export function IntegrationsLine({ children }: { children: ReactNode }) {
-  if (!integrationsLive()) return null;
   return (
     <div className={styles.wrap}>
       <div className={styles.integLine}>
@@ -114,7 +105,6 @@ export function IntegrationsLine({ children }: { children: ReactNode }) {
 
 // Under the hero CTAs: a quiet "Works with" row.
 export function HeroIntegrations() {
-  if (!integrationsLive()) return null;
   return (
     <div className={styles.heroWorks}>
       <Mono className={styles.heroWorksLabel}>Works with</Mono>

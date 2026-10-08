@@ -1,6 +1,6 @@
 import styles from "./site.module.css";
 import { HeroIntegrations } from "./IntegrationsBand";
-import { Asterisk, ENQUIRE_HREF, Emoji, Mono, Accent, cx } from "./ui";
+import { Asterisk, ENQUIRE_HREF, Emoji, Accent, cx } from "./ui";
 
 type OrbitChip = { x: number; y: number; emoji: string; label: string; dark: boolean };
 
@@ -81,9 +81,6 @@ export function HomeHero() {
           <div className={styles.hub} style={{ left: 224, top: 206, width: 112, height: 112, boxShadow: "0 0 80px rgba(255,214,10,0.35)" }}>
             <Asterisk size={56} />
           </div>
-          <Mono className={styles.orbitLabel} style={{ left: 230, top: 330, width: 100 }}>
-            the system
-          </Mono>
           {CHIPS.map((c) => (
             <div
               key={c.label}
