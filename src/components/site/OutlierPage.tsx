@@ -184,7 +184,7 @@ export async function OutlierPage() {
                 links={[
                   { href: "#how", label: "How it works" },
                   { href: "#score", label: "The score" },
-                  { href: "#pricing", label: "Pricing" },
+                  { href: "#access", label: "Early access" },
                 ]}
               />
             </div>
@@ -242,8 +242,8 @@ export async function OutlierPage() {
                   Track the creators and brands in your space. Every post is scored against its own running median, so you see what’s
                   breaking out while it’s still climbing.
                 </p>
-                <a href="#pricing" className={cx(styles.btn, styles.btnPaper, styles.btnMobFull)} style={{ alignSelf: "flex-start" }}>
-                  Start tracking ↗
+                <a href="#access" className={cx(styles.btn, styles.btnPaper, styles.btnMobFull)} style={{ alignSelf: "flex-start" }}>
+                  Request access ↗
                 </a>
               </div>
 

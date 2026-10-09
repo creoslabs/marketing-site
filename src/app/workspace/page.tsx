@@ -282,7 +282,7 @@ export default async function OverviewPage() {
               <Mono className={s.cardLabel} style={{ fontSize: 10 }}>
                 03 / In the lab
               </Mono>
-              <span style={{ fontSize: 15 }}>Something new is forming. It’ll be included in your subscription.</span>
+              <span style={{ fontSize: 15 }}>Something new is forming. It’ll arrive with early access.</span>
             </div>
             <span className={s.disp} style={{ fontSize: 28, color: "var(--ws-headline-grey)" }}>
               ???
@@ -308,9 +308,8 @@ export default async function OverviewPage() {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, paddingTop: 20, borderTop: "1px solid var(--ws-hairline)" }}>
-        <Chip variant="accent">Founding access</Chip>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>A$15/month</span>
-        <span style={{ fontSize: 14, color: "var(--ws-ink-45)" }}>Your founding price stays yours once you subscribe.</span>
+        <Chip variant="accent">Early access</Chip>
+        <span style={{ fontSize: 14, color: "var(--ws-ink-45)" }}>You’re in the early-access group. We’ll tell you before anything changes.</span>
         <Link href="/workspace/billing" style={{ marginLeft: "auto", fontSize: 14, fontWeight: 600 }}>
           Billing →
         </Link>

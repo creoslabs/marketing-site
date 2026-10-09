@@ -21,15 +21,15 @@ const PRINCIPLES = [
     body: "Every feature starts from a specific task someone actually does — not a feature checklist or a competitor's changelog.",
   },
   {
-    name: "Priced like a tool, not a platform",
-    body: "One subscription, no per-seat math, no enterprise sales call. Useful whether you're one person or a team.",
+    name: "Simple to start",
+    body: "No enterprise sales call and no setup project. Useful whether you're one person or a team.",
   },
 ];
 
 const STATUS = [
   { name: "Outlier", state: "Live", body: "Tracking creators and scoring posts for early-access users." },
   { name: "Signal", state: "Live", body: "Scoring static and video creative against best-practice criteria." },
-  { name: "What's next", state: "In the lab", body: "More focused tools, added to the same subscription as they ship." },
+  { name: "What's next", state: "In the lab", body: "More focused tools, added as they ship." },
 ];
 
 export default function AboutPage() {
@@ -130,12 +130,12 @@ export default function AboutPage() {
           <Reveal className="mx-auto max-w-xl px-6 text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Come build with us.</h2>
             <p className="mt-4 text-muted">
-              Get Outlier, Signal, and whatever we build next — one subscription, no lock-in.
+              Early access to Outlier, Signal, and whatever we build next is by invitation.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <LiquidButton asChild size="xl" className="w-full rounded-full sm:w-auto">
-                <Link href="/#pricing">
-                  Get Creos <span className="cta-arrow">→</span>
+                <Link href="/products/outlier#access">
+                  Request access <span className="cta-arrow">→</span>
                 </Link>
               </LiquidButton>
               <a

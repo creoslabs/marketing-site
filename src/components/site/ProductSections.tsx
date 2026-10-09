@@ -10,18 +10,19 @@ const PRODUCTS: Record<Product, { name: string; blurb: string; emoji: string }> 
   signal: { name: "Signal", blurb: "Creative analysis", emoji: "🎯" },
 };
 
-// "<Product> comes with Creos." — the product itself, then the other one,
-// then the unannounced third, all included in one founding-access price.
+// Early-access section: invite-only while the products are being tested, so
+// no pricing is shown anywhere. The three rows say what an invitation covers;
+// the card is the one place a visitor leaves their email.
 export function PricingSection({ product, teamsCopy }: { product: Product; teamsCopy: string }) {
   const other: Product = product === "outlier" ? "signal" : "outlier";
   const rows = [PRODUCTS[product], PRODUCTS[other]];
 
   return (
-    <section id="pricing" className={styles.pricingSec}>
+    <section id="access" className={styles.pricingSec}>
       <div className={styles.wrap}>
-        <Eyebrow>Pricing</Eyebrow>
+        <Eyebrow>Early access</Eyebrow>
         <h2 className={cx(styles.disp, styles.h2)}>
-          {PRODUCTS[product].name} comes <Accent>with Creos.</Accent>
+          {PRODUCTS[product].name} is invite-only <Accent>while we test.</Accent>
         </h2>
         <div className={styles.priceRow}>
           <div className={styles.includes}>
@@ -32,7 +33,7 @@ export function PricingSection({ product, teamsCopy }: { product: Product; teams
                   <span className={styles.disp}>{r.name}</span>
                   <span>{r.blurb}</span>
                 </div>
-                <Mono className={styles.includeTag}>Included</Mono>
+                <Mono className={styles.includeTag}>Early access</Mono>
               </div>
             ))}
             <div className={cx(styles.include, styles.includeLab)}>
@@ -41,20 +42,19 @@ export function PricingSection({ product, teamsCopy }: { product: Product; teams
                 <span className={styles.disp}>???</span>
                 <span>Something new is forming in the lab</span>
               </div>
-              <Mono className={styles.includeTag}>Included</Mono>
+              <Mono className={styles.includeTag}>Next in line</Mono>
             </div>
           </div>
 
           <div className={styles.priceCol}>
             <div className={styles.priceCard}>
-              <Mono>Founding access</Mono>
+              <Mono>Early access</Mono>
               <div className={styles.priceAmt}>
-                <span className={styles.disp}>A$15</span>
-                <span>/month</span>
+                <span className={styles.disp}>By invitation</span>
               </div>
-              <p className={styles.priceNote}>Your founding price stays yours while you’re subscribed.</p>
+              <p className={styles.priceNote}>We&apos;re letting people in a few at a time. Leave your email and we&apos;ll be in touch when a spot opens.</p>
               <GetCreosForm />
-              <Mono className={styles.priceFine}>No lock-in. Cancel anytime.</Mono>
+              <Mono className={styles.priceFine}>Limited spots while we test.</Mono>
             </div>
           </div>
         </div>
@@ -81,8 +81,8 @@ export function ProductClose({ children, sub }: { children: ReactNode; sub: stri
       </div>
       <h2 className={cx(styles.disp, styles.h2CloseProd)}>{children}</h2>
       <p className={styles.closeSub}>{sub}</p>
-      <a href="#pricing" className={cx(styles.btn, styles.btnAccent, styles.btnMobFull)}>
-        Get Creos, A$15/month
+      <a href="#access" className={cx(styles.btn, styles.btnAccent, styles.btnMobFull)}>
+        Request early access
       </a>
     </section>
   );

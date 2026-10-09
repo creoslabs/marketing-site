@@ -3174,11 +3174,12 @@
 }
 
 .priceAmt .disp {
-  font-size: 72px;
-  letter-spacing: -0.05em;
+  font-size: clamp(44px, 5vw, 60px);
+  letter-spacing: -0.04em;
+  line-height: 0.95;
 }
 
-.priceAmt span:last-child {
+.priceAmt span:last-child:not(:first-child) {
   font-size: 16px;
   color: var(--label-l);
 }
@@ -3501,6 +3502,12 @@
   filter: grayscale(1);
   opacity: 0.62;
   transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+/* Always full colour (the homepage band). */
+.integLogosColour .integLogoTile img {
+  filter: none;
+  opacity: 1;
 }
 
 .integLogoTile:hover {

@@ -15,7 +15,7 @@ const TOC = [
   { id: "content", label: "Your content" },
   { id: "public", label: "Public data & AI output" },
   { id: "integrations", label: "Integrations & your keys" },
-  { id: "billing", label: "Plans & billing" },
+  { id: "billing", label: "Access & billing" },
   { id: "availability", label: "Availability & changes" },
   { id: "ending", label: "Ending your use" },
   { id: "disclaimers", label: "Disclaimers" },
@@ -104,12 +104,11 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="billing" title="Plans & billing">
+      <LegalSection id="billing" title="Access & billing">
         <p>
-          Paid access is a subscription at the price shown when you sign up, in Australian dollars unless stated otherwise. The founding price shown on our site stays the same for as long as you
-          remain subscribed. There&apos;s no lock-in: you can cancel at any time and your access continues to the end of the period you&apos;ve paid for. Taxes may apply. Unless the law says
-          otherwise, payments already made aren&apos;t refundable. If we change prices for new customers, it doesn&apos;t change the price you already hold; if we ever need to change yours,
-          we&apos;ll give you notice first.
+          Creos Labs is currently available by invitation while we test. If paid plans are introduced, we&apos;ll tell you the price and terms before you&apos;re charged anything, and you can
+          choose not to continue. Where you do subscribe, the subscription renews until you cancel; you can cancel at any time and your access continues to the end of the period you&apos;ve paid
+          for. Taxes may apply. Unless the law says otherwise, payments already made aren&apos;t refundable.
         </p>
       </LegalSection>
 

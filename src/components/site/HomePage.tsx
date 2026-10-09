@@ -17,7 +17,7 @@ const SERVICE_PRICES: { reporting: string | null; tracking: string | null; agent
 };
 
 function Price({ value }: { value: string | null }) {
-  return <Mono className={styles.servicePrice}>{value ? `From ${value}` : "Enquire for pricing"}</Mono>;
+  return <Mono className={styles.servicePrice}>{value ? `From ${value}` : "Scoped with you"}</Mono>;
 }
 
 const PILLS_SIGNAL = ["Video + static", "Meta · TikTok · YouTube", "Pre-publish"];
@@ -94,7 +94,7 @@ export function HomePage() {
                 <p>Check your creative before it runs. Study what’s working for everyone else. Use one, or both.</p>
                 <div className={styles.foundRow}>
                   <AvatarStack people={["👩🏻", "🧔🏾", "👩🏼‍🦰"]} />
-                  <Mono>Founding access open</Mono>
+                  <Mono>Early access · by invitation</Mono>
                 </div>
               </div>
             </div>

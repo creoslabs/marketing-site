@@ -12,13 +12,14 @@ const LOGOS = [
   { key: "notion", name: "Notion" },
 ] as const;
 
-// "Works with" row: logos only, no labels. Official logo files from
+// "Works with" row: logos only, no labels. Muted by default; `colour` shows them
+// in full colour always (the homepage band). Official logo files from
 // public/brand/integrations/ (full colour, equal size, never redrawn) where
 // they exist; the name alone as a fallback until a file is added. Never
 // phrased as a partnership. Each logo keeps an accessible name.
-function LogoRow({ small }: { small?: boolean }) {
+function LogoRow({ small, colour }: { small?: boolean; colour?: boolean }) {
   return (
-    <div className={cx(styles.integLogos, small && styles.integLogosSmall)} role="list" aria-label="Works with Slack, Gmail, Google Sheets and Notion">
+    <div className={cx(styles.integLogos, small && styles.integLogosSmall, colour && styles.integLogosColour)} role="list" aria-label="Works with Slack, Gmail, Google Sheets and Notion">
       {LOGOS.map((l, i) => {
         const hasFile = existsSync(path.join(process.cwd(), "public/brand/integrations", `${l.key}.svg`));
         return (
@@ -78,7 +79,7 @@ export function IntegrationsBand() {
             <Mono className={styles.integFine}>Connect once with your Creos Labs account. It works across every Creos Labs product.</Mono>
           </div>
           <div className={styles.integSide}>
-            <LogoRow />
+            <LogoRow colour />
             <SlackMock />
           </div>
         </div>

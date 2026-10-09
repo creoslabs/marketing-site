@@ -172,7 +172,7 @@ export async function SignalPage() {
                 links={[
                   { href: "#how", label: "How it works" },
                   { href: "#demo", label: "See a breakdown" },
-                  { href: "#pricing", label: "Pricing" },
+                  { href: "#access", label: "Early access" },
                 ]}
               />
             </div>
@@ -234,8 +234,8 @@ export async function SignalPage() {
                   Upload creative before you publish. Signal checks it beat by beat against what tends to hold attention, and benchmarks the
                   score against everything you’ve made before.
                 </p>
-                <a href="#pricing" className={cx(styles.btn, styles.btnPaper, styles.btnMobFull)} style={{ alignSelf: "flex-start" }}>
-                  Analyse your first ad ↗
+                <a href="#access" className={cx(styles.btn, styles.btnPaper, styles.btnMobFull)} style={{ alignSelf: "flex-start" }}>
+                  Request access ↗
                 </a>
               </div>
 

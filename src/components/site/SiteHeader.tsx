@@ -14,14 +14,14 @@ const PRODUCT_NAV: Record<Product, Array<{ href: string; label: string }>> = {
     { href: "#how", label: "How it works" },
     { href: "#score", label: "The score" },
     { href: "#feed", label: "Feed" },
-    { href: "#pricing", label: "Pricing" },
+    { href: "#access", label: "Early access" },
     { href: "#faq", label: "FAQ" },
   ],
   signal: [
     { href: "#how", label: "How it works" },
     { href: "#demo", label: "Breakdown" },
     { href: "#round", label: "Review a round" },
-    { href: "#pricing", label: "Pricing" },
+    { href: "#access", label: "Early access" },
     { href: "#faq", label: "FAQ" },
   ],
 };
@@ -55,7 +55,7 @@ export function SiteHeader({ product, isLoggedIn = false, fromRoot = false }: { 
   const label = product === "outlier" ? "Outlier" : "Signal";
   // Pages other than the homepage (legal, etc.) point the section links back at "/".
   const nav = product ? PRODUCT_NAV[product] : fromRoot ? HOME_NAV.map((n) => ({ ...n, href: `/${n.href}` })) : HOME_NAV;
-  const cta = product ? { href: "#pricing", label: `Get ${label}` } : { href: ENQUIRE_HREF, label: "Start a project" };
+  const cta = product ? { href: "#access", label: "Request access" } : { href: ENQUIRE_HREF, label: "Start a project" };
 
   return (
     <>
@@ -67,6 +67,11 @@ export function SiteHeader({ product, isLoggedIn = false, fromRoot = false }: { 
               /
             </span>
             <span className={cx(styles.disp, styles.productName)}>{label}</span>
+          </Link>
+        ) : fromRoot ? (
+          // Pages other than the homepage (legal, etc.): the logo goes home.
+          <Link href={rootHref} className={cx(styles.lockup, styles.lockupHome)} aria-label="Creos Labs home">
+            <BrandLockup className={cx(styles.lockImg, styles.lockImgHome)} />
           </Link>
         ) : (
           <a href="#top" className={cx(styles.lockup, styles.lockupHome)} aria-label="Creos Labs home">

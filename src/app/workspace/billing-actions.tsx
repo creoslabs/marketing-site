@@ -3,15 +3,6 @@
 import { useToast } from "@/components/ws-toast";
 import { Button } from "@/components/app/ui";
 
-export function ChoosePlanButton() {
-  const toast = useToast();
-  return (
-    <Button variant="ink" onClick={() => toast("Founding access isn't open yet — join the waitlist from the homepage.")}>
-      Get founding access
-    </Button>
-  );
-}
-
 export function AddPaymentButton() {
   const toast = useToast();
   return (

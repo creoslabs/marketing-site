@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LiquidButton } from "@/components/ui/button";
-import { useProductHref } from "@/lib/use-product-href";
+import { useProductHref, useLandingHref } from "@/lib/use-product-href";
 import { BrandLockup } from "@/components/brand";
 
 export default function Nav() {
@@ -18,7 +18,8 @@ export default function Nav() {
   // (the signed-out landing page) — every one of these is a root-app-only
   // path, so it needs to leave the current subdomain to resolve there.
   const topHref = useProductHref("root", "/#top");
-  const pricingHref = useProductHref("root", "/#pricing");
+  // Early access is requested on the Outlier page (one signup moment).
+  const accessHref = `${useLandingHref("outlier")}#access`;
   const aboutHref = useProductHref("root", "/about");
   const insightsHref = useProductHref("root", "/insights");
   const loginHref = useProductHref("root", "/login");
@@ -86,8 +87,8 @@ export default function Nav() {
                 </div>
               )}
             </div>
-            <Link href={pricingHref} className="link-underline transition hover:text-foreground">
-              Pricing
+            <Link href={accessHref} className="link-underline transition hover:text-foreground">
+              Early access
             </Link>
             <Link href={aboutHref} className="link-underline transition hover:text-foreground">
               About
@@ -106,7 +107,7 @@ export default function Nav() {
             Sign in
           </Link>
           <LiquidButton asChild variant="secondary" size="sm" className="rounded-full text-[13px]">
-            <Link href={pricingHref}>Get Creos</Link>
+            <Link href={accessHref}>Request access</Link>
           </LiquidButton>
           <button
             type="button"
@@ -136,8 +137,8 @@ export default function Nav() {
             </Link>
           ))}
           <div className="my-2 h-px bg-white/10" />
-          <Link href={pricingHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
-            Pricing
+          <Link href={accessHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
+            Early access
           </Link>
           <Link href={aboutHref} onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-foreground transition hover:bg-white/5">
             About
