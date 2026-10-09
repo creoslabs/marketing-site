@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { getCreators, getPosts, getJobs } from "@/app/outlier/live-data";
+import { getCreators, getTopPosts, getCreatorDetail, getJobs } from "@/app/outlier/live-data";
 import { pullsPaused } from "@/app/outlier/pull-errors";
 import { getLibrary, getAssetDetail, percentileWithin } from "@/app/signal/live-data";
 import { serverProductHref, serverDashboardHref } from "@/lib/product-links";
@@ -78,23 +78,21 @@ export default async function OverviewPage() {
   const outlierHref = (path: string) => serverProductHref(headerList, "outlier", path);
   const signalHref = (path: string) => serverProductHref(headerList, "signal", path);
 
-  const [user, creators, posts, library, { jobs, finished }] = await Promise.all([getUser(), getCreators(), getPosts(), getLibrary(), getJobs()]);
+  const [user, creators, topPosts, library, { jobs, finished }] = await Promise.all([getUser(), getCreators(), getTopPosts(100), getLibrary(), getJobs()]);
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const allHandles = creators.flatMap((c) => c.handles);
-  const outlierPosts = posts.filter((p) => p.score >= 2);
+  const outlierPosts = topPosts.filter((p) => p.score >= 2);
   const weekPosts = outlierPosts.filter((p) => nowMs() - new Date(p.createdAtIso).getTime() < WEEK_MS);
   const pool = weekPosts.length > 0 ? weekPosts : outlierPosts;
   const headlinePost = pool.length > 0 ? pool.reduce((a, b) => (b.score > a.score ? b : a)) : null;
   const headlineCreator = headlinePost ? creatorById.get(headlinePost.creatorId) : null;
   const headlineHandle = headlineCreator?.handles.find((h) => h.platform === headlinePost?.platform)?.handle;
-  const creatorRecent = headlinePost
-    ? posts
-        .filter((p) => p.creatorId === headlinePost.creatorId)
-        .sort((a, b) => new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime())
-        .slice(-12)
+  const headlineDetail = headlinePost ? await getCreatorDetail(headlinePost.creatorId) : null;
+  const creatorRecent = headlineDetail
+    ? [...headlineDetail.posts].sort((a, b) => new Date(a.postedAtIso).getTime() - new Date(b.postedAtIso).getTime()).slice(-12)
     : [];
 
   const assets = library.assets;

@@ -1,6 +1,21 @@
 import type { NextConfig } from "next";
 
+// Hosts the scrapers' thumbnails come from (TikTok, Instagram/Facebook,
+// YouTube). Only these go through Next's image optimizer — see
+// src/components/app/remote-image.tsx, which keeps the same list.
+const THUMBNAIL_HOSTS = ["tiktokcdn.com", "tiktokcdn-us.com", "tiktokv.com", "tiktokv.us", "cdninstagram.com", "fbcdn.net", "ytimg.com", "ggpht.com"];
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: THUMBNAIL_HOSTS.flatMap((host) => [
+      { protocol: "https" as const, hostname: host },
+      { protocol: "https" as const, hostname: `**.${host}` },
+    ]),
+    // Scraped URLs are signed and expire within hours or days. The resized
+    // copy is kept for a week so thumbnails outlive their source link.
+    minimumCacheTTL: 60 * 60 * 24 * 7,
+    formats: ["image/webp"],
+  },
   // These bundle their platform ffmpeg/ffprobe binary via a dynamic
   // require() that Next.js's bundler can't statically resolve — excluding
   // them lets Node's own require() load them normally at runtime.

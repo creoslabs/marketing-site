@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getApifyToken, pullTikTok, pullInstagram, pullYouTube } from "./apify";
 import { analyzeOutlierPost } from "./analyze-post";
 import { shouldNotify } from "@/lib/notification-prefs";
+import { revalidateOutlier } from "@/lib/outlier/cache";
 import { emitSafe } from "@/lib/integrations/deliver";
 import { buildOutlierPayload } from "@/lib/integrations/messages";
 
@@ -91,6 +92,8 @@ export async function pullHandle(
     .select("id")
     .single();
   const jobId = jobRow?.id as string | undefined;
+  // Cached lists (incl. the running-pulls count) update as the pull starts and ends.
+  revalidateOutlier(handle.user_id);
 
   await admin.from("outlier_handles").update({ status: "pulling", error: null }).eq("id", handle.id);
 
@@ -213,6 +216,7 @@ export async function pullHandle(
       });
     }
 
+    revalidateOutlier(handle.user_id);
     return { ok: true, newCount, totalPulled: rawPosts.length, autoAnalyzed };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Pull failed.";
@@ -228,6 +232,7 @@ export async function pullHandle(
         href: "/outlier/progress",
       });
     }
+    revalidateOutlier(handle.user_id);
     return { ok: false, error: message };
   }
 }

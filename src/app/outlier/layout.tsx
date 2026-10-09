@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import { OutlierChrome } from "./outlier-chrome";
-import { countAttention } from "@/lib/integrations/store";
 import { WsUIProvider } from "@/components/ws-ui-provider";
 import { getJobs } from "./live-data";
 
@@ -28,12 +27,11 @@ export default async function OutlierLayout({ children }: { children: React.Reac
   const name = getDisplayName(user);
   const email = user?.email ?? "";
   const initials = deriveInitials(name);
-  const attention = (await countAttention(user.id)) > 0;
 
   return (
     <div className="ws">
       <WsUIProvider>
-        <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} name={name} email={email} initials={initials} attention={attention} />
+        <OutlierChrome runningCount={runningCount} lastPulledLabel={lastPulledLabel} name={name} email={email} initials={initials} />
         {children}
       </WsUIProvider>
     </div>

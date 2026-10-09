@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { revalidateOutlier } from "@/lib/outlier/cache";
+import { NextResponse, after } from "next/server";
 import { getUser } from "@/lib/supabase/data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,6 +8,8 @@ export async function DELETE(_request: Request, ctx: RouteContext<"/api/outlier/
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  // Clear the cached Outlier lists once this request has finished writing.
+  after(() => revalidateOutlier(user.id));
 
   const { id } = await ctx.params;
   const supabase = await createClient();
@@ -26,6 +29,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/outlier/cr
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  // Clear the cached Outlier lists once this request has finished writing.
+  after(() => revalidateOutlier(user.id));
 
   const { id } = await ctx.params;
   const body = await request.json().catch(() => null);

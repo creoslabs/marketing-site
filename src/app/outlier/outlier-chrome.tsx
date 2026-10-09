@@ -8,14 +8,12 @@ export function OutlierChrome({
   name,
   email,
   initials,
-  attention,
 }: {
   runningCount: number;
   lastPulledLabel: string | null;
   name: string;
   email: string;
   initials: string;
-  attention?: boolean;
 }) {
   const tabs: AppTab[] = [
     { href: "/outlier", label: "Home", exact: true },
@@ -24,5 +22,5 @@ export function OutlierChrome({
     { href: "/outlier/creators", label: "Creators" },
     { href: "/outlier/progress", label: "Progress", badge: runningCount > 0 ? runningCount : undefined },
   ];
-  return <AppHeader product="outlier" tabs={tabs} user={{ name, email, initials }} attention={attention} pulledLabel={lastPulledLabel} />;
+  return <AppHeader product="outlier" tabs={tabs} user={{ name, email, initials }} pulledLabel={lastPulledLabel} />;
 }

@@ -7,7 +7,7 @@ import { Accent, Eyebrow, Mono, cx } from "./ui";
 
 const LOGOS = [
   { key: "slack", name: "Slack" },
-  { key: "email", name: "Email" },
+  { key: "email", name: "Gmail" },
   { key: "sheets", name: "Google Sheets" },
   { key: "notion", name: "Notion" },
 ] as const;
@@ -18,7 +18,7 @@ const LOGOS = [
 // phrased as a partnership. Each logo keeps an accessible name.
 function LogoRow({ small }: { small?: boolean }) {
   return (
-    <div className={cx(styles.integLogos, small && styles.integLogosSmall)} role="list" aria-label="Works with Slack, email, Google Sheets and Notion">
+    <div className={cx(styles.integLogos, small && styles.integLogosSmall)} role="list" aria-label="Works with Slack, Gmail, Google Sheets and Notion">
       {LOGOS.map((l, i) => {
         const hasFile = existsSync(path.join(process.cwd(), "public/brand/integrations", `${l.key}.svg`));
         return (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getCreators, getPosts } from "../live-data";
+import { getFeedData } from "../live-data";
 import { FeedGrid } from "./feed-grid";
 
 export const metadata: Metadata = {
@@ -8,6 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default async function FeedPage() {
-  const [creators, posts] = await Promise.all([getCreators(), getPosts()]);
-  return <FeedGrid creators={creators} posts={posts} />;
+  const data = await getFeedData();
+  return (
+    <FeedGrid
+      creators={data.creators}
+      initialPosts={data.posts}
+      outlierCount={data.outlierCount}
+      platforms={data.platforms}
+      hookOptions={data.hookOptions}
+      initialLoadedAll={data.loadedAll}
+    />
+  );
 }

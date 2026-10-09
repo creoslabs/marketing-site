@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Creator, Platform, Post } from "../data";
 import { formatCompact, formatScore } from "../format";
@@ -41,10 +41,26 @@ function isFreshlyPulled(post: Post) {
   return Date.now() - new Date(post.createdAtIso).getTime() < NEW_WINDOW_MS;
 }
 
-// The Feed: every tracked creator's posts, ranked. Filters, sort and the
-// outliers-only switch all run client-side on data already loaded, and the
-// grid is paginated ("Show 20 more") rather than rendering every post at once.
-export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; posts: Post[] }) {
+// The Feed: every tracked creator's posts, ranked. It opens with just the
+// outliers (the default view); the rest of the posts are fetched the first
+// time they're needed — turning the outliers filter off, or filtering to a
+// creator who has none. Filters, sort and the outliers-only switch then run
+// client-side, and the grid is paginated ("Show 20 more").
+export function FeedGrid({
+  creators,
+  initialPosts,
+  outlierCount,
+  platforms: platformsPresent,
+  hookOptions,
+  initialLoadedAll,
+}: {
+  creators: Creator[];
+  initialPosts: Post[];
+  outlierCount: number;
+  platforms: Platform[];
+  hookOptions: [string, string][];
+  initialLoadedAll: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [sort, setSort] = useState<SortValue>("score");
@@ -57,16 +73,12 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [favouriting, setFavouriting] = useState(false);
+  const [allPosts, setAllPosts] = useState(initialPosts);
+  const [loadedAll, setLoadedAll] = useState(initialLoadedAll);
+  const fetchingAll = useRef(false);
+  const above2x = outlierCount;
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
-  const above2x = useMemo(() => allPosts.filter((post) => post.score >= OUTLIER_THRESHOLD).length, [allPosts]);
-  const platformsPresent = useMemo(() => [...new Set(allPosts.map((post) => post.platform))], [allPosts]);
-  const hookOptions = useMemo(() => {
-    const tags = new Map<string, string>();
-    for (const p of allPosts) for (const t of p.hookTags) tags.set(t.trim().toLowerCase(), t.trim());
-    return [...tags.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [allPosts]);
-
   const filtered = useMemo(() => {
     const cutoff = range === "all" ? 0 : nowMs() - Number(range) * DAY_MS;
     return allPosts.filter((p) => {
@@ -83,6 +95,23 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
   // an empty grid with no way to see what exists.
   const noOutliersYet = filtered.length > 0 && outliers.length === 0;
   const effectiveOutliersOnly = outliersOnly && !noOutliersYet;
+
+  // The rest of the posts load once, the first time the view needs them.
+  const needsAll = !loadedAll && (!outliersOnly || filtered.length === 0);
+  useEffect(() => {
+    if (!needsAll || fetchingAll.current) return;
+    fetchingAll.current = true;
+    fetch("/api/outlier/feed-all")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Couldn't load every post."))))
+      .then((data: { posts: Post[] }) => {
+        setAllPosts(data.posts);
+        setLoadedAll(true);
+      })
+      .catch(() => toast("Couldn't load every post — try again.", "error"))
+      .finally(() => {
+        fetchingAll.current = false;
+      });
+  }, [needsAll, toast]);
 
   const ranked = useMemo(
     () =>
@@ -232,6 +261,8 @@ export function FeedGrid({ creators, posts: allPosts }: { creators: Creator[]; p
             )
           }
         />
+      ) : ranked.length === 0 && needsAll ? (
+        <p style={{ margin: 0, fontSize: 14, color: "var(--ws-ink-45)" }}>Loading every post…</p>
       ) : ranked.length === 0 ? (
         <EmptyState size="large" emoji="🔍" title="No posts match these filters" description="Try a different creator, hook style or date range." />
       ) : (

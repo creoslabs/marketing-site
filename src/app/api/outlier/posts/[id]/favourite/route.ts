@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { revalidateOutlier } from "@/lib/outlier/cache";
+import { NextResponse, after } from "next/server";
 import { getVerifiedUser } from "@/lib/supabase/data";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -7,6 +8,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/outlier/pos
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  // Clear the cached Outlier lists once this request has finished writing.
+  after(() => revalidateOutlier(user.id));
 
   let admin;
   try {

@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { createClient } from "./server";
 
 // proxy.ts already calls supabase.auth.getUser() — a network round-trip that
@@ -72,3 +73,15 @@ export function getDisplayName(user: NamedUser) {
       .join(" ") || "Account"
   );
 }
+
+// The user id proxy.ts verified with Supabase for this request (see
+// VERIFIED_USER_HEADER there). Unlike getUser() — which only decodes the
+// session cookie — this can't be forged, so it's safe to key a shared
+// cache on. Null outside protected pages (or when Supabase isn't configured).
+export const getVerifiedUserId = cache(async (): Promise<string | null> => {
+  try {
+    return (await headers()).get("x-creos-verified-uid");
+  } catch {
+    return null;
+  }
+});

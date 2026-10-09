@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { revalidateOutlier } from "@/lib/outlier/cache";
+import { NextResponse, after } from "next/server";
 import { getUser } from "@/lib/supabase/data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,6 +8,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  // Clear the cached Outlier lists once this request has finished writing.
+  after(() => revalidateOutlier(user.id));
 
   const body = await request.json().catch(() => null);
   const platform = body?.platform === "TT" || body?.platform === "IG" || body?.platform === "YT" ? body.platform : null;

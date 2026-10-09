@@ -3,7 +3,8 @@ import Link from "next/link";
 import { getUser, getDisplayName } from "@/lib/supabase/data";
 import {
   getCreators,
-  getPosts,
+  getTopPosts,
+  getPostSummary,
   getJobs,
   getRecentRepurposes,
   getFavouritePosts,
@@ -71,10 +72,10 @@ function nextStepTip({
 }
 
 export default async function OutlierHomePage() {
-  const [user, creators, posts, { jobs, finished }, recentRepurposes, favouritePosts, collections, hookPatterns] = await Promise.all([
+  const [user, creators, topOutliers, { jobs, finished }, recentRepurposes, favouritePosts, collections, hookPatterns] = await Promise.all([
     getUser(),
     getCreators(),
-    getPosts(),
+    getTopPosts(4),
     getJobs(),
     getRecentRepurposes(),
     getFavouritePosts(),
@@ -82,23 +83,23 @@ export default async function OutlierHomePage() {
     getHookStylePatterns(),
   ]);
   const topPattern = hookPatterns.find((p) => p.creatorCount >= 3) ?? null;
+  const summary = await getPostSummary();
   const topPatternPosts = topPattern ? await getPostsByHookTag(topPattern.tag) : [];
   const firstName = getDisplayName(user).split(" ")[0];
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const allHandles = creators.flatMap((c) => c.handles);
-  const topOutliers = posts.slice(0, 4);
   const runningJobs = jobs.filter((job) => job.state === "running");
   const thinCreators = creators.filter((creator) => creator.handles.some((h) => h.thin));
-  const hasPosts = posts.length > 0;
-  const best = hasPosts ? posts.reduce((b, post) => (post.score > b.score ? post : b), posts[0]) : null;
-  const outlierPosts = posts.filter((post) => post.score >= 2);
+  const hasPosts = summary.total > 0;
+  // topOutliers is already ranked, so the first one is the best.
+  const best = topOutliers[0] ?? null;
   const paused = pullsPaused(jobs, finished[0]?.finishedAtIso ?? null);
 
   const latest = getLatestChangelogEntry();
   const tip = nextStepTip({
-    hasAnalyzedAny: posts.some((p) => p.analysisStatus === "done"),
+    hasAnalyzedAny: summary.anyAnalyzed,
     hasRepurposed: recentRepurposes.length > 0,
     favouritesCount: favouritePosts.length,
     hasCollections: collections.length > 0,
@@ -113,7 +114,7 @@ export default async function OutlierHomePage() {
       <AppMain>
         <PageHeader eyebrow={`01 / Home · ${today}`} line1={`${greeting()},`} line2={`${firstName}.`} sub="Nothing pulled yet." />
         <div style={{ maxWidth: 560 }}>
-          <OnboardingChecklist creators={creators} posts={posts} />
+          <OnboardingChecklist creators={creators} hasPost={hasPosts} hasAnalyzed={summary.anyAnalyzed} bestPost={best} />
         </div>
       </AppMain>
     );
@@ -127,7 +128,7 @@ export default async function OutlierHomePage() {
         eyebrow={`01 / Home · ${today}`}
         line1={`${greeting()},`}
         line2={`${firstName}.`}
-        sub={hasPosts ? `${outlierPosts.length} outliers across ${posts.length} posts from ${creators.length} creator${creators.length === 1 ? "" : "s"}.` : "Nothing pulled yet."}
+        sub={hasPosts ? `${summary.outlierCount} outliers across ${summary.total} posts from ${creators.length} creator${creators.length === 1 ? "" : "s"}.` : "Nothing pulled yet."}
         actions={
           <>
             <AddCreatorButton variant="ghost" />
@@ -136,7 +137,7 @@ export default async function OutlierHomePage() {
         }
       />
 
-      <OnboardingChecklist creators={creators} posts={posts} />
+      <OnboardingChecklist creators={creators} hasPost={hasPosts} hasAnalyzed={summary.anyAnalyzed} bestPost={best} />
       <AnnouncementBar items={announcements} />
       <IntegrationPrompt product="outlier" />
 
@@ -158,9 +159,9 @@ export default async function OutlierHomePage() {
 
       <StatsRow
         stats={[
-          { label: "Outliers", value: outlierPosts.length, note: "score ≥ 2×" },
+          { label: "Outliers", value: summary.outlierCount, note: "score ≥ 2×" },
           { label: "Best score", value: best ? formatScore(best.score) : "—", note: bestHandle ? `@${bestHandle}` : "no posts yet", accent: true },
-          { label: "Posts pulled", value: posts.length, note: `across ${creators.length} creator${creators.length === 1 ? "" : "s"}` },
+          { label: "Posts pulled", value: summary.total, note: `across ${creators.length} creator${creators.length === 1 ? "" : "s"}` },
           { label: "Needs attention", value: thinCreators.length, note: "thin history" },
         ]}
       />
@@ -173,7 +174,7 @@ export default async function OutlierHomePage() {
               right={
                 hasPosts && (
                   <Link href="/outlier/feed" className={s.cardLink}>
-                    All {posts.length} in Feed →
+                    All {summary.total} in Feed →
                   </Link>
                 )
               }

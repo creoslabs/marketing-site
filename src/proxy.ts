@@ -2,6 +2,12 @@ import { createServerClient, type CookieOptionsWithName } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getCookieDomain } from "./lib/supabase/cookie-domain";
 
+// Set by this proxy (and only here) to the user id it just verified with
+// Supabase, so server code can use a *trusted* id — e.g. as a cache key —
+// without another auth round trip. Any value the client sends under this
+// name is stripped from every request below, so it can't be spoofed.
+const VERIFIED_USER_HEADER = "x-creos-verified-uid";
+
 const PROTECTED_ROUTES = ["/workspace", "/outlier", "/signal", "/dashboard"];
 const ROOT_HOSTS = ["creos-labs.com", "www.creos-labs.com"];
 
@@ -82,17 +88,22 @@ export async function proxy(request: NextRequest) {
           ? originalPath
           : `/${subdomainProduct}${originalPath}`;
 
-  function buildResponse(path: string, init?: { request: NextRequest }) {
-    if (path === originalPath) {
-      return init ? NextResponse.next(init) : NextResponse.next();
-    }
+  // Built at response time (not earlier) so it carries any session-cookie
+  // refresh Supabase made to request.cookies; the client's own headers are
+  // forwarded minus any attempt to supply the verified-user header.
+  function buildResponse(path: string, verifiedUserId?: string) {
+    const forwarded = new Headers(request.headers);
+    forwarded.delete(VERIFIED_USER_HEADER);
+    if (verifiedUserId) forwarded.set(VERIFIED_USER_HEADER, verifiedUserId);
+    const init = { request: { headers: forwarded } };
+    if (path === originalPath) return NextResponse.next(init);
     const rewriteUrl = request.nextUrl.clone();
     rewriteUrl.pathname = path;
-    return init ? NextResponse.rewrite(rewriteUrl, init) : NextResponse.rewrite(rewriteUrl);
+    return NextResponse.rewrite(rewriteUrl, init);
   }
 
-  function next(init?: { request: NextRequest }) {
-    return buildResponse(rewrittenPath, init);
+  function next() {
+    return buildResponse(rewrittenPath);
   }
 
   const isProtected = PROTECTED_ROUTES.some((route) => rewrittenPath.startsWith(route));
@@ -141,8 +152,8 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  function respond(path: string) {
-    const response = buildResponse(path, { request });
+  function respond(path: string, verifiedUserId?: string) {
+    const response = buildResponse(path, verifiedUserId);
     pendingCookies.forEach(({ name, value, options }) =>
       response.cookies.set(name, value, options)
     );
@@ -165,7 +176,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return respond(rewrittenPath);
+  return respond(rewrittenPath, user?.id);
 }
 
 export const config = {

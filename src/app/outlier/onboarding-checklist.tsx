@@ -42,15 +42,22 @@ function StepRow({ step, index, isCurrent, action }: { step: Step; index: number
 
 // Shown until all three steps are done, then never again — this is a
 // first-run aid, not a permanent dashboard fixture.
-export function OnboardingChecklist({ creators, posts }: { creators: Creator[]; posts: Post[] }) {
+export function OnboardingChecklist({
+  creators,
+  hasPost,
+  hasAnalyzed,
+  bestPost,
+}: {
+  creators: Creator[];
+  hasPost: boolean;
+  hasAnalyzed: boolean;
+  bestPost: Post | null;
+}) {
   const hasCreator = creators.length > 0;
-  const hasPost = posts.length > 0;
-  const hasAnalyzed = posts.some((p) => p.analysisStatus === "done");
 
   if (hasCreator && hasPost && hasAnalyzed) return null;
 
   const allHandles = creators.flatMap((c) => c.handles);
-  const bestPost = posts.length > 0 ? [...posts].sort((a, b) => b.score - a.score)[0] : null;
 
   const steps: Step[] = [
     { label: "Track a creator", description: "Add someone by handle to start scoring their posts.", done: hasCreator },

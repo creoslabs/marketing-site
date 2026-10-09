@@ -150,15 +150,28 @@ export function AppHeader({
   tabs,
   user,
   pulledLabel,
-  attention,
 }: {
   product: AppProduct;
   tabs: AppTab[];
   user: { name: string; email: string; initials: string };
   pulledLabel?: string | null;
-  attention?: boolean;
 }) {
   const pathname = usePathname();
+  // The integrations "needs attention" dot is fetched after render so the
+  // query never blocks a page navigation.
+  const [attention, setAttention] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/integrations/attention")
+      .then((r) => (r.ok ? r.json() : { count: 0 }))
+      .then((d: { count?: number }) => {
+        if (!cancelled) setAttention((d.count ?? 0) > 0);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const openPalette = useCommandPalette();
   const homeHref = useProductHref("root", "/workspace");
   // Tied to the pathname it was opened on, so navigating closes it without

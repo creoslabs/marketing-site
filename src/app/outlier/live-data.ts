@@ -1,5 +1,10 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getVerifiedUserId } from "@/lib/supabase/data";
+import { outlierTag } from "@/lib/outlier/cache";
 import { relativeTime } from "@/lib/relative-time";
 import type {
   Creator,
@@ -125,14 +130,20 @@ type PostRow = {
   posted_at: string;
   analysis_status: "none" | "analyzing" | "done" | "failed";
   analysis_error: string | null;
-  transcript: TranscriptLine[] | null;
+  // Not loaded for list views (see POST_LIST_COLUMNS); only the detail page selects it.
+  transcript?: TranscriptLine[] | null;
   beats: Beat[] | null;
   hook_tags: string[] | null;
   favourited: boolean;
   created_at: string;
 };
 
-function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<string, PostRow[]>): Creator {
+// Everything the list pages (Home, Feed, Trends, Creators…) need — notably
+// without the transcript, which is large and only the post page shows.
+const POST_LIST_COLUMNS =
+  "id, handle_id, platform, caption, url, video_url, thumbnail_url, views, likes, comments, shares, saves, followers, duration_seconds, posted_at, analysis_status, analysis_error, beats, hook_tags, favourited, created_at";
+
+function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<string, StatRow[]>): Creator {
   const allPosts = handles.flatMap((h) => postsByHandle.get(h.id) ?? []);
   const views = allPosts.map((p) => p.views);
   const median = medianOf(views);
@@ -143,7 +154,7 @@ function buildCreator(row: CreatorRow, handles: HandleRow[], postsByHandle: Map<
   const initials = name.replace(/^@/, "").slice(0, 2).toUpperCase();
   const avatarUrl = handles.find((h) => h.avatar_url)?.avatar_url ?? null;
 
-  const postsByPlatform = new Map<Platform, PostRow[]>();
+  const postsByPlatform = new Map<Platform, StatRow[]>();
   for (const post of allPosts) {
     postsByPlatform.set(post.platform, [...(postsByPlatform.get(post.platform) ?? []), post]);
   }
@@ -213,90 +224,216 @@ function buildPost(row: PostRow, creatorId: string, creatorMedian: number, thin:
   };
 }
 
-// Fetches every creator this user tracks, each with all of its handles'
-// posts combined (a person tracked on two platforms is one Creator card).
-// cache()-wrapped because getCreators/getPosts/getCreatorDetail all call
-// this — without dedup, a page needing both (e.g. Feed calling
-// getCreators() and getPosts() together) ran all three queries twice.
-const loadAll = cache(async () => {
-  const supabase = await createClient();
+// ---------------------------------------------------------------------------
+// Data loading.
+//
+// Every list page used to download every post (all columns) and score them
+// in code. Now there are two tiers:
+//   1. A light pass — only the few columns needed to rank and score every
+//      post (views, dates, tags). It's small, cached per user for 30 s, and
+//      powers creators, medians, scores, counts, hook patterns.
+//   2. Full "card" rows, fetched only for the posts a page really shows.
+// A creator page loads just that creator's posts.
+// ---------------------------------------------------------------------------
 
-  // outlier_handles carries its own user_id (RLS: auth.uid() = user_id),
-  // so it doesn't need creatorRows' ids to be scoped safely — fetching it
-  // alongside creators instead of after them turns a 3-step waterfall
-  // (creators -> handles -> posts) into 2 steps, cutting a full
-  // Supabase round trip off of every Outlier page load.
-  const [{ data: creatorRows }, { data: handleRows }] = await Promise.all([
-    supabase.from("outlier_creators").select("id, display_name, notes").order("created_at", { ascending: false }).returns<CreatorRow[]>(),
-    supabase
-      .from("outlier_handles")
-      .select("id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url")
-      .returns<HandleRow[]>(),
-  ]);
-  if (!creatorRows || creatorRows.length === 0) {
-    return { supabase, creators: [] as Creator[], handlesByCreator: new Map<string, HandleRow[]>(), postsByHandle: new Map<string, PostRow[]>() };
+type LightPostRow = Pick<PostRow, "id" | "handle_id" | "platform" | "views" | "posted_at" | "created_at" | "analysis_status" | "hook_tags" | "favourited">;
+type StatRow = Pick<PostRow, "views" | "posted_at" | "platform">;
+type LightData = { creatorRows: CreatorRow[]; handleRows: HandleRow[]; postRows: LightPostRow[] };
+
+const LIGHT_COLUMNS = "id, handle_id, platform, views, posted_at, created_at, analysis_status, hook_tags, favourited";
+const CARD_COLUMNS =
+  "id, handle_id, platform, caption, thumbnail_url, views, likes, comments, shares, saves, followers, duration_seconds, posted_at, created_at, analysis_status, hook_tags, favourited";
+const CREATOR_COLUMNS = "id, display_name, notes";
+const HANDLE_COLUMNS = "id, creator_id, platform, handle, status, error, last_pulled_at, avatar_url";
+const LIGHT_TTL_SECONDS = 30;
+const ID_CHUNK = 120;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- this project doesn't generate a Database type for the Supabase client.
+type Db = SupabaseClient<any>;
+
+// PostgREST caps a response at 1,000 rows, so page through until done —
+// previously a big watchlist was silently cut off at 1,000 posts.
+async function fetchLightPosts(db: Db, handleIds: string[]): Promise<LightPostRow[]> {
+  const PAGE = 1000;
+  const out: LightPostRow[] = [];
+  for (let page = 0; page < 30; page++) {
+    const { data } = await db
+      .from("outlier_posts")
+      .select(LIGHT_COLUMNS)
+      .in("handle_id", handleIds)
+      .order("posted_at", { ascending: false })
+      .order("id")
+      .range(page * PAGE, page * PAGE + PAGE - 1)
+      .returns<LightPostRow[]>();
+    out.push(...(data ?? []));
+    if ((data?.length ?? 0) < PAGE) break;
   }
+  return out;
+}
+
+// `userId` is set when reading with the service-role client (cache path) —
+// every query is then scoped to that user by hand, standing in for RLS. With
+// the cookie-bound client RLS does the scoping and userId is null.
+async function fetchLightData(db: Db, userId: string | null): Promise<LightData> {
+  // outlier_handles carries its own user_id, so it can be fetched alongside
+  // creators instead of after them.
+  let creatorsQ = db.from("outlier_creators").select(CREATOR_COLUMNS).order("created_at", { ascending: false });
+  let handlesQ = db.from("outlier_handles").select(HANDLE_COLUMNS);
+  if (userId) {
+    creatorsQ = creatorsQ.eq("user_id", userId);
+    handlesQ = handlesQ.eq("user_id", userId);
+  }
+  const [{ data: creatorRows }, { data: handleRows }] = await Promise.all([creatorsQ.returns<CreatorRow[]>(), handlesQ.returns<HandleRow[]>()]);
   const handles = handleRows ?? [];
+  if (!creatorRows || creatorRows.length === 0 || handles.length === 0) return { creatorRows: creatorRows ?? [], handleRows: handles, postRows: [] };
+  const postRows = await fetchLightPosts(db, handles.map((h) => h.id));
+  return { creatorRows, handleRows: handles, postRows };
+}
 
-  const { data: postRows } = await supabase
-    .from("outlier_posts")
-    .select("*")
-    .in(
-      "handle_id",
-      handles.map((h) => h.id)
-    )
-    .order("posted_at", { ascending: false })
-    .returns<PostRow[]>();
-  const posts = postRows ?? [];
+function readLightCached(userId: string): Promise<LightData> {
+  return unstable_cache(() => fetchLightData(createAdminClient(), userId), ["outlier-light-v1", userId], {
+    revalidate: LIGHT_TTL_SECONDS,
+    tags: [outlierTag(userId)],
+  })();
+}
 
-  const postsByHandle = new Map<string, PostRow[]>();
-  for (const post of posts) {
-    postsByHandle.set(post.handle_id, [...(postsByHandle.get(post.handle_id) ?? []), post]);
+function canUseSharedCache() {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+type PostMeta = { row: LightPostRow; creatorId: string; creatorMedian: number; thin: boolean; score: number };
+
+const loadLight = cache(async () => {
+  const empty = { creators: [] as Creator[], handlesByCreator: new Map<string, HandleRow[]>(), metas: [] as PostMeta[], metaById: new Map<string, PostMeta>() };
+  if (!isSupabaseConfigured()) return empty;
+
+  // Shared 30 s cache keyed on the proxy-verified user id; falls back to a
+  // direct (RLS-scoped) read whenever that isn't available.
+  const userId = canUseSharedCache() ? await getVerifiedUserId() : null;
+  let data: LightData | null = null;
+  if (userId) {
+    try {
+      data = await readLightCached(userId);
+    } catch {
+      data = null;
+    }
   }
+  if (!data) data = await fetchLightData(await createClient(), null);
+  if (data.creatorRows.length === 0) return empty;
 
   const handlesByCreator = new Map<string, HandleRow[]>();
-  for (const h of handles) {
-    handlesByCreator.set(h.creator_id, [...(handlesByCreator.get(h.creator_id) ?? []), h]);
-  }
+  for (const h of data.handleRows) handlesByCreator.set(h.creator_id, [...(handlesByCreator.get(h.creator_id) ?? []), h]);
+  const postsByHandle = new Map<string, LightPostRow[]>();
+  for (const p of data.postRows) postsByHandle.set(p.handle_id, [...(postsByHandle.get(p.handle_id) ?? []), p]);
 
-  const creators = creatorRows
+  const creators = data.creatorRows
     .map((row) => buildCreator(row, handlesByCreator.get(row.id) ?? [], postsByHandle))
     .filter((c) => c.handles.length > 0); // a creator that just lost its last handle shouldn't linger
 
-  return { supabase, creators, handlesByCreator, postsByHandle };
-});
-
-export const getCreators = cache(async (): Promise<Creator[]> => {
-  if (!isSupabaseConfigured()) return [];
-  const { creators } = await loadAll();
-  return creators;
-});
-
-// Top outliers across the whole watchlist, for the Feed/Home pages.
-export const getPosts = cache(async (): Promise<Post[]> => {
-  if (!isSupabaseConfigured()) return [];
-  const { creators, handlesByCreator, postsByHandle } = await loadAll();
-  if (creators.length === 0) return [];
-
-  const posts: Post[] = [];
+  const metas: PostMeta[] = [];
   for (const creator of creators) {
-    const handles = handlesByCreator.get(creator.id) ?? [];
     const thin = creator.handles.every((h) => h.thin);
-    for (const handle of handles) {
-      const rows = postsByHandle.get(handle.id) ?? [];
-      for (const row of rows) {
-        posts.push(buildPost(row, creator.id, creator.median, thin));
+    for (const handle of handlesByCreator.get(creator.id) ?? []) {
+      for (const row of postsByHandle.get(handle.id) ?? []) {
+        metas.push({ row, creatorId: creator.id, creatorMedian: creator.median, thin, score: creator.median > 0 ? row.views / creator.median : 0 });
       }
     }
   }
+  metas.sort((a, b) => b.score - a.score);
+  return { creators, handlesByCreator, metas, metaById: new Map(metas.map((m) => [m.row.id, m])) };
+});
 
+export const getCreators = cache(async (): Promise<Creator[]> => (await loadLight()).creators);
+
+// Full card rows for specific posts, fetched in parallel chunks (a long
+// id list would overflow the request URL).
+async function fetchCards(ids: string[]): Promise<Map<string, PostRow>> {
+  const out = new Map<string, PostRow>();
+  if (ids.length === 0) return out;
+  const supabase = await createClient();
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += ID_CHUNK) chunks.push(ids.slice(i, i + ID_CHUNK));
+  const results = await Promise.all(chunks.map((chunk) => supabase.from("outlier_posts").select(CARD_COLUMNS).in("id", chunk).returns<PostRow[]>()));
+  for (const { data } of results) for (const row of data ?? []) out.set(row.id, row);
+  return out;
+}
+
+// Posts for a set of metas, highest score first.
+async function postsFor(metas: PostMeta[]): Promise<Post[]> {
+  const cards = await fetchCards(metas.map((m) => m.row.id));
+  const posts: Post[] = [];
+  for (const meta of metas) {
+    const row = cards.get(meta.row.id);
+    if (row) posts.push(buildPost(row, meta.creatorId, meta.creatorMedian, meta.thin));
+  }
   return posts.sort((a, b) => b.score - a.score);
+}
+
+export type PostSummary = { total: number; outlierCount: number; anyAnalyzed: boolean; bestScore: number; bestPostId: string | null };
+
+// Counts and headline numbers for Home/Workspace without loading any post.
+export const getPostSummary = cache(async (): Promise<PostSummary> => {
+  const { metas } = await loadLight();
+  return {
+    total: metas.length,
+    outlierCount: metas.filter((m) => m.score >= 2).length,
+    anyAnalyzed: metas.some((m) => m.row.analysis_status === "done"),
+    bestScore: metas[0]?.score ?? 0,
+    bestPostId: metas[0]?.row.id ?? null,
+  };
+});
+
+// The n highest-scoring posts across the watchlist.
+export const getTopPosts = cache(async (n: number): Promise<Post[]> => {
+  const { metas } = await loadLight();
+  return postsFor(metas.slice(0, n));
+});
+
+// Every post across the watchlist, ranked — only for the Feed's "show
+// everything" view; ordinary pages never need this.
+export const getAllPosts = cache(async (): Promise<Post[]> => {
+  const { metas } = await loadLight();
+  return postsFor(metas);
+});
+
+const FEED_INITIAL_CAP = 300;
+
+export type FeedData = {
+  creators: Creator[];
+  posts: Post[];
+  total: number;
+  outlierCount: number;
+  // Everything the filters offer, computed from the light pass so they're
+  // complete even though only some posts are loaded.
+  platforms: Platform[];
+  hookOptions: [string, string][];
+  loadedAll: boolean;
+};
+
+// What the Feed opens with: just the outliers (score ≥ 2×) — the view it
+// defaults to — or, if nothing has crossed the bar yet, the top posts. The
+// rest loads on demand when someone turns the outliers-only filter off.
+export const getFeedData = cache(async (): Promise<FeedData> => {
+  const { creators, metas } = await loadLight();
+  const outliers = metas.filter((m) => m.score >= 2);
+  const initial = (outliers.length > 0 ? outliers : metas).slice(0, FEED_INITIAL_CAP);
+  const tags = new Map<string, string>();
+  for (const m of metas) for (const t of m.row.hook_tags ?? []) tags.set(t.trim().toLowerCase(), t.trim());
+  return {
+    creators,
+    posts: await postsFor(initial),
+    total: metas.length,
+    outlierCount: outliers.length,
+    platforms: [...new Set(metas.map((m) => m.row.platform))],
+    hookOptions: [...tags.entries()].sort((a, b) => a[1].localeCompare(b[1])),
+    loadedAll: initial.length === metas.length,
+  };
 });
 
 // Favourited posts across the whole watchlist, for the Favourites page.
 export const getFavouritePosts = cache(async (): Promise<Post[]> => {
-  const posts = await getPosts();
-  return posts.filter((post) => post.favourite);
+  const { metas } = await loadLight();
+  return postsFor(metas.filter((m) => m.row.favourited));
 });
 
 // Every post across the whole watchlist sharing a hook tag, ranked by
@@ -307,8 +444,8 @@ export const getFavouritePosts = cache(async (): Promise<Post[]> => {
 export const getPostsByHookTag = cache(async (tag: string): Promise<Post[]> => {
   const key = tag.trim().toLowerCase();
   if (!key) return [];
-  const posts = await getPosts();
-  return posts.filter((post) => post.hookTags.some((t) => t.trim().toLowerCase() === key));
+  const { metas } = await loadLight();
+  return postsFor(metas.filter((m) => (m.row.hook_tags ?? []).some((t) => t.trim().toLowerCase() === key)));
 });
 
 export type HookStylePattern = {
@@ -325,17 +462,17 @@ export type HookStylePattern = {
 // creators, matching the "topic-agnostic" framing: one creator doing well
 // with a style tells you nothing about whether the style itself works.
 export const getHookStylePatterns = cache(async (): Promise<HookStylePattern[]> => {
-  const posts = await getPosts();
+  const { metas } = await loadLight();
   const byTag = new Map<string, { label: string; scores: number[]; creatorIds: Set<string> }>();
-  for (const post of posts) {
-    if (post.analysisStatus !== "done" || post.thin) continue;
-    for (const rawTag of post.hookTags) {
+  for (const m of metas) {
+    if (m.row.analysis_status !== "done" || m.thin) continue;
+    for (const rawTag of m.row.hook_tags ?? []) {
       const label = rawTag.trim();
       if (!label) continue;
       const key = label.toLowerCase();
       const entry = byTag.get(key) ?? { label, scores: [], creatorIds: new Set() };
-      entry.scores.push(post.score);
-      entry.creatorIds.add(post.creatorId);
+      entry.scores.push(m.score);
+      entry.creatorIds.add(m.creatorId);
       byTag.set(key, entry);
     }
   }
@@ -350,22 +487,41 @@ export const getHookStylePatterns = cache(async (): Promise<HookStylePattern[]> 
     .sort((a, b) => b.avgScore - a.avgScore);
 });
 
+// One creator with all of its posts. Loads only this creator's rows rather
+// than the whole watchlist.
 export const getCreatorDetail = cache(
   async (id: string): Promise<{ creator: Creator; posts: Post[]; patterns: CreatorPatterns } | null> => {
     if (!isSupabaseConfigured()) return null;
-    const { creators, handlesByCreator, postsByHandle } = await loadAll();
-    const creator = creators.find((c) => c.id === id);
-    if (!creator) return null;
+    const supabase = await createClient();
+    const [{ data: creatorRow }, { data: handleRows }] = await Promise.all([
+      supabase.from("outlier_creators").select(CREATOR_COLUMNS).eq("id", id).maybeSingle<CreatorRow>(),
+      supabase.from("outlier_handles").select(HANDLE_COLUMNS).eq("creator_id", id).returns<HandleRow[]>(),
+    ]);
+    const handles = handleRows ?? [];
+    if (!creatorRow || handles.length === 0) return null;
 
-    const handles = handlesByCreator.get(id) ?? [];
+    const rows: PostRow[] = [];
+    for (let page = 0; page < 30; page++) {
+      const { data } = await supabase
+        .from("outlier_posts")
+        .select(POST_LIST_COLUMNS)
+        .in("handle_id", handles.map((h) => h.id))
+        .order("posted_at", { ascending: false })
+        .order("id")
+        .range(page * 1000, page * 1000 + 999)
+        .returns<PostRow[]>();
+      rows.push(...(data ?? []));
+      if ((data?.length ?? 0) < 1000) break;
+    }
+
+    const postsByHandle = new Map<string, PostRow[]>();
+    for (const post of rows) postsByHandle.set(post.handle_id, [...(postsByHandle.get(post.handle_id) ?? []), post]);
+    const creator = buildCreator(creatorRow, handles, postsByHandle);
     const overallThin = creator.handles.every((h) => h.thin);
-    const rows = handles.flatMap((h) => postsByHandle.get(h.id) ?? []);
     const posts = rows
       .map((row) => buildPost(row, id, creator.median, overallThin))
       .sort((a, b) => new Date(b.postedAtIso).getTime() - new Date(a.postedAtIso).getTime());
-    const patterns = computePatterns(rows);
-
-    return { creator, posts, patterns };
+    return { creator, posts, patterns: computePatterns(rows) };
   }
 );
 
@@ -407,6 +563,26 @@ type JobRow = {
   finished_at: string | null;
 };
 
+// Raw job + handle rows. Cached briefly per user (it runs in the layout on
+// every navigation) and cleared by revalidateOutlier() when a pull starts
+// or finishes, so the running count stays live.
+async function fetchJobData(db: Db, userId: string | null): Promise<{ rows: JobRow[]; handleRows: { id: string; creator_id: string; platform: Platform; handle: string }[] }> {
+  let jobsQ = db.from("outlier_jobs").select("*").order("created_at", { ascending: false }).limit(30);
+  if (userId) jobsQ = jobsQ.eq("user_id", userId);
+  const { data } = await jobsQ.returns<JobRow[]>();
+  const rows = data ?? [];
+  if (rows.length === 0) return { rows, handleRows: [] };
+  const { data: handleRows } = await db
+    .from("outlier_handles")
+    .select("id, creator_id, platform, handle")
+    .in(
+      "id",
+      rows.map((r) => r.handle_id)
+    )
+    .returns<{ id: string; creator_id: string; platform: Platform; handle: string }[]>();
+  return { rows, handleRows: handleRows ?? [] };
+}
+
 export const getJobs = cache(
   async (): Promise<{
     jobs: Job[];
@@ -414,25 +590,22 @@ export const getJobs = cache(
   }> => {
     if (!isSupabaseConfigured()) return { jobs: [], finished: [] };
 
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("outlier_jobs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(30)
-      .returns<JobRow[]>();
-    const rows = data ?? [];
+    const userId = canUseSharedCache() ? await getVerifiedUserId() : null;
+    let raw: Awaited<ReturnType<typeof fetchJobData>> | null = null;
+    if (userId) {
+      try {
+        raw = await unstable_cache(() => fetchJobData(createAdminClient(), userId), ["outlier-jobs-v1", userId], {
+          revalidate: 15,
+          tags: [outlierTag(userId)],
+        })();
+      } catch {
+        raw = null;
+      }
+    }
+    if (!raw) raw = await fetchJobData(await createClient(), null);
+    const { rows, handleRows } = raw;
     if (rows.length === 0) return { jobs: [], finished: [] };
-
-    const { data: handleRows } = await supabase
-      .from("outlier_handles")
-      .select("id, creator_id, platform, handle")
-      .in(
-        "id",
-        rows.map((r) => r.handle_id)
-      )
-      .returns<{ id: string; creator_id: string; platform: Platform; handle: string }[]>();
-    const handleById = new Map((handleRows ?? []).map((h) => [h.id, h]));
+    const handleById = new Map(handleRows.map((h) => [h.id, h]));
 
     const jobs: Job[] = rows
       .filter((r) => r.state === "queued" || r.state === "running" || r.state === "failed")

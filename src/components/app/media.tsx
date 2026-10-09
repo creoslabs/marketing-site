@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useEffect, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import styles from "./app.module.css";
 import { Avatar, Chip, cx } from "./ui";
+import { RemoteImage } from "./remote-image";
 
 // Fixed 9:16 (or set height) tile with platform chip top-left, optional label
 // top-right, and a score badge bottom-left (accent when ≥ 2× or a winner,
@@ -20,6 +21,7 @@ export function MediaTile({
   ring,
   children,
   className,
+  imageSizes = "(max-width: 760px) 50vw, 300px",
 }: {
   src?: string | null;
   platform?: string;
@@ -31,31 +33,16 @@ export function MediaTile({
   ring?: boolean;
   children?: ReactNode;
   className?: string;
+  // The rendered width, so the optimizer sends an appropriately small image.
+  imageSizes?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // An image can fail before React hydrates, in which case onError never
-  // fires — check the element's own state once mounted.
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth === 0) setFailed(true);
-  }, [src]);
 
   const showImage = Boolean(src) && !failed;
   const tile = (
     <div className={cx(styles.tile, className)} style={height ? { height } : { aspectRatio: "9 / 16" }}>
       {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element -- scraped CDN thumbnail
-        <img
-          ref={imgRef}
-          src={src as string}
-          alt=""
-          className={styles.tileImg}
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-        />
+        <RemoteImage src={src as string} className={styles.tileImg} sizes={imageSizes} onFailed={() => setFailed(true)} />
       ) : (
         emoji && (
           <span className={cx(styles.emo, styles.tileEmoji)} aria-hidden="true">
