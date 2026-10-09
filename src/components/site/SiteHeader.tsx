@@ -35,7 +35,7 @@ const HOME_NAV = [
 // One header for all three pages. With no `product` it's the homepage nav;
 // with one it's that product's own lockup ("CREOS LABS® / OUTLIER") and nav.
 // Below 900px the nav collapses into the menu button.
-export function SiteHeader({ product, isLoggedIn = false }: { product?: Product; isLoggedIn?: boolean }) {
+export function SiteHeader({ product, isLoggedIn = false, fromRoot = false }: { product?: Product; isLoggedIn?: boolean; fromRoot?: boolean }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootHref = useProductHref("root", "/");
@@ -53,7 +53,8 @@ export function SiteHeader({ product, isLoggedIn = false }: { product?: Product;
 
   const close = () => setOpen(false);
   const label = product === "outlier" ? "Outlier" : "Signal";
-  const nav = product ? PRODUCT_NAV[product] : HOME_NAV;
+  // Pages other than the homepage (legal, etc.) point the section links back at "/".
+  const nav = product ? PRODUCT_NAV[product] : fromRoot ? HOME_NAV.map((n) => ({ ...n, href: `/${n.href}` })) : HOME_NAV;
   const cta = product ? { href: "#pricing", label: `Get ${label}` } : { href: ENQUIRE_HREF, label: "Start a project" };
 
   return (

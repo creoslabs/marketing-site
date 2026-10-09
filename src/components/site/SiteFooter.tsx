@@ -16,6 +16,9 @@ export function SiteFooter({ variant }: { variant: "home" | "product" }) {
   const servicesHref = useProductHref("root", "/#services");
   const aboutHref = useProductHref("root", "/about");
   const insightsHref = useProductHref("root", "/insights");
+  const privacyHref = useProductHref("root", "/privacy");
+  const termsHref = useProductHref("root", "/terms");
+  const cookiesHref = useProductHref("root", "/cookies");
   const outlierHref = useLandingHref("outlier");
   const signalHref = useLandingHref("signal");
 
@@ -35,7 +38,12 @@ export function SiteFooter({ variant }: { variant: "home" | "product" }) {
           </div>
           <div className={styles.footMeta}>
             <span>Marketing, engineered.</span>
-            <span className={styles.mono}>© {YEAR} Creos Labs · creos-labs.com</span>
+            <span className={cx(styles.mono, styles.footLegal)}>
+              <Link href={privacyHref}>Privacy</Link>
+              <Link href={termsHref}>Terms</Link>
+              <Link href={cookiesHref}>Cookies</Link>
+              <span>© {YEAR} Creos Labs · creos-labs.com</span>
+            </span>
           </div>
         </div>
       </footer>
@@ -64,6 +72,12 @@ export function SiteFooter({ variant }: { variant: "home" | "product" }) {
               <Link href={aboutHref}>About</Link>
               <Link href={insightsHref}>Insights</Link>
               <a href="mailto:hello@creos-labs.com">hello@creos-labs.com</a>
+            </div>
+            <div className={styles.footCol}>
+              <span className={styles.mono}>Legal</span>
+              <Link href={privacyHref}>Privacy Policy</Link>
+              <Link href={termsHref}>Terms of Use</Link>
+              <Link href={cookiesHref}>Cookie Notice</Link>
             </div>
           </div>
         </div>

@@ -8,5 +8,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 1,
     },
+    ...["/privacy", "/terms", "/cookies"].map((path) => ({
+      url: `https://www.creos-labs.com${path}`,
+      lastModified: new Date("2026-10-09"),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
 }

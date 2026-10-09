@@ -3657,3 +3657,157 @@
   color: var(--label-d);
   opacity: 0.8;
 }
+
+/* ---------- legal pages ---------- */
+
+.legalHead {
+  padding-top: 72px;
+  padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1280px;
+}
+
+.legalTitle {
+  font-size: clamp(44px, 6vw, 84px);
+  line-height: 0.92;
+}
+
+.legalMeta {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label-d);
+}
+
+.legalIntro {
+  max-width: 720px;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--muted-d);
+}
+
+.legalBody {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 720px);
+  gap: 64px;
+  padding-bottom: 120px;
+  align-items: start;
+}
+
+.legalToc {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--label-d);
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+
+.legalToc a:hover {
+  color: var(--accent);
+}
+
+.legalText {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+  color: var(--body2);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.legalSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-margin-top: 96px;
+}
+
+.legalSection h2 {
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+}
+
+.legalSection h3 {
+  margin: 8px 0 0;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--paper);
+}
+
+.legalSection ul {
+  margin: 0;
+  padding-left: 22px;
+  list-style: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legalSection a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.legalSection strong {
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.legalTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.legalTable th,
+.legalTable td {
+  text-align: left;
+  vertical-align: top;
+  padding: 12px 14px 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.legalTable th {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label-d);
+  font-weight: 500;
+  border-top: none;
+}
+
+@media (max-width: 900px) {
+  .legalBody {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .legalToc {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+.footLegal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.footLegal a:hover {
+  color: var(--accent);
+}
